@@ -1,6 +1,6 @@
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
 import { arts, type ArtDefinition } from '../data/arts';
-import { sentinelPatterns, type AttackPattern } from '../data/enemies';
+import { sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
@@ -134,13 +134,15 @@ export class CombatSimulation {
     if (this.state.state === 'Dead' || this.flags.invulnerable) return;
     const elapsed = this.now - this.actionStart;
     if (this.state.state === 'Dodge' && elapsed >= balance.dodge.iframeStart && elapsed <= balance.dodge.iframeEnd) { this.emit('notice', 'Evaded'); return; }
-    if (pattern.parryable && this.state.state === 'Parry' && elapsed <= balance.parry.window && inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, 4, 1.7)) {
+    if (pattern.parryable && this.state.state === 'Parry' && elapsed <= (pattern.kind === 'basic' ? 260 : balance.parry.window) && inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, 4, 1.7)) {
       this.player.sp = gainSp(this.player.sp, balance.sp.parry); this.counters.parries++; this.applyBreak(enemy, balance.parry.break);
       this.emit('parry', `PERFECT PARRY · +${balance.sp.parry} SP · NO DAMAGE`, enemy, { strong: true, grade:'Perfect' }); this.state.set('Idle'); return;
     }
     let damage = pattern.damage;
     if (this.state.state === 'Guard' && this.useStamina(balance.guard.cost)) damage *= balance.guard.damageMultiplier;
     this.player.hp = Math.max(0, this.player.hp - damage); this.emit('hit', `−${Math.round(damage)}`, this.player, { amount: damage, target: 'player', strong: true });
+    // A committed Art retains its timing through nonlethal hits; damage still matters.
+    if(this.art && this.player.hp > 0 && ['ArtStartup','ArtSequence'].includes(this.state.state))return;
     this.art = null; this.cancelBufferedInput();
     if (this.player.hp <= 0) { this.state.set('Dead'); this.emit('death', 'You fell. Rise again.'); }
     else { this.state.set('HitReaction'); this.actionStart = this.now; this.actionEnd = this.now + 330; }
@@ -182,7 +184,8 @@ export class CombatSimulation {
         this.emit('slash', `Cut ${i + 1}`, this.player, { grade });
       }
     });
-    if (elapsed >= def.finisher.at && !art.finisher) {
+    if (!def.finisher && art.resolved.size === def.nodes.length) { this.state.set('ArtRecovery'); this.actionEnd = this.now + def.recovery; }
+    if (def.finisher && elapsed >= def.finisher.at && !art.finisher) {
       art.finisher = true; const perfect = art.grades.every(g => g === 'Perfect'); const multiplier = perfect ? def.finisher.perfectBonus : 1;
       this.strike(def.finisher.damage * multiplier, def.finisher.break * multiplier, def.finisher.range, perfect ? 'Perfect' : 'Good', 'finisher');
       this.emit('slash', perfect ? 'Lunar finish' : 'Finisher', this.player, { strong: true, grade: perfect ? 'Perfect' : 'Good' });
@@ -224,7 +227,7 @@ export class CombatSimulation {
     if (enemy.pattern) {
       const elapsed = this.now - enemy.attackStart, pattern = enemy.pattern;
       // Tracking stops before impact, making the windup readable and dodgeable.
-      if (elapsed < pattern.telegraph - 260) enemy.yaw = Math.atan2(dx, dz);
+      if (elapsed < pattern.telegraph - (pattern.kind === 'basic' ? 500 : 260)) enemy.yaw = Math.atan2(dx, dz);
       enemy.state = elapsed < pattern.telegraph ? 'Telegraph' : 'Attack';
       for (let i = 0; i < pattern.hits.length; i++) if (elapsed >= pattern.hits[i] && !enemy.hits.has(i)) {
         enemy.hits.add(i); this.emit('slash', pattern.name, enemy, { target: enemy.id, strong: !pattern.parryable });
@@ -238,6 +241,6 @@ export class CombatSimulation {
     if (distance > balance.enemy.aggro || this.now < enemy.until) { enemy.state = 'Idle'; return; }
     enemy.yaw = Math.atan2(dx, dz);
     if (distance > 2.25) { enemy.state = 'Chase'; enemy.x += dx / distance * balance.enemy.speed * dt; enemy.z += dz / distance * balance.enemy.speed * dt; this.bound(enemy); }
-    else { enemy.pattern = sentinelPatterns[enemy.nextPattern++ % sentinelPatterns.length]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
+    else { enemy.pattern = sentinelPatterns[sentinelSequence[enemy.nextPattern++ % sentinelSequence.length]]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
   }
 }

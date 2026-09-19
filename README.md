@@ -30,7 +30,7 @@ Browser tests use the locally installed Microsoft Edge channel. The development-
 | WASD | Camera-relative movement |
 | Shift | Sprint; consumes stamina |
 | Tap left mouse or J | Untimed low-damage basic attack |
-| 1 | Crescent Break; tap left mouse/J at its three pulses |
+| 1 | Crescent Break; tap left mouse/J at its single pulse |
 | 2–4 | Remaining Art slots; initially empty |
 | Space + movement | Directional dodge; forward without movement input |
 | Q | Parry |
@@ -43,7 +43,7 @@ Browser tests use the locally installed Microsoft Edge channel. The development-
 | Escape | Pause/resume |
 | Backtick | Developer panel |
 
-Basic attacks commit on press, deal 5 damage at starting Strength, and earn 10 SP per landed hit (cap 100). Holding or releasing does not affect damage or SP. Crescent Break costs 30 SP and has three timed inputs; misses still attack at reduced strength. Gold attacks can be parried; red sweeps must be dodged. Break creates a 3.4-second opening with ×1.6 damage.
+Basic attacks commit on press, deal 5 damage at starting Strength, and earn 10 SP per landed hit (cap 100). Holding or releasing does not affect damage or SP. Crescent Break costs 30 SP and has one timed input; misses still attack at reduced strength. Gold attacks can be parried; red sweeps must be dodged. Break creates a 3.4-second opening with ×1.6 damage.
 
 Settings, attributes, four-slot loadout, and aggregate combat counters persist in IndexedDB. Encounter HP/SP/positions and developer cheats intentionally reset each session.
 

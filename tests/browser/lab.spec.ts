@@ -24,10 +24,10 @@ test('real controls, assets, timing, Arts, camera, debug and save',async({page},
  expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBeGreaterThanOrEqual(30);
  const sp=await page.evaluate(()=>window.trinity.sim.player.sp);
  await page.keyboard.press('1');expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBe(sp-30);
- for(const at of [620,1180,1740]){await page.waitForFunction(at=>{const a=window.trinity.sim.art;return a&&window.trinity.sim.now-a.start>=at-20;},at,{polling:'raf'});await page.keyboard.press('j');}
- await expect.poll(()=>page.evaluate(()=>window.trinity.sim.art?.grades.filter((g:string)=>g==='Good'||g==='Perfect').length??0)).toBe(3);
+ for(const at of [620]){await page.waitForFunction(at=>{const a=window.trinity.sim.art;return a&&window.trinity.sim.now-a.start>=at-20;},at,{polling:'raf'});await page.keyboard.press('j');}
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.art?.grades.filter((g:string)=>g==='Good'||g==='Perfect').length??0)).toBe(1);
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
- expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBeLessThan(300);
+ expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBeLessThan(380);
  await page.keyboard.press('Space');expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Dodge');await page.waitForTimeout(500);
  await page.keyboard.press('Backquote');await expect(page.locator('#debug')).toBeVisible();
  await page.locator('[data-action="sp"]').click();expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBe(100);
@@ -150,4 +150,17 @@ test('all tutorial lessons can be completed through combat',async({page})=>{
  await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();
  await page.keyboard.press('1');await expect(page.locator('#tutorial-next')).toBeEnabled({timeout:5000});
  await page.locator('#tutorial-next').click();await expect(page.locator('#tutorial')).toBeHidden();expect(await page.evaluate(()=>window.trinity.sim.flags.freezeAI)).toBe(false);
+});
+
+
+test('enemy basics are animation-led and player Art suppresses competing cues',async({page})=>{
+ await ready(page);await setupClose(page);
+ await page.evaluate(()=>{const s=window.trinity.sim;s.flags.freezeAI=false;s.enemies[0].until=0;});
+ await page.waitForFunction(()=>window.trinity.sim.enemies[0].pattern?.kind==='basic');
+ await expect(page.locator('#defense-cue')).toBeHidden();expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toEqual([]);
+ await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.player.z=0;s.enemies[0].z=2;s.enemies[0].nextPattern=1;s.enemies[0].until=0;s.player.sp=30;});
+ await expect(page.locator('#defense-cue')).toBeVisible();await page.keyboard.press('1');
+ await expect(page.locator('#defense-cue')).toBeHidden();await expect(page.locator('#timing')).toHaveCSS('opacity','1');
+ expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(2);
+ await page.screenshot({path:'test-results/single-art.png'});
 });

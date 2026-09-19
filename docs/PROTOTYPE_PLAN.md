@@ -1,3 +1,7 @@
+# Updated beginner combat direction
+
+Use single-event beginner Arts, distinct offensive/defensive audio, and animation-led enemy basics alternating with skills. Multi-input Arts are reserved for later advanced skills. The current Art retains commitment through nonlethal damage. Test audio priority and readability before adding progression breadth.
+
 # Current implementation update
 
 Implemented: mandatory untimed low-damage basics, fixed 10 SP, a 100 ms recovery input buffer, earlier Art impact resolution, enemy build-up phrases for every hit, defensive geometry, and five replayable combat lessons. The user selected tap-only basics; the old hold/release comparison below is superseded. Skill acquisition/mastery, calibration, a full soundtrack, and Blender animation clips remain future work.

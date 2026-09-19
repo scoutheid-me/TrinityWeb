@@ -1,3 +1,9 @@
+# Combat clarity follow-up
+
+Crescent Break now uses one timing input and one strike. Nonlethal hits preserve a committed Art (HP damage still applies). Sentinel basics alternate with skills; basics use narrower arcs, earlier tracking lock, a 260 ms parry window, and animation-only anticipation. Only the nearest skill plays a short low warning; player Arts take audio/UI priority. Dodge uses an airy swish and ground wake, parry a bright metallic response and gold sparks, and Arts pitched notes with a square target. Existing rigid procedural poses were improved; no production animation clips were authored.
+
+Validation: 45 unit tests, all eight browser scenarios, production startup, and build passed. One initial WebGL page startup timed out before the HUD loaded; the targeted live-enemy rerun passed. The Art-priority screenshot was inspected. Audio hardware latency and subjective combat feel still need player feedback.
+
 # September 18 update: quick basics and guided combat
 
 Implemented and verified:

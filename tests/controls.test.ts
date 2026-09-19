@@ -21,7 +21,7 @@ describe('control profiles',()=>{
 });
 describe('musical timing and Perfect Parry',()=>{
  it('requires no musical timing for basics',()=>{const s=new CombatSimulation();s.pressAttack();expect(timingPhrase(s)).toBeNull();});
- it('aligns three Art accents to their actual grading deadlines with lead-ins',()=>{const s=new CombatSimulation();s.player.sp=30;s.activateArt(0);const phrase=timingPhrase(s)!;expect(phrase.notes.filter(n=>n.accent).slice(0,3).map(n=>n.at)).toEqual(s.art!.definition.nodes.map(n=>s.art!.start+n.at));expect(phrase.notes.filter(n=>!n.accent)).toHaveLength(3);});
+ it('aligns one Art accent to their actual grading deadlines with lead-ins',()=>{const s=new CombatSimulation();s.player.sp=30;s.activateArt(0);const phrase=timingPhrase(s)!;expect(phrase.notes.filter(n=>n.accent).slice(0,3).map(n=>n.at)).toEqual(s.art!.definition.nodes.map(n=>s.art!.start+n.at));expect(phrase.notes.filter(n=>!n.accent)).toHaveLength(1);});
  it('provides no continuing timing phrase after interruption',()=>{const s=new CombatSimulation();s.pressAttack();s.state.set('HitReaction');expect(timingPhrase(s)).toBeNull();});
  it('Perfect Parry negates lethal damage, gains SP, and explains the reward',()=>{const s=new CombatSimulation();s.player.z=0;s.player.yaw=0;s.player.hp=1;s.player.sp=10;s.enemies[0].z=2;s.parry();s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBe(1);expect(s.player.sp).toBe(24);expect(s.events.find(e=>e.type==='parry')).toMatchObject({grade:'Perfect',text:'PERFECT PARRY · +14 SP · NO DAMAGE'});});
  it('caps the Perfect Parry reward without allowing damage through',()=>{const s=new CombatSimulation();s.player.z=0;s.player.sp=99;s.parry();s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.sp).toBe(100);expect(s.player.hp).toBe(s.hpMax);});
@@ -41,3 +41,6 @@ describe('new combat loop',()=>{
  s.flags.freezeAI=true;expect(enemyTimingPhrases(s)).toEqual([]);s.flags.freezeAI=false;s.applyBreak(e,100);expect(enemyTimingPhrases(s)).toEqual([]);
  });
 });
+
+
+it('keeps basic defense silent and gives player Arts audio priority',()=>{const s=new CombatSimulation(),e=s.enemies[0];e.pattern=sentinelPatterns[0];expect(enemyTimingPhrases(s)).toEqual([]);e.pattern=sentinelPatterns[1];expect(enemyTimingPhrases(s)).toHaveLength(1);s.player.sp=30;s.activateArt(0);expect(enemyTimingPhrases(s)).toEqual([]);expect(timingPhrase(s)!.notes.filter(n=>n.accent)).toHaveLength(1);});

@@ -19,15 +19,15 @@ describe('resources and timing',()=>{
 describe('state and defense',()=>{
  it('rejects attack/dodge overlap and dead actions',()=>{const state=new StateMachine();expect(state.set('ArtStartup')).toBe(true);expect(state.set('Dodge')).toBe(false);expect(state.set('BasicAttackStartup')).toBe(false);expect(state.set('ArtSequence')).toBe(true);expect(state.set('ArtRecovery')).toBe(true);expect(state.set('Idle')).toBe(true);state.set('Dead');expect(state.set('Idle')).toBe(false);state.reset();expect(state.state).toBe('Idle');});
  it('parries within window, grants SP and Break, and permits next parry',()=>{const s=encounter();s.parry();advance(s,80);const hp=s.player.hp;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBe(hp);expect(s.player.sp).toBe(14);expect(s.enemies[0].break).toBe(32);expect(s.counters.parries).toBe(1);expect(s.parry()).toBe(true);});
- it('late parry fails and red attacks cannot be parried',()=>{const s=encounter();s.parry();advance(s,200);s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBe(s.hpMax-24);s.state.reset();s.parry();s.receiveAttack(s.enemies[0],sentinelPatterns[2]);expect(s.player.hp).toBe(s.hpMax-60);});
+ it('late parry fails and red attacks cannot be parried',()=>{const s=encounter();s.parry();advance(s,280);s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBe(s.hpMax-24);s.state.reset();s.parry();s.receiveAttack(s.enemies[0],sentinelPatterns[2]);expect(s.player.hp).toBe(s.hpMax-60);});
  it('dodge consumes stamina, moves and avoids hits only inside iframes',()=>{const s=encounter();s.input.x=1;expect(s.dodge()).toBe(true);expect(s.player.stamina).toBe(76);advance(s,100);expect(s.player.x).toBeGreaterThan(.8);s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBe(s.hpMax);advance(s,260);s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBeLessThan(s.hpMax);});
  it('cannot dodge without stamina and guard reduces damage',()=>{const s=encounter();s.player.stamina=0;expect(s.dodge()).toBe(false);s.player.stamina=100;s.input.guard=true;s.update(10);s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBeCloseTo(s.hpMax-24*.2);expect(s.player.stamina).toBe(76);});
 });
 describe('encounter',()=>{
  it('accumulates Break, staggers and resets after vulnerability',()=>{const s=encounter(),e=s.enemies[0];s.applyBreak(e,60);expect(e.state).not.toBe('Broken');s.applyBreak(e,40);expect(e.state).toBe('Broken');s.hitEnemy(e,10,0,'Normal','a');expect(e.hp).toBe(e.maxHp-16);s.flags.freezeAI=false;advance(s,balance.enemy.stagger+20);expect(e.state).toBe('Recovery');expect(e.break).toBe(0);});
- it('timed Art has three inputs and stronger perfect outcome',()=>{
+ it('timed Art has one input and stronger perfect outcome',()=>{
   const run=(perfect:boolean)=>{const s=encounter();s.player.sp=100;s.activateArt(0);const art=s.art!;if(perfect)for(const node of art.definition.nodes){advance(s,node.at-(s.now-art.start));s.artInput();}advance(s,2800-(s.now-art.start));return s;};
-  const p=run(true),m=run(false);expect(p.enemies[0].hp).toBeLessThan(m.enemies[0].hp);expect(p.counters.perfects).toBe(3);expect(p.player.sp).toBe(70);expect(p.state.state).toBe('Idle');
+  const p=run(true),m=run(false);expect(p.enemies[0].hp).toBeLessThan(m.enemies[0].hp);expect(p.counters.perfects).toBe(1);expect(p.player.sp).toBe(70);expect(p.state.state).toBe('Idle');
  });
  it('handles enemy death once, player death, and reset',()=>{const s=encounter();s.hitEnemy(s.enemies[0],999,0,'Perfect','kill');s.hitEnemy(s.enemies[0],999,0,'Perfect','again');expect(s.counters.kills).toBe(1);expect(s.enemies[0].state).toBe('Dead');s.player.hp=1;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.state.state).toBe('Dead');expect(s.player.hp).toBe(0);s.reset();expect(s.state.state).toBe('Idle');expect(s.enemies[0].hp).toBe(460);expect(s.player.hp).toBe(s.hpMax);});
  it('enemy approaches, telegraphs and damages the player',()=>{const s=new CombatSimulation();advance(s,7000);expect(s.player.hp).toBeLessThan(s.hpMax);expect(s.enemies[0].nextPattern).toBeGreaterThan(0);});
@@ -50,4 +50,11 @@ describe('recovery input buffer',()=>{
  const s=encounter();s.pressAttack();advance(s,400);s.dodge();expect(s.buffered).not.toBeNull();
  s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.buffered).toBeNull();s.reset();expect(s.buffered).toBeNull();
  });
+});
+
+
+describe('readable beginner combat',()=>{
+ it('keeps a committed Art through damage but never through death',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);const art=s.art;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.art).toBe(art);expect(s.player.hp).toBe(s.hpMax-24);expect(s.state.state).toBe('ArtStartup');s.player.hp=1;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.art).toBeNull();expect(s.state.state).toBe('Dead');});
+ it('gives basics a wider parry window than skills',()=>{for(const index of [0,1]){const s=encounter();s.parry();advance(s,220);s.receiveAttack(s.enemies[0],sentinelPatterns[index]);expect(s.counters.parries).toBe(index===0?1:0);}});
+ it('resolves only one Art strike, without a hidden finisher',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,620);s.artInput();advance(s,1400);expect(s.events.filter(e=>e.type==='hit'&&e.target!=='player')).toHaveLength(1);expect(s.state.state).toBe('Idle');});
 });

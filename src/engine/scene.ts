@@ -155,8 +155,13 @@ export class LabScene {
       let actor = this.actors.get(enemy.id);
       if (!actor) { actor = this.actor(this.enemyTemplate.clone(enemy.id,null)!,enemy.id,true); this.actors.set(enemy.id,actor); }
       const elapsed = sim.now-enemy.attackStart;
-      let attack = enemy.state === 'Telegraph' ? -2.25 : 0;
-      if (enemy.state === 'Attack') attack = Math.sin(elapsed*.018)*1.8;
+      let attack = 0;
+      if(enemy.pattern){
+        const hit=enemy.pattern.hits.find(at=>elapsed<at+200)??enemy.pattern.hits.at(-1)!;
+        const until=hit-elapsed;
+        // Deliberate lift, then one clean contact stroke per authored deadline.
+        attack=until>180?-2.25*Math.min(1,elapsed/450):until>0?-2.25+(1-until/180)*2.25:Math.min(1,-until/180)*1.8;
+      }
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,enemy.state==='Chase'?2.5:0,attack,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       if (enemy.flashUntil>sim.now) actor.root.position.y += .04*Math.sin(sim.now*.1);
     }
@@ -164,14 +169,14 @@ export class LabScene {
     let swing = 0;
     if (state === 'BasicAttackStartup') swing = -1.4 - Math.min(1,(sim.now-sim.actionStart)/chargeTime(sim.attributes.dexterity))*.9;
     if (state === 'BasicAttackActive') swing = -2.3 + (sim.now-sim.actionStart)/balance.basic.active*3.5;
-    if (sim.art && state === 'ArtSequence') swing = Math.sin((sim.now-sim.art.start)*.012)*2;
+    if (sim.art && state === 'ArtSequence') {const phase=sim.now-sim.art.start-sim.art.definition.nodes[0].at;swing=phase<0?-2.3:Math.min(1,phase/160)*3.5-2.3;}
     this.animate(this.player,sim.player.x,sim.player.z,sim.player.yaw,Math.hypot(sim.player.vx,sim.player.vz),swing,state==='Guard'||state==='Parry',state==='Dead',state==='HitReaction',poseDt);
     const artCue=sim.art?.definition.nodes.some(n=>Math.abs(sim.now-sim.art!.start-n.at)<=balance.timing.perfect)??false;
     this.timingFlash.setEnabled(artCue);
     if (state==='Dodge') this.player.root.position.y = -.22;
     const target = sim.target;
     this.ring.setEnabled(!!target); if (target) this.ring.position.set(target.x,.07,target.z);
-    const danger = sim.enemies.find(e => e.pattern && (e.state==='Telegraph'||e.state==='Attack'));
+    const danger = sim.enemies.find(e => e.pattern?.kind==='skill' && (e.state==='Telegraph'||e.state==='Attack'));
     this.telegraph.setEnabled(!!danger);
     if (danger && danger.pattern) {
       this.telegraph.position.set(danger.x,.05,danger.z);
@@ -212,6 +217,11 @@ export class LabScene {
         this.pendingEffects.push({mesh:spark,life:.32,max:.32,velocity:new Vector3(Math.sin(i*2.4)*3,1+i%3,Math.cos(i*2.4)*3)});
       }
       setTimeout(()=>mat.dispose(),500);
+    }
+    if(event.type==='dodge') {
+      const trail=MeshBuilder.CreateTorus('dodge wake',{diameter:1,thickness:.025,tessellation:24},this.scene);
+      trail.position.set(event.x,.09,event.z);trail.scaling.z=.45;trail.material=this.material('dodge mist','#a9c4d0',.5);
+      const material=trail.material;this.pendingEffects.push({mesh:trail,life:.25,max:.25});setTimeout(()=>material?.dispose(),400);
     }
     if(event.type==='slash') {
       const yaw=event.target?sim.enemies.find(e=>e.id===event.target)?.yaw??0:sim.player.yaw;
