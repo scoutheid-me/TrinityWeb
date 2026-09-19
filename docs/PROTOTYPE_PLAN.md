@@ -1,3 +1,7 @@
+# Current roadmap
+
+Use [EXPANSION_PLAN.md](EXPANSION_PLAN.md) as the current staged expansion plan. It incorporates the contact/footprint pass, beginner single-input Arts and the new HUD. The earlier review below is retained as historical design context; outdated feature-status statements are superseded by STATUS.md.
+
 # Updated beginner combat direction
 
 Use single-event beginner Arts, distinct offensive/defensive audio, and animation-led enemy basics alternating with skills. Multi-input Arts are reserved for later advanced skills. The current Art retains commitment through nonlethal damage. Test audio priority and readability before adding progression breadth.

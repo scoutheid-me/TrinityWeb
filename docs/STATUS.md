@@ -1,3 +1,11 @@
+# September 19: floating-glass HUD and expansion plan
+
+Restyled the HUD and menus from the supplied visual references using original CSS: pale translucent panels, angular green HP, gold highlights, upper-left resources, upper-right target information, compact bottom Art slots, and a functional right-side menu rail. Removed persistent combat instructions and hid performance telemetry by default (available in Lab tools). Art labels/costs now read the equipped definitions.
+
+Verification: build, all 12 existing browser scenarios, and production startup passed. Inspected combat, controls, tutorial, 1280×720 pause menu, and 640×900 HUD screenshots. Resource/target/Art panels stay inside the smaller viewport; keyboard/mouse remains the supported input. Existing bundle-size warning remains.
+
+`EXPANSION_PLAN.md` is the current roadmap: a Guild Trial inside the existing hall, preceded by per-Art policies and trustworthy outcome/reward events, then earned Arts, four-slot loadouts and a small mastery choice. Enemy/boss expansion, equipment, trainers, deterministic Event Ledger/quests and the first region follow explicit acceptance gates. This is planned work, not implemented progression.
+
 # September 19: actual hit footprints and contact-marked duel motion
 
 Implemented:

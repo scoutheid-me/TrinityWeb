@@ -70,3 +70,5 @@ Design references: [GDD](docs/GDD.md), [architecture](docs/ARCHITECTURE.md), [co
 The [combat quality and scalability audit](docs/COMBAT_AUDIT.md) records the production gaps, current verification, and next implementation gates.
 
 Enemy attack warnings now show their actual gameplay footprint: a narrow cleave lane, a fan for the double cut, or a full disk for the radial sweep. Their reach stays fixed during windup. Muted decorative floor inlays are separate from these attack outlines. The duel uses Blender-authored contact-marked motion curves on the existing prototype characters.
+
+The current HUD uses a compact floating-glass style based on the supplied visual references. Use the right-side menu for pause, controls and tutorial. Performance telemetry is available in Lab tools. See the [current expansion plan](docs/EXPANSION_PLAN.md) for the proposed Guild Trial and progression milestones.
