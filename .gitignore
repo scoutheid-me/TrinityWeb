@@ -1,0 +1,12 @@
+# Blender backups and temporary saves; keep production .blend source files.
+*.blend[0-9]*
+*.blend@
+*.blend.tmp
+node_modules/
+dist/
+test-results/
+playwright-report/
+.vite/
+*.log
+.env
+.env.*
