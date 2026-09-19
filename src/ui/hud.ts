@@ -1,3 +1,4 @@
+import {imminentThreat} from '../combat/timeline';
 import {balance,chargeTime,type Attributes} from '../data/balance';
 import {arts} from '../data/arts';
 import type {CombatSimulation,CombatEvent} from '../combat/simulation';
@@ -55,7 +56,7 @@ export class HUD {
     bar('hp',p.hp,sim.hpMax);bar('stamina',p.stamina,sim.staminaMax);bar('sp',p.sp,100);
     this.el('hp-value').textContent=`${Math.ceil(p.hp)} / ${sim.hpMax}`;this.el('stamina-value').textContent=`${Math.floor(p.stamina)}`;this.el('sp-value').textContent=String(Math.floor(p.sp));
     if(e){bar('enemy-hp',e.hp,e.maxHp);bar('enemy-break',e.break,100);this.el('enemy-values').textContent=`${Math.ceil(e.hp)} / ${e.maxHp}`;this.el('enemy-state').textContent=e.hp<=0?`DEFEATED · ${bindingText(this.bindings,'reset')} TO RESET`:e.state==='Broken'?'BROKEN · DAMAGE ×1.6':e.pattern?`${e.pattern.name.toUpperCase()} · ${e.pattern.parryable?'PARRY OR DODGE':'DODGE'}`:e.state.toUpperCase();}
-    const threat=sim.flags.freezeAI||sim.art?undefined:sim.enemies.filter(e=>e.pattern?.kind==='skill'&&e.hp>0).map(e=>({enemy:e,at:e.attackStart+e.pattern!.hits.find((_,i)=>!e.hits.has(i))!})).filter(t=>Number.isFinite(t.at)).sort((a,b)=>a.at-b.at)[0];
+    const selected=sim.flags.freezeAI||sim.art?undefined:imminentThreat(sim,true);const threat=selected?{enemy:selected.enemy,at:selected.phase!.contactAt}:undefined;
     const defense=this.el('defense-cue');defense.hidden=!threat||!this.showTiming;
     if(threat){const parryable=threat.enemy.pattern!.parryable,remaining=threat.at-sim.now-(parryable?80:150);defense.classList.toggle('sweep',!parryable);defense.querySelector('i')!.style.transform='rotate(45deg) scale('+Math.max(.5,Math.min(2,1+remaining/600))+')';defense.querySelector('span')!.textContent=(remaining<=55?'NOW · ':'BUILD-UP · ')+(parryable?'PARRY '+bindingText(this.bindings,'parry'):'DODGE '+bindingText(this.bindings,'dodge'));}
     this.el('lock-label').style.opacity=sim.target?'1':'0';

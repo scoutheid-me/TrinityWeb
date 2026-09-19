@@ -22,3 +22,5 @@ Outputs are resolved relative to the script, independent of the working director
 
 Rerunning replaces these test outputs. `References` is reserved for source references.
 This setup generates only a smoke test, not game assets.
+
+For contact-marked duel animation, run `build_duel_motion.py` with the same background flags. It preserves the base models and outputs separate combat `.blend` sources plus the runtime sampled curves. See `docs/ASSET_PIPELINE.md`.

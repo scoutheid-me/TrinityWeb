@@ -1,3 +1,4 @@
+import {sentinelPatterns} from '../../src/data/enemies';
 import {test,expect,type Page} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
 declare global {interface Window {trinity:any;}}
@@ -181,4 +182,26 @@ test('five-enemy audit benchmark stays bounded and renders without exceptions',a
  expect(await page.evaluate(()=>window.trinity.sim.enemies.length)).toBe(5);
  const sample=await page.evaluate(async()=>{const frames:number[]=[];let previous=performance.now();for(let i=0;i<240;i++){await new Promise<void>(r=>requestAnimationFrame(()=>r()));const now=performance.now();if(i>60)frames.push(now-previous);previous=now;}frames.sort((a,b)=>a-b);return {...window.trinity.view.stats(),enemies:window.trinity.sim.enemies.length,meanFrameMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95FrameMs:frames[Math.floor(frames.length*.95)]};});
  writeFileSync('test-results/audit-five-enemies.json',JSON.stringify(sample,null,2));await info.attach('five-enemies',{body:JSON.stringify(sample),contentType:'application/json'});await page.screenshot({path:'test-results/audit-five-enemies.png'});expect(errors).toEqual([]);
+});
+
+
+test('attack footprints match actual shapes and disappear on reset',async({page})=>{
+ await ready(page);await page.evaluate(()=>window.trinity.pause(true));
+ for(const pattern of sentinelPatterns){
+  const result=await page.evaluate(pattern=>{const {sim:s,view}=window.trinity;s.reset();s.player.z=-2;s.enemies[0].z=1;s.enemies[0].yaw=Math.PI;s.enemies[0].pattern=pattern;s.enemies[0].attackStart=s.now-pattern.hits[0]+200;s.enemies[0].state='Telegraph';view.update(s,.016);const indicator=view.hitIndicators.get(s.enemies[0].id);return {shape:indicator.mesh.metadata.hitShape,scale:indicator.mesh.scaling.asArray(),yaw:indicator.mesh.rotation.y};},pattern);
+  expect(result.shape).toEqual(pattern.shape);expect(result.scale).toEqual([1,1,1]);expect(result.yaw).toBeCloseTo(Math.PI);
+  // Hide the pause overlay only for visual inspection; simulation remains paused.
+  await page.locator('#overlay').evaluate(e=>(e as HTMLElement).hidden=true);
+  await page.screenshot({path:'test-results/footprint-'+pattern.motion+'.png'});
+ }
+ await page.evaluate(()=>{const {sim,view}=window.trinity;sim.reset();view.update(sim,.016);});expect(await page.evaluate(()=>window.trinity.view.hitIndicators.size)).toBe(0);
+});
+
+test('visible cleave lane predicts live hit and miss after facing locks',async({page})=>{
+ await ready(page);
+ for(const [x,hp] of [[.25,176],[.8,200]]){
+  await page.evaluate(({pattern,x})=>{const s=window.trinity.sim;s.reset();s.player.x=x;s.player.z=2;const e=s.enemies[0];e.x=0;e.z=0;e.yaw=0;e.pattern=pattern;e.attackStart=s.now-800;e.state='Telegraph';}, {pattern:sentinelPatterns[0],x});
+  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hits.size)).toBe(1);
+  expect(await page.evaluate(()=>window.trinity.sim.player.hp)).toBe(hp);
+ }
 });

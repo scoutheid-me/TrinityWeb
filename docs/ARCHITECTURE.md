@@ -29,3 +29,5 @@ Save schema v2 stores settings, primary/alternate keyboard and mouse bindings, t
 Procedural posing is intentionally isolated from combat rules so a skinned GLB animation adapter can replace it. Future controller input should feed the same actions and movement intent. Future Arts use the reusable executor and need no controller branches.
 
 See `COMBAT_AUDIT.md` for required extraction boundaries before expanding content: shared attack/contact timeline, authoritative threat selection, typed progression-eligible outcomes, and learned/equipped Art validation. Existing counters are telemetry, not validated mastery or quest facts.
+
+September 19: `combat/geometry.ts` owns box/sector/disk containment and footprint boundaries; `engine/hitIndicator.ts` renders those boundaries without changing their reach. `combat/timeline.ts` shares phase contact deadlines and skill threat selection. `engine/duelMotion.ts` samples Blender-authored curves using those phase times. Attack events now carry their actual shape to VFX, and player strikes record actual contact time for late-input follow-through.

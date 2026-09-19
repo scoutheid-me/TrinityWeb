@@ -1,10 +1,11 @@
+import {containsHit,type HitShape} from './geometry';
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
 import { arts, type ArtDefinition } from '../data/arts';
 import { sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
-export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; }
+export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; }
 export interface Enemy extends Point { id: string; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
   now = 0;
@@ -29,6 +30,7 @@ export class CombatSimulation {
   actionEnd = 0;
   lastStaminaUse = -1000;
   basicGrade: Grade = 'Normal';
+  lastContact: {at:number;shape:HitShape}|null=null;
   basicHit = false;
   attackSerial = 0;
   hits = new HitRegistry();
@@ -46,7 +48,7 @@ export class CombatSimulation {
   grade(grade: Grade) { this.lastGrade = grade; this.lastGradeAt = this.now; if (grade === 'Perfect') this.counters.perfects++; this.emit('grade', grade, this.player, { grade }); }
   reset() {
     this.player = { x: 0, z: -4, yaw: 0, hp: this.hpMax, stamina: this.staminaMax, sp: 0, vx: 0, vz: 0 };
-    this.cancelBufferedInput(); this.state.reset(); this.art = null; this.actionEnd = 0; this.hits.clear(); this.lockedId = null; this.events = []; this.hitStopUntil = 0;
+    this.lastContact=null; this.cancelBufferedInput(); this.state.reset(); this.art = null; this.actionEnd = 0; this.hits.clear(); this.lockedId = null; this.events = []; this.hitStopUntil = 0;
     this.input = { x: 0, z: 0, sprint: false, guard: false }; this.enemies = []; this.spawnEnemy();
   }
   spawnEnemy() {
@@ -73,7 +75,8 @@ export class CombatSimulation {
     if (this.state.state !== 'BasicAttackStartup') return;
     this.basicGrade = 'Normal';
     this.state.set('BasicAttackActive'); this.actionStart = this.now; this.actionEnd = this.now + balance.basic.active; this.basicHit = false; this.attackSerial++; this.hits.clear();
-    this.emit('slash', 'Basic', this.player, { grade: this.basicGrade });
+    this.lastContact={at:this.now,shape:{kind:'sector',range:balance.basic.range,halfArc:balance.basic.arc}};
+    this.emit('slash', 'Basic', this.player, { grade: this.basicGrade,shape:this.lastContact.shape,motion:'basic' });
   }
   activateArt(slot: number) {
     if(this.buffer('art',slot))return true;
@@ -124,8 +127,10 @@ export class CombatSimulation {
     return true;
   }
   strike(damage: number, breakDamage: number, range: number, grade: Grade, phase: string, basic = false) {
+    const shape:HitShape={kind:'sector',range,halfArc:balance.basic.arc};
+    this.lastContact={at:this.now,shape};
     let landed = false;
-    for (const enemy of this.enemies) if (inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, range, balance.basic.arc)) {
+    for (const enemy of this.enemies) if (containsHit(shape,this.player,this.player.yaw,enemy)) {
       landed = this.hitEnemy(enemy, physicalDamage(damage, this.attributes.strength), breakDamage, grade, phase) || landed;
     }
     if (basic && landed) this.player.sp = gainSp(this.player.sp, balance.sp.normal);
@@ -183,14 +188,14 @@ export class CombatSimulation {
         const grade = art.grades[i] ?? 'Miss'; if (!art.grades[i]) this.grade(grade);
         art.grades[i] = grade; art.resolved.add(i);
         this.strike(node.damage * artMultiplier(grade), node.break * artMultiplier(grade), node.range, grade, `art-${i}`);
-        this.emit('slash', `Cut ${i + 1}`, this.player, { grade });
+        this.emit('slash', `Cut ${i + 1}`, this.player, { grade,shape:this.lastContact!.shape,motion:'art' });
       }
     });
     if (!def.finisher && art.resolved.size === def.nodes.length) { this.state.set('ArtRecovery'); this.actionEnd = this.now + def.recovery; }
     if (def.finisher && elapsed >= def.finisher.at && !art.finisher) {
       art.finisher = true; const perfect = art.grades.every(g => g === 'Perfect'); const multiplier = perfect ? def.finisher.perfectBonus : 1;
       this.strike(def.finisher.damage * multiplier, def.finisher.break * multiplier, def.finisher.range, perfect ? 'Perfect' : 'Good', 'finisher');
-      this.emit('slash', perfect ? 'Lunar finish' : 'Finisher', this.player, { strong: true, grade: perfect ? 'Perfect' : 'Good' });
+      this.emit('slash', perfect ? 'Lunar finish' : 'Finisher', this.player, { strong: true, grade: perfect ? 'Perfect' : 'Good',shape:this.lastContact!.shape,motion:'art' });
       this.state.set('ArtRecovery'); this.actionEnd = this.now + def.recovery;
     }
   }
@@ -232,9 +237,9 @@ export class CombatSimulation {
       if (elapsed < pattern.telegraph - (pattern.kind === 'basic' ? 500 : 260)) enemy.yaw = Math.atan2(dx, dz);
       enemy.state = elapsed < pattern.telegraph ? 'Telegraph' : 'Attack';
       for (let i = 0; i < pattern.hits.length; i++) if (elapsed >= pattern.hits[i] && !enemy.hits.has(i)) {
-        enemy.hits.add(i); this.emit('slash', pattern.name, enemy, { target: enemy.id, strong: !pattern.parryable });
-        if (inHitVolume(enemy.x, enemy.z, enemy.yaw, this.player.x, this.player.z, pattern.range, pattern.arc)) this.receiveAttack(enemy, pattern);
-        else if (this.state.state === 'Dodge' && this.now-this.actionStart >= balance.dodge.iframeStart && this.now-this.actionStart <= balance.dodge.iframeEnd && distance <= pattern.range + 3.3) this.emit('notice', 'Evaded');
+        enemy.hits.add(i); this.emit('slash', pattern.name, enemy, { target: enemy.id, strong: !pattern.parryable,shape:pattern.shape,motion:pattern.motion });
+        if (containsHit(pattern.shape, enemy, enemy.yaw, this.player)) this.receiveAttack(enemy, pattern);
+        else if (this.state.state === 'Dodge' && this.now-this.actionStart >= balance.dodge.iframeStart && this.now-this.actionStart <= balance.dodge.iframeEnd && distance <= pattern.shape.range + 3.3) this.emit('notice', 'Evaded');
         if (enemy.state as string === 'Broken') return;
       }
       if (elapsed >= pattern.hits.at(-1)! + 220) { enemy.pattern = null; enemy.state = 'Recovery'; enemy.until = this.now + pattern.recovery; }

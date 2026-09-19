@@ -1,3 +1,15 @@
+# September 19: actual hit footprints and contact-marked duel motion
+
+Implemented:
+- Cleave: forward 2.6 m × 0.96 m box; double cut: 2.9 m sector; sweep: actual 3.4 m disk. Shared shape data drives damage and every enemy's rendered footprint. Opacity pulses without changing reach.
+- Blender-authored rigid-joint motion curves with contact markers, saved in separate editable combat sources and sampled into the runtime. Directional slash effects now use real attack reach; second cuts mirror their motion. Player follow-through uses the actual damage resolution time, including late/missed Art inputs.
+- Shared imminent-skill selection for audio/HUD; each enemy retains its own ground warning. Decorative floor rings are muted to distinguish them from attack footprints.
+- Player debug footprint uses the shared sector geometry; enemy warnings clear after contact, reset, death or Break.
+
+Validation: 60 unit tests and 12 Edge browser scenarios passed, including real inside/outside cleave avoidance and all three footprint shapes. Screenshots inspected; three final focused browser checks passed after the contrast adjustment. Production build and startup passed. Existing large bundle warning remains. Blender source saves and sampled curves succeeded despite thumbnail-cache warnings.
+
+Limitations: these are ground-center hit tests and contact-marked rigid-part animations, not skinned production animation or continuous blade collision. This completes the first contact/footprint pass, not the entire AAA polish milestone. Multi-enemy attack coordination, body separation, production rigs and the remaining audit gates still apply.
+
 # Counter risk and combat audit
 
 Failed parry commitment now takes 1.5× incoming damage; successful counters retain zero damage, +14 SP and +32 Break. Live input tests verified cleave damage of 24 neutral / 36 failed / 0 successful. The audit in `COMBAT_AUDIT.md` concludes this is a working foundation, not yet AAA-ready or ready for world expansion. It details animation/contact, threat coordination, per-Art rules and progression/ledger gaps, with verification and performance measurements.

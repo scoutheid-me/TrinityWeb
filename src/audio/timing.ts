@@ -1,3 +1,4 @@
+import {imminentThreat} from '../combat/timeline';
 import type {CombatSimulation} from '../combat/simulation';
 export interface TimingNote {at:number;frequency:number;accent:boolean; voice?: 'offense' | 'defense';}
 export interface TimingPhrase {id:string;notes:TimingNote[];}
@@ -19,7 +20,8 @@ export function timingPhrase(sim:CombatSimulation):TimingPhrase|null {
 /** Preparation notes per enemy hit, including the second cut. */
 export function enemyTimingPhrases(sim:CombatSimulation):TimingPhrase[] {
  if(sim.flags.freezeAI||sim.player.hp<=0||sim.art)return [];
- return sim.enemies.filter(e=>e.pattern?.kind==='skill'&&e.hp>0).sort((a,b)=>Math.hypot(a.x-sim.player.x,a.z-sim.player.z)-Math.hypot(b.x-sim.player.x,b.z-sim.player.z)).slice(0,1).map(e=>{
+ const selected=imminentThreat(sim,true);
+ return (selected?[selected.enemy]:[]).map(e=>{
   const pattern=e.pattern!,notes:TimingNote[]=[];
   pattern.hits.forEach(at=>{
    const cue=e.attackStart+at-(pattern.parryable?80:150),base=pattern.parryable?330:130;

@@ -31,3 +31,13 @@ Reset clears encounter resources, positions, enemies, lock, and actions; counter
 Failed counter risk: if a hit catches an unsuccessful Parry action, damage is multiplied by `balance.parry.failureDamageMultiplier` (1.5). Neutral cleave 24 → failed counter 36. Wrong-facing and unparryable attacks also receive the penalty. Successful counters still take zero damage and gain 14 SP / 32 Break. Exposure ends with the 430 ms action or its interruption; it does not carry into later hits or retroactively affect hits taken before the input. Basic/skill success windows are centralized in balance data.
 
 See [combat audit](COMBAT_AUDIT.md) for current quality and scalability gates.
+
+## September 19: contact and footprint pass
+
+Enemy indicators are the fixed-size ground projection of the shapes used by damage checks: Measured Cleave is a 2.6 m × 0.96 m forward box, Twin Refrain is a 2.9 m forward sector (1.3 rad half-angle), and Seismic Sweep is a true 3.4 m radial disk. They rotate with tracked facing until tracking locks. Color/opacity changes signal anticipation/contact; geometry does not grow to fake the reach. Every attacking enemy has its own footprint. They disappear on reset, death, Break, or after the contact flash. The cyan lock marker remains a targeting marker, not an attack volume.
+
+Tests use the target ground center, not the visible mesh or a capsule radius. This is a deliberate simplified gameplay volume: toe/weapon overlap alone does not cause a hit. Curved boundaries are rendered with 64 segments (sub-centimeter approximation at these radii). Damage still resolves once per phase at its contact timestamp; the short flash is visual persistence, not another active damage window.
+
+Blender-authored rigid-joint clips now replace generic sine-wave attack motion. Each phase samples a contact-marked clip against simulation time. The second refrain cut mirrors its yaw. The sweep uses a horizontal spin and ground wave; the cleave uses a downward slash effect, and player cuts use their configured sector reach. Late/missed Art resolution records its actual contact timestamp for follow-through. These are improvements to prototype joint animation, not production skinned clips or continuous blade collision.
+
+Audio and the defensive HUD now share the imminent-skill selector. Ground footprints show all attacking enemies rather than silently selecting just one.

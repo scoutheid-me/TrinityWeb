@@ -1,3 +1,7 @@
+# September 19 follow-up
+
+Implemented the first contact/footprint pass: shared box/sector/disk geometry for indicators and collision, Blender-authored rigid-joint clips sampled at contact deadlines, actual-reach slash effects, and shared audio/HUD skill selection. Floor warnings now show each attacker. Production rigs, continuous blade sweeps, multi-enemy coordination and the other gates below remain outstanding. The earlier assessment is retained as the audit baseline.
+
 # Combat audit — September 18, 2026
 
 ## Verdict and scope

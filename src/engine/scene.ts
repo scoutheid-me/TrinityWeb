@@ -1,3 +1,6 @@
+import {duelPose} from './duelMotion';
+import {HitIndicator} from './hitIndicator';
+import {enemyPhase} from '../combat/timeline';
 import { AbstractEngine, ArcRotateCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import glslangJs from '@babylonjs/core/assets/glslang/glslang.js?url';
@@ -21,8 +24,8 @@ export class LabScene {
   enemyTemplate!: TransformNode;
   swordTemplate!: TransformNode;
   ring!: Mesh;
-  telegraph!: Mesh;
-  debugVolume!: Mesh;
+  hitIndicators = new Map<string, HitIndicator>();
+  debugVolume:HitIndicator|null=null;
   timingFlash!: Mesh;
   glow!: GlowLayer;
   backend = 'WebGL';
@@ -70,9 +73,6 @@ export class LabScene {
     for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; const copy = column.clone(`column-${i}`, null)!; copy.setEnabled(true); copy.position.set(Math.sin(a)*13.4,0,Math.cos(a)*13.4); this.cast(copy); }
     const rack = await this.asset('/assets/props/weapon_rack.glb'); rack.position.set(-8,0,9); rack.rotation.y = -.7; this.cast(rack);
     this.ring = MeshBuilder.CreateTorus('lock indicator', { diameter: 1.8, thickness: .035, tessellation: 48 }, this.scene); this.ring.material = this.material('lock', '#72e6ef', 1); this.ring.position.y = .07;
-    this.telegraph = MeshBuilder.CreateTorus('danger radius', { diameter: 5.6, thickness: .045, tessellation: 64 }, this.scene); this.telegraph.material = this.material('danger', '#e7af63', .7); this.telegraph.position.y = .07;
-    this.debugVolume = MeshBuilder.CreateCylinder('hit-volume', { height: .02, diameter: balance.basic.range * 2, tessellation: 32, arc: balance.basic.arc / Math.PI }, this.scene);
-    this.debugVolume.material = this.material('debug cyan', '#43ffff', .3); this.debugVolume.visibility = .25;
     this.setQuality('medium');
     window.addEventListener('resize', () => this.engine.resize());
     await this.scene.whenReadyAsync();
@@ -84,7 +84,8 @@ export class LabScene {
     const stone = this.material('silver limestone', '#758d98'), rim = this.material('deep basalt', '#293e4b'), gold = this.material('brass inlay', '#b7995c');
     const floor = MeshBuilder.CreateCylinder('training dais', { diameter: 26, height: .55, tessellation: 96 }, this.scene); floor.position.y = -.28; floor.material = this.material('arena slate','#3b5666'); floor.receiveShadows = true;
     const foundation = MeshBuilder.CreateCylinder('foundation', { diameter: 27.2, height: 1, tessellation: 96 }, this.scene); foundation.position.y = -.95; foundation.material = rim;
-    for (const diameter of [6.3, 13, 21.9, 24.6]) { const ring = MeshBuilder.CreateTorus('floor inlay', { diameter, thickness: .038, tessellation: 96 }, this.scene); ring.position.y = .015; ring.material = gold; }
+    const inlay=this.material('quiet floor inlay','#516874');
+    for (const diameter of [6.3, 13, 21.9, 24.6]) { const ring = MeshBuilder.CreateTorus('floor inlay', { diameter, thickness: .018, tessellation: 96 }, this.scene); ring.position.y = .015; ring.material = inlay; }
     for (let i = 0; i < 24; i++) { const a = i * Math.PI / 12; const line = MeshBuilder.CreateBox('radial joint', { width: .024, height: .008, depth: 12.8 }, this.scene); line.position.set(Math.sin(a)*6.4,.01,Math.cos(a)*6.4); line.rotation.y = a; line.material = rim; }
     const glowMat = this.material('aether filament', '#76e3ea', 1.2);
     for (let i = 0; i < 12; i++) {
@@ -154,38 +155,42 @@ export class LabScene {
     for (const enemy of sim.enemies) {
       let actor = this.actors.get(enemy.id);
       if (!actor) { actor = this.actor(this.enemyTemplate.clone(enemy.id,null)!,enemy.id,true); this.actors.set(enemy.id,actor); }
-      const elapsed = sim.now-enemy.attackStart;
-      let attack = 0;
-      if(enemy.pattern){
-        const hit=enemy.pattern.hits.find(at=>elapsed<at+200)??enemy.pattern.hits.at(-1)!;
-        const until=hit-elapsed;
-        // Deliberate lift, then one clean contact stroke per authored deadline.
-        attack=until>180?-2.25*Math.min(1,elapsed/450):until>0?-2.25+(1-until/180)*2.25:Math.min(1,-until/180)*1.8;
-      }
-      this.animate(actor,enemy.x,enemy.z,enemy.yaw,enemy.state==='Chase'?2.5:0,attack,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
+      this.animate(actor,enemy.x,enemy.z,enemy.yaw,enemy.state==='Chase'?2.5:0,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
+      const phase=enemyPhase(enemy,sim.now,300);
+      if(phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
+      else if(actor.rightArm)actor.rightArm.rotation.y=0;
       if (enemy.flashUntil>sim.now) actor.root.position.y += .04*Math.sin(sim.now*.1);
     }
     const state = sim.state.state;
     let swing = 0;
-    if (state === 'BasicAttackStartup') swing = -1.4 - Math.min(1,(sim.now-sim.actionStart)/chargeTime(sim.attributes.dexterity))*.9;
-    if (state === 'BasicAttackActive') swing = -2.3 + (sim.now-sim.actionStart)/balance.basic.active*3.5;
-    if (sim.art && state === 'ArtSequence') {const phase=sim.now-sim.art.start-sim.art.definition.nodes[0].at;swing=phase<0?-2.3:Math.min(1,phase/160)*3.5-2.3;}
     this.animate(this.player,sim.player.x,sim.player.z,sim.player.yaw,Math.hypot(sim.player.vx,sim.player.vz),swing,state==='Guard'||state==='Parry',state==='Dead',state==='HitReaction',poseDt);
+    let pose:ReturnType<typeof duelPose>|null=null;
+    if(state==='BasicAttackStartup')pose=duelPose('basic',sim.now,sim.actionStart,sim.actionEnd);
+    else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact)pose=duelPose('basic',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,sim.lastContact.at-chargeTime(sim.attributes.dexterity),sim.lastContact.at);
+    else if(sim.art){
+      const art=sim.art,index=art.definition.nodes.findIndex((_,i)=>!art.resolved.has(i));
+      if(index>=0){const target=art.start+art.definition.nodes[index].at;const contact=art.grades[index]?target:Math.max(target,sim.now+16);pose=duelPose('art',sim.now,art.start,contact);}
+      else if(sim.lastContact)pose=duelPose('art',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,art.start,sim.lastContact.at);
+    }
+    if(this.player.rightArm){this.player.rightArm.rotation.y=pose?.yaw??0;if(pose)this.player.rightArm.rotation.x=pose.pitch;}
     const artCue=sim.art?.definition.nodes.some(n=>Math.abs(sim.now-sim.art!.start-n.at)<=balance.timing.perfect)??false;
     this.timingFlash.setEnabled(artCue);
     if (state==='Dodge') this.player.root.position.y = -.22;
     const target = sim.target;
     this.ring.setEnabled(!!target); if (target) this.ring.position.set(target.x,.07,target.z);
-    const danger = sim.enemies.find(e => e.pattern?.kind==='skill' && (e.state==='Telegraph'||e.state==='Attack'));
-    this.telegraph.setEnabled(!!danger);
-    if (danger && danger.pattern) {
-      this.telegraph.position.set(danger.x,.05,danger.z);
-      const phase = Math.min(1,(sim.now-danger.attackStart)/danger.pattern.telegraph);
-      this.telegraph.scaling.setAll(danger.pattern.range/2.8 * (.75+.25*phase));
-      const mat = this.telegraph.material as StandardMaterial;
-      mat.emissiveColor = Color3.FromHexString(danger.pattern.parryable?'#e4b96a':'#ff536c').scale(.5+phase);
+    const visible=new Set<string>();
+    for(const enemy of sim.enemies){const phase=enemyPhase(enemy,sim.now);if(!phase||!enemy.pattern)continue;
+      visible.add(enemy.id);let indicator=this.hitIndicators.get(enemy.id);
+      if(indicator&&indicator.shape!==enemy.pattern.shape){indicator.dispose();this.hitIndicators.delete(enemy.id);indicator=undefined;}
+      if(!indicator){indicator=new HitIndicator(this.scene,enemy.pattern.shape,'attack footprint '+enemy.id);this.hitIndicators.set(enemy.id,indicator);}
+      indicator.update(enemy.x,enemy.z,enemy.yaw,phase.remaining,enemy.pattern.parryable);
     }
-    this.debugVolume.setEnabled(this.showHitboxes); this.debugVolume.position.set(sim.player.x,.1,sim.player.z); this.debugVolume.rotation.y = sim.player.yaw;
+    for(const [id,indicator] of this.hitIndicators)if(!visible.has(id)){indicator.dispose();this.hitIndicators.delete(id);}
+    if(this.showHitboxes){
+      const range=sim.art?.definition.nodes.find((_,i)=>!sim.art!.resolved.has(i))?.range??balance.basic.range;
+      if(this.debugVolume?.shape.range!==range){this.debugVolume?.dispose();this.debugVolume=new HitIndicator(this.scene,{kind:'sector',range,halfArc:balance.basic.arc},'player hit footprint');}
+      this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,100,true);
+    }else this.debugVolume?.mesh.setEnabled(false);
     const desired = new Vector3(sim.player.x,1.2,sim.player.z);
     if (target) { desired.x += (target.x-sim.player.x)*.18; desired.z += (target.z-sim.player.z)*.18;
       const yaw = Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;
@@ -225,11 +230,16 @@ export class LabScene {
     }
     if(event.type==='slash') {
       const yaw=event.target?sim.enemies.find(e=>e.id===event.target)?.yaw??0:sim.player.yaw;
-      const points: Vector3[]=[];
-      for(let i=0;i<=18;i++){const a=yaw-1.2+i/18*2.4;points.push(new Vector3(event.x+Math.sin(a)*1.8,.95+Math.sin(i/18*Math.PI)*.35,event.z+Math.cos(a)*1.8));}
+      const points: Vector3[]=[],shape=event.shape??{kind:'sector' as const,range:balance.basic.range,halfArc:balance.basic.arc};
+      if(shape.kind==='box'){
+        for(let i=0;i<=18;i++){const t=i/18;points.push(new Vector3(event.x+Math.sin(yaw)*shape.range*t,2.4*(1-t)+.08,event.z+Math.cos(yaw)*shape.range*t));}
+      }else{
+        const arc=shape.kind==='circle'?Math.PI:shape.halfArc;
+        for(let i=0;i<=48;i++){const a=yaw-arc+i/48*arc*2;points.push(new Vector3(event.x+Math.sin(a)*shape.range,shape.kind==='circle'?.14:.95,event.z+Math.cos(a)*shape.range));}
+      }
       const trail=MeshBuilder.CreateTube('sword sweep',{path:points,radius:event.strong?.065:.035,tessellation:4},this.scene);
       trail.material=this.material('slash light',event.target?'#edb276':'#b5f7ff',1.2);
-      this.pendingEffects.push({mesh:trail,life:.19,max:.19});
+      this.pendingEffects.push({mesh:trail,life:.19,max:.19,velocity:Vector3.Zero()});
       const material=trail.material; setTimeout(()=>material?.dispose(),350);
       if(this.showTraces){const trace=MeshBuilder.CreateLines('debug trace',{points},this.scene);this.pendingEffects.push({mesh:trace,life:.8,max:.8});}
     }
