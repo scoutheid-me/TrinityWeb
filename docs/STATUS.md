@@ -1,3 +1,7 @@
+# Counter risk and combat audit
+
+Failed parry commitment now takes 1.5× incoming damage; successful counters retain zero damage, +14 SP and +32 Break. Live input tests verified cleave damage of 24 neutral / 36 failed / 0 successful. The audit in `COMBAT_AUDIT.md` concludes this is a working foundation, not yet AAA-ready or ready for world expansion. It details animation/contact, threat coordination, per-Art rules and progression/ledger gaps, with verification and performance measurements.
+
 # Combat clarity follow-up
 
 Crescent Break now uses one timing input and one strike. Nonlethal hits preserve a committed Art (HP damage still applies). Sentinel basics alternate with skills; basics use narrower arcs, earlier tracking lock, a 260 ms parry window, and animation-only anticipation. Only the nearest skill plays a short low warning; player Arts take audio/UI priority. Dodge uses an airy swish and ground wake, parry a bright metallic response and gold sparks, and Arts pitched notes with a square target. Existing rigid procedural poses were improved; no production animation clips were authored.

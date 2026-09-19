@@ -24,6 +24,8 @@ Save schema v2 stores settings, primary/alternate keyboard and mouse bindings, t
 
 `src/input/bindings.ts` validates control profiles and centralizes the corrected camera-relative movement basis. `src/ui/controls.ts` pauses gameplay while capturing bindings, rejects duplicate inputs, and provides defaults and Escape recovery. HUD instructions are generated from active bindings.
 
-`src/audio/timing.ts` derives basic and Art phrase timestamps directly from the same charge formula and Art node data used for grading. `CombatAudio` schedules notes ahead on `AudioContext.currentTime`, cancelling/rebasing them on pause, interruption, or slow-motion changes. SVG rings/squares represent the same deadlines; no external audio files or copied music are used. Output-device latency calibration and a full soundtrack remain future work.
+`src/audio/timing.ts` derives Art and enemy-skill phrase timestamps from simulation deadlines; basics have no timing phrase. `CombatAudio` schedules notes ahead on `AudioContext.currentTime`, cancelling/rebasing them on pause, interruption, or slow-motion changes. SVG rings/squares represent the same deadlines; no external audio files or copied music are used. Output-device latency calibration and a full soundtrack remain future work.
 
 Procedural posing is intentionally isolated from combat rules so a skinned GLB animation adapter can replace it. Future controller input should feed the same actions and movement intent. Future Arts use the reusable executor and need no controller branches.
+
+See `COMBAT_AUDIT.md` for required extraction boundaries before expanding content: shared attack/contact timeline, authoritative threat selection, typed progression-eligible outcomes, and learned/equipped Art validation. Existing counters are telemetry, not validated mastery or quest facts.

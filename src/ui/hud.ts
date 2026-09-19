@@ -44,7 +44,7 @@ export class HUD {
     panel.innerHTML=`<div><kbd>${key('forward')} ${key('left')} ${key('backward')} ${key('right')}</kbd> Move <kbd>${key('sprint')}</kbd> Sprint</div><div><kbd>${key('attack')}</kbd> Tap attack · build SP</div><div><kbd>${key('dodge')}</kbd> Dodge <kbd>${key('parry')}</kbd> Parry</div><div><kbd>${key('lock')}</kbd> Lock <kbd>${key('orbit')}</kbd> Orbit</div><div><kbd>${key('guard')}</kbd> Guard <kbd>${key('reset')}</kbd> Reset <kbd>${key('debug')}</kbd> Lab tools</div>`;
     for(let i=0;i<4;i++)this.el(`slot-${i}`).querySelector('kbd')!.textContent=key(`art${i+1}` as Action);
     this.el('menu').innerHTML=`${key('pause')} <span>Pause</span>`;
-    this.root.querySelector('.intro-help')!.innerHTML=`Tap <b>${key('attack')}</b> for low damage and +10 SP on hit.<br>Earn <b>30 SP</b>. Press <b>${key('art1')}</b> for Crescent Break.<br>Tap <b>${key('attack')}</b> once as the square meets its outline.<br>Follow the musical lead-in; act on the bright note.<br>Perfect Parry with <b>${key('parry')}</b>: +14 SP, zero damage.<br>Red sweep? Dodge with <b>${key('dodge')}</b>.`;
+    this.root.querySelector('.intro-help')!.innerHTML=`Tap <b>${key('attack')}</b> for low damage and +10 SP on hit.<br>Earn <b>30 SP</b>. Press <b>${key('art1')}</b> for Crescent Break.<br>Tap <b>${key('attack')}</b> once as the square meets its outline.<br>Follow the musical lead-in; act on the bright note.<br>Failed parry: <b>50% extra damage</b>.<br>Perfect Parry with <b>${key('parry')}</b>: +14 SP, zero damage.<br>Red sweep? Dodge with <b>${key('dodge')}</b>.`;
   }
   toggleDebug(){this.debugOpen=!this.debugOpen;this.el('debug').hidden=!this.debugOpen;}
   notice(text:string){this.el('notice').textContent=text;this.noticeUntil=performance.now()+2200;}

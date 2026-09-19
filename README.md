@@ -49,7 +49,7 @@ Settings, attributes, four-slot loadout, and aggregate combat counters persist i
 
 Choose **Controls** from the title/pause screen or the upper-right HUD to remap keyboard and mouse inputs. Every action has primary/alternate slots. Conflicts are reported; clear the old binding before reusing a key. Changes save automatically, and **Restore defaults** resets the profile. Escape always remains a pause/cancel fallback. The A/D strafe direction has been flipped from the initial prototype to correct the camera handedness.
 
-Timing uses defensive diamonds/rings and squares for Art taps, with original musical lead-ins ending on the sweet spot. Musical timing cues can be disabled in Lab tools. A successful **Perfect Parry** blocks all damage, gives **14 SP** (capped at 100), and builds enemy Break.
+Timing uses defensive diamonds/rings and squares for Art taps, with original musical lead-ins ending on the sweet spot. Musical timing cues can be disabled in Lab tools. A hit during a failed parry deals **50% extra damage**. A successful **Perfect Parry** blocks all damage, gives **14 SP** (capped at 100), and builds enemy Break.
 
 The reviewed roadmap for skills, mastery, musical combat, and animation is in [PROTOTYPE_PLAN.md](docs/PROTOTYPE_PLAN.md). Those future progression systems are not yet implemented.
 
@@ -66,3 +66,5 @@ Original Blender-generated GLBs and editable `.blend` sources are included. Rebu
 The player and enemy are articulated prototype models with procedural poses, not production anime characters or skinned animation assets. The arena shell and distant scenery remain procedural prototype geometry. See [asset conventions](docs/ASSET_PIPELINE.md) and [verification status](docs/STATUS.md).
 
 Design references: [GDD](docs/GDD.md), [architecture](docs/ARCHITECTURE.md), [combat](docs/COMBAT.md), [Arts](docs/SKILLS.md), [future quests](docs/QUESTS.md), [art direction](docs/ART_BIBLE.md), and [performance](docs/PERFORMANCE.md).
+
+The [combat quality and scalability audit](docs/COMBAT_AUDIT.md) records the production gaps, current verification, and next implementation gates.

@@ -164,3 +164,21 @@ test('enemy basics are animation-led and player Art suppresses competing cues',a
  expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(2);
  await page.screenshot({path:'test-results/single-art.png'});
 });
+
+
+test('live counter risk compares neutral, failed and successful defense',async({page})=>{
+ await ready(page);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ const arrange=async()=>{await setupClose(page);await page.evaluate(()=>{const s=window.trinity.sim;s.flags.freezeAI=false;s.enemies[0].until=0;});};
+ await arrange();await expect.poll(()=>page.evaluate(()=>window.trinity.sim.player.hp)).toBe(176);
+ await arrange();await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];const remaining=e.pattern?e.attackStart+e.pattern.hits[0]-s.now:Infinity;return remaining<360&&remaining>280;},null,{polling:'raf'});await page.keyboard.press('q');
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.player.hp)).toBe(164);await expect(page.locator('#notice')).toContainText('COUNTER FAILED');await page.screenshot({path:'test-results/counter-risk.png'});
+ await arrange();await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&e.attackStart+e.pattern.hits[0]-s.now<100;},null,{polling:'raf'});await page.keyboard.press('q');await expect.poll(()=>page.evaluate(()=>window.trinity.sim.player.sp)).toBe(14);expect(await page.evaluate(()=>window.trinity.sim.player.hp)).toBe(200);expect(errors).toEqual([]);
+});
+
+test('five-enemy audit benchmark stays bounded and renders without exceptions',async({page},info)=>{
+ await ready(page);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.flags.invulnerable=true;for(let i=0;i<8;i++)s.spawnEnemy();});
+ expect(await page.evaluate(()=>window.trinity.sim.enemies.length)).toBe(5);
+ const sample=await page.evaluate(async()=>{const frames:number[]=[];let previous=performance.now();for(let i=0;i<240;i++){await new Promise<void>(r=>requestAnimationFrame(()=>r()));const now=performance.now();if(i>60)frames.push(now-previous);previous=now;}frames.sort((a,b)=>a-b);return {...window.trinity.view.stats(),enemies:window.trinity.sim.enemies.length,meanFrameMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95FrameMs:frames[Math.floor(frames.length*.95)]};});
+ writeFileSync('test-results/audit-five-enemies.json',JSON.stringify(sample,null,2));await info.attach('five-enemies',{body:JSON.stringify(sample),contentType:'application/json'});await page.screenshot({path:'test-results/audit-five-enemies.png'});expect(errors).toEqual([]);
+});

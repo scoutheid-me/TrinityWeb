@@ -27,3 +27,7 @@ Timing guide: converging squares mark Art taps. Defensive diamonds mark parries 
 A successful parry within its attack-specific window (260 ms basic / 170 ms skill) is explicitly labeled **Perfect Parry**: all incoming damage is negated, 14 SP is awarded up to the 100 cap, and 32 Break is applied. This names the existing successful outcome; it does not add a second, undocumented defensive timing tier. Late inputs and the un-parryable red sweep retain their previous behavior.
 
 Reset clears encounter resources, positions, enemies, lock, and actions; counters persist. Debug cheat toggles remain selected during reset. Enemy AI freeze also freezes its pattern/recovery clocks.
+
+Failed counter risk: if a hit catches an unsuccessful Parry action, damage is multiplied by `balance.parry.failureDamageMultiplier` (1.5). Neutral cleave 24 → failed counter 36. Wrong-facing and unparryable attacks also receive the penalty. Successful counters still take zero damage and gain 14 SP / 32 Break. Exposure ends with the 430 ms action or its interruption; it does not carry into later hits or retroactively affect hits taken before the input. Basic/skill success windows are centralized in balance data.
+
+See [combat audit](COMBAT_AUDIT.md) for current quality and scalability gates.

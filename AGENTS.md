@@ -7,6 +7,7 @@ These instructions apply to the Combat Lab and all future work in this repositor
 - Build an original, real-time, third-person anime action RPG. The immediate scope is one playable Combat Lab; prioritize combat feel before world expansion. Do not add multiplayer or copy assets from other games.
 - Use TypeScript, Vite, and Babylon.js with WebGPU detection and WebGL fallback. Keep simulation, rendering, input, UI, balance data, and saves separate. Define Combat Arts and enemy attacks through data, with exactly four equipped Art slots.
 - Core loop: untimed low-damage basics generate SP, beginner Arts use one timing event and spend SP and build Break, stagger creates an opening. Use elapsed milliseconds, explicit legal state transitions, and phase-level hit deduplication.
+- Perfect Parry negates damage and rewards SP/Break; a hit during failed parry commitment deals extra damage. Keep counter windows and the failure multiplier in balance data.
 - Preserve a playable build. Run core combat tests and browser integration checks, inspect the actual scene, and report measured results and honest limitations. Do not claim milestones complete based only on compilation. Keep the design and implementation documents in `docs/` current.
 
 ## Blender / 3D Asset Pipeline

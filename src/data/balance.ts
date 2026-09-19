@@ -4,7 +4,7 @@ export const balance = {
   timing: { perfect: 55, good: 120 },
   sp: { max: 100, normal: 10, good: 13, perfect: 16, parry: 14 },
   dodge: { cost: 24, duration: 460, iframeStart: 40, iframeEnd: 330, speed: 10 },
-  parry: { window: 170, duration: 430, cost: 8, break: 32 },
+  parry: { window: 170, basicWindow: 260, failureDamageMultiplier: 1.5, duration: 430, cost: 8, break: 32 },
   guard: { cost: 24, damageMultiplier: 0.2 },
   staminaRegen: 24,
   enemy: { hp: 460, breakThreshold: 100, stagger: 3400, speed: 2.35, aggro: 15, radius: 0.6 },

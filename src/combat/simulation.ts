@@ -134,11 +134,13 @@ export class CombatSimulation {
     if (this.state.state === 'Dead' || this.flags.invulnerable) return;
     const elapsed = this.now - this.actionStart;
     if (this.state.state === 'Dodge' && elapsed >= balance.dodge.iframeStart && elapsed <= balance.dodge.iframeEnd) { this.emit('notice', 'Evaded'); return; }
-    if (pattern.parryable && this.state.state === 'Parry' && elapsed <= (pattern.kind === 'basic' ? 260 : balance.parry.window) && inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, 4, 1.7)) {
+    if (pattern.parryable && this.state.state === 'Parry' && elapsed <= (pattern.kind === 'basic' ? balance.parry.basicWindow : balance.parry.window) && inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, 4, 1.7)) {
       this.player.sp = gainSp(this.player.sp, balance.sp.parry); this.counters.parries++; this.applyBreak(enemy, balance.parry.break);
       this.emit('parry', `PERFECT PARRY · +${balance.sp.parry} SP · NO DAMAGE`, enemy, { strong: true, grade:'Perfect' }); this.state.set('Idle'); return;
     }
-    let damage = pattern.damage;
+    const failedCounter = this.state.state === 'Parry';
+    let damage = pattern.damage * (failedCounter ? balance.parry.failureDamageMultiplier : 1);
+    if (failedCounter) this.emit('notice', `COUNTER FAILED · ${Math.round((balance.parry.failureDamageMultiplier - 1) * 100)}% EXTRA DAMAGE`);
     if (this.state.state === 'Guard' && this.useStamina(balance.guard.cost)) damage *= balance.guard.damageMultiplier;
     this.player.hp = Math.max(0, this.player.hp - damage); this.emit('hit', `−${Math.round(damage)}`, this.player, { amount: damage, target: 'player', strong: true });
     // A committed Art retains its timing through nonlethal hits; damage still matters.
