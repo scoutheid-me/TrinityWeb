@@ -3,7 +3,7 @@ export const challenges={
   positioning:{name:'Footwork',description:'Land 3 basic hits and evade a strike. Read the cleave lane and move through an opening.',reward:'aether-step',requires:[]},
   breaking:{name:'Break the guard',description:'Land a Combat Art and Break the sentinel. Build SP with basics or counters first.',reward:'resonant-cleave',requires:['positioning']},
   countering:{name:'Counter discipline',description:'Perfect Parry 3 strikes. A failed counter takes 50% extra damage.',reward:'stillwater-return',requires:['breaking']},
-  trial:{name:'Guild Trial',description:'Defeat two sentinels with your chosen build. Only one enemy commits to an attack at a time.',reward:null,requires:['positioning','breaking','countering']},
+  trial:{name:'Guild Trial',description:'Defeat two sentinels with your chosen build. Only one enemy commits to an attack at a time.',reward:'wayfarer-oath',requires:['positioning','breaking','countering']},
 } as const;
 export type ChallengeId=keyof typeof challenges;
 export type MasteryChoice='recovery'|'break';
@@ -26,3 +26,10 @@ export function validateProgression(raw:unknown):Progression{
   return p;
 }
 export function validLoadout(ids:(string|null)[],progress:Progression,weapon:string){return ids.length===4&&new Set(ids.filter(Boolean)).size===ids.filter(Boolean).length&&ids.every(id=>id===null||!!progress.learned[id]&&arts[id]?.weapon===weapon);}
+
+export const guildStory={
+ positioning:{chapter:'I · Keep your footing',brief:'Warden Ilyra: The Lantern Guild keeps the roads open when the watchfires go dark. A blade cannot protect a traveller if its bearer cannot stay standing.',debrief:'You found your footing. Take Aether Step: reach the opening, then leave room to breathe.'},
+ breaking:{chapter:'II · Make an opening',brief:'The old sentinels were built to endure. Learn where their guard yields; strength without patience only wears down the traveller.',debrief:'Every guard has a limit. Resonant Cleave will help you find it.'},
+ countering:{chapter:'III · Keep your nerve',brief:'A guild blade is a promise of restraint. Meet the blow without flinching, and answer with one clean cut.',debrief:'You held your nerve. Stillwater Cut is yours: a simple answer to a brief opening.'},
+ trial:{chapter:'IV · The lantern oath',brief:'Two sentinels guard the oathstone. Carry footing, patience and nerve into one trial. Earn the Wayfarer title and our first paired Art: Wayfarer’s Oath.',debrief:'Ilyra: A lantern is a promise that someone will return. Today, you become one of those people. Bear the Wayfarer title, and carry our paired blade form with you.'}
+} as const;

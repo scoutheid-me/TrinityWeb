@@ -219,10 +219,10 @@ test('Guild Footwork unlock, loadout, paused board and reload',async({page})=>{
  await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&s.now-e.attackStart>e.pattern.telegraph-170;},null,{polling:'raf'});
  await page.keyboard.press('Space');
  await expect(page.locator('#guild-board')).toBeVisible();
- await expect(page.locator('.guild-result')).toContainText('Challenge complete');
- await expect(page.locator('.guild-reward')).toContainText('Aether Step');await expect(page.locator('.guild-reward')).toContainText('Close distance');
+ await expect(page.locator('.guild-result')).toContainText('CHALLENGE COMPLETE');
+ await expect(page.locator('.guild-reward')).toContainText('Aether Step');await page.locator('.guild-reward summary').click();await expect(page.locator('.guild-reward')).toContainText('A short forward step');
  expect(await page.evaluate(()=>window.trinity.sim.progression.learned['aether-step'])).toBe('positioning');
- await page.locator('[data-equip="1"]').selectOption('aether-step');await page.locator('#guild-equip').click();
+ await page.locator('[data-tab="arts"]').click();await page.locator('[data-equip="1"]').selectOption('aether-step');await page.locator('#guild-equip').click();
  await expect(page.locator('#guild-message')).toHaveText('Loadout saved.');
  await page.locator('#guild-board').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'test-results/guild-board.png'});
  await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();
@@ -258,4 +258,49 @@ test('remapped and on-screen Art holds both release through the combat executor'
  await page.locator('#slot-0').hover();await page.mouse.down();
  await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.mouse.up();
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(284);
+});
+
+test('first-person personal journal stays live, follows the viewport and reveals nested help',async({page})=>{
+ await ready(page,true);await page.locator('#perspective').click();
+ expect(await page.evaluate(()=>window.trinity.view.scene.activeCamera.name)).toBe('first person');
+ await page.locator('header .guild-open').click();await expect(page.locator('#guild-board')).toHaveClass(/personal-live/);
+ const before=await page.evaluate(()=>({now:window.trinity.sim.now,z:window.trinity.sim.player.z}));
+ await page.keyboard.down('w');await page.waitForTimeout(350);await page.keyboard.up('w');
+ const after=await page.evaluate(()=>({now:window.trinity.sim.now,z:window.trinity.sim.player.z}));expect(after.now).toBeGreaterThan(before.now+200);expect(after.z).toBeGreaterThan(before.z+.5);
+ await page.getByText('Why take the oath?',{exact:true}).click();await expect(page.locator('.guild-invitation')).toContainText('watchfires');
+ await page.screenshot({path:'test-results/first-person-journal.png'});
+ await page.locator('#guild-close').click();await page.locator('[data-help]').first().hover();await expect(page.locator('#context-help')).toBeVisible();
+ await page.keyboard.press('Escape');await expect(page.locator('#context-help')).toBeHidden();
+ await page.locator('#perspective').click();expect(await page.evaluate(()=>window.trinity.view.scene.activeCamera.name)).toBe('camera');
+});
+
+test('entire Guild journey earns the oath, equips it and lands two timed cuts',async({page})=>{
+ test.setTimeout(180000);await ready(page,true);
+ for(const id of ['positioning','breaking','countering','trial']){
+  if(!await page.locator('#guild-board').isVisible())await page.locator('header .guild-open').click();
+  await page.locator('[data-tab="journey"]').click();await page.locator(`[data-challenge="${id}"]`).click();
+  // Drive public combat actions at real render time. No flags, resources, outcomes or rewards are modified.
+  await page.evaluate(id=>{const t=window.trinity,s=t.sim;const timer=setInterval(()=>{
+   if(!s.encounter.active){clearInterval(timer);return;}
+   const target=s.enemies.filter((e:any)=>e.hp>0).sort((a:any,b:any)=>Math.hypot(a.x-s.player.x,a.z-s.player.z)-Math.hypot(b.x-s.player.x,b.z-s.player.z))[0];
+   if(target){s.lockedId=target.id;s.faceTarget();}
+   const threat=s.enemies.find((e:any)=>e.pattern),remaining=threat?.pattern?.hits.filter((_:any,i:number)=>!threat.hits.has(i)).map((at:number)=>at+threat.attackStart-s.now)[0]??Infinity;
+   if(s.art&&s.art.grades[0]===null&&Math.abs(s.now-s.art.start-s.art.definition.nodes[0].at)<30)s.releaseArt(0);
+   if(s.free&&target){const d=Math.hypot(target.x-s.player.x,target.z-s.player.z);
+    if(remaining<150){if(id==='positioning'||!threat.pattern.parryable)s.dodge();else{s.lockedId=threat.id;s.parry();}}
+    else if(remaining>1100&&d<2.3){if(s.player.sp>=30&&(id!=='countering'||s.encounter.stats.parries<2))s.activateArt(0);else if(id!=='countering'||s.encounter.stats.parries<2)s.pressAttack();}
+   }
+  },10);},id);
+  await expect(page.locator('#guild-board')).toBeVisible({timeout:60000});
+  expect(await page.evaluate(()=>window.trinity.sim.encounter.result)).toBe('completed');
+ }
+ await expect(page.locator('.guild-title-earned')).toContainText('Wayfarer');await expect(page.locator('.guild-reward')).toContainText('Wayfarer');
+ await page.screenshot({path:'test-results/guild-oath-earned.png'});
+ await page.locator('[data-tab="arts"]').click();await page.locator('[data-equip="1"]').selectOption('wayfarer-oath');await page.locator('#guild-equip').click();await page.evaluate(()=>window.trinity.persist());
+ await page.reload();await expect(page.locator('#begin')).toBeEnabled();expect(await page.evaluate(()=>window.trinity.sim.loadout[1])).toBe('wayfarer-oath');
+ await page.locator('#begin').click();await setupClose(page);await page.evaluate(()=>window.trinity.sim.player.sp=100);
+ await page.keyboard.down('2');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('2');
+ await page.waitForFunction(()=>window.trinity.sim.art?.awaitingHold);await expect(page.locator('#timing-action')).toContainText('HOLD');
+ await page.keyboard.down('2');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=780;},null,{polling:'raf'});await page.keyboard.up('2');
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(323);
 });

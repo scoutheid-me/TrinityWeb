@@ -2,7 +2,7 @@ import {EncounterLedger,type OutcomeKind} from './encounter';
 import {freshProgression,canStart,awardChallenge,validLoadout,type ChallengeId} from '../progression/guild';
 import {containsHit,type HitShape} from './geometry';
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
-import { arts, type ArtDefinition } from '../data/arts';
+import { arts, chargeDuration, type ArtDefinition } from '../data/arts';
 import { sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
@@ -40,7 +40,7 @@ export class CombatSimulation {
   basicHit = false;
   attackSerial = 0;
   hits = new HitRegistry();
-  art: { definition: ArtDefinition; slot:number; releasedAt:number|null; start: number; grades: (Grade | null)[]; offsets:number[]; resolved: Set<number>; finisher: boolean } | null = null;
+  art: { definition: ArtDefinition; slot:number; stage:number; awaitingHold:boolean; releasedAt:number|null; start: number; grades: (Grade | null)[]; offsets:number[]; resolved: Set<number>; finisher: boolean } | null = null;
   dodgeOrigin:Point={x:0,z:0};
   dodgeVector: Point = { x: 0, z: 1 };
   lastGrade = '';
@@ -87,6 +87,7 @@ export class CombatSimulation {
     this.emit('slash', 'Basic', this.player, { grade: this.basicGrade,shape:this.lastContact.shape,motion:'basic' });
   }
   activateArt(slot: number) {
+    if(this.art?.slot===slot&&this.art.awaitingHold){this.art.awaitingHold=false;this.art.start=this.now;this.art.releasedAt=null;return true;}
     if(!validLoadout(this.loadout,this.progression,this.weapon)){this.emit('notice','Invalid loadout — visit the Guild board');return false;}
     const id = this.loadout[slot], base = id ? arts[id] : null;
     let def=base?structuredClone(base):null;
@@ -100,22 +101,22 @@ export class CombatSimulation {
     this.player.sp = this.flags.infiniteSp ? this.player.sp : after!;
     if(def.counterWindow)this.lastParryAt=-Infinity;
     this.state.set('ArtStartup'); this.faceTarget(); this.actionStart = this.now;
-    this.art = { definition: def, slot, releasedAt:null, start: this.now, grades: def.nodes.map(() => null), offsets:[], resolved: new Set(), finisher: false };
+    this.art = { definition: def, slot, stage:0, awaitingHold:false, releasedAt:null, start: this.now, grades: def.nodes.map(() => null), offsets:[], resolved: new Set(), finisher: false };
     this.attackSerial++; this.hits.clear(); this.counters.arts++; this.emit('art', def.name); return true;
   }
   releaseArt(slot:number) {
-    const art=this.art;if(!art||art.slot!==slot||art.grades[0]!==null)return;
-    const offset=this.now-art.start-art.definition.nodes[0].at;
-    const grade=timingGrade(offset,true);art.offsets[0]=offset;art.grades[0]=grade;this.grade(grade);
-    this.encounter.record({kind:'art-phase',actor:'player',target:'phase',attackId:this.attackSerial,phase:'0',at:this.now,amount:0,artId:art.definition.id,grade,offsetMs:offset});
+    const art=this.art;if(!art||art.awaitingHold||art.slot!==slot||art.grades[art.stage]!==null)return;
+    const offset=this.now-art.start-chargeDuration(art.definition,art.stage);
+    const grade=timingGrade(offset,true);art.offsets[art.stage]=offset;art.grades[art.stage]=grade;this.grade(grade);
+    this.encounter.record({kind:'art-phase',actor:'player',target:'phase',attackId:this.attackSerial,phase:String(art.stage),at:this.now,amount:0,artId:art.definition.id,grade,offsetMs:offset});
     if(grade==='Miss'){
-      art.resolved.add(0);this.state.set('ArtRecovery');this.actionEnd=this.now+art.definition.recovery;
+      art.resolved.add(art.stage);this.state.set('ArtRecovery');this.actionEnd=this.now+art.definition.recovery;
       this.emit('notice','CHARGE FAILED · no strike · SP spent');
     }else{art.releasedAt=this.now;this.state.set('ArtSequence');this.emit('notice',grade==='Perfect'?'PERFECT RELEASE · full power':'GOOD RELEASE · 60% power');}
   }
   cancelArtCharge(){
-    if(!this.art||this.art.grades[0]!==null)return;
-    if(!this.flags.infiniteSp)this.player.sp=gainSp(this.player.sp,this.art.definition.cost);
+    if(!this.art||this.art.grades[this.art.stage]!==null)return;
+    if(this.art.stage===0&&!this.flags.infiniteSp)this.player.sp=gainSp(this.player.sp,this.art.definition.cost);
     this.art=null;this.state.reset();this.cancelBufferedInput();
   }
   useStamina(cost: number) { if (this.player.stamina < cost) return false; this.player.stamina -= cost; this.lastStaminaUse = this.now; return true; }
@@ -208,19 +209,21 @@ export class CombatSimulation {
   }
   private updateArt(dt:number) {
     const art=this.art;if(!art||this.state.state==='ArtRecovery')return;
-    const def=art.definition,node=def.nodes[0];
-    if(art.releasedAt===null){if(this.now-art.start>node.at+balance.timing.good)this.releaseArt(art.slot);return;}
+    const def=art.definition,node=def.nodes[art.stage];
+    if(art.awaitingHold){if(this.now>=this.actionEnd){art.awaitingHold=false;art.start=this.now-chargeDuration(def,art.stage)-1000;this.releaseArt(art.slot);}return;}
+    if(art.releasedAt===null){if(this.now-art.start>chargeDuration(def,art.stage)+balance.timing.good)this.releaseArt(art.slot);return;}
     const elapsed=this.now-art.releasedAt;
     if(elapsed<def.startup){
       this.player.x+=Math.sin(this.player.yaw)*def.movement/(def.startup/1000)*dt;
       this.player.z+=Math.cos(this.player.yaw)*def.movement/(def.startup/1000)*dt;
       this.bound(this.player);this.resolveBodies();
     }
-    if(elapsed>=def.startup&&!art.resolved.has(0)){
-      art.resolved.add(0);const grade=art.grades[0]!,power=artMultiplier(grade);
-      this.strike(node.damage*power,node.break*power,node.range,grade,'art-0');
+    if(elapsed>=def.startup&&!art.resolved.has(art.stage)){
+      art.resolved.add(art.stage);const grade=art.grades[art.stage]!,power=artMultiplier(grade);
+      this.strike(node.damage*power,node.break*power,node.range,grade,'art-'+art.stage);
       this.emit('slash',def.name,this.player,{grade,shape:this.lastContact!.shape,motion:def.motion});
-      this.state.set('ArtRecovery');this.actionEnd=this.now+def.recovery;
+      if(art.stage+1<def.nodes.length){art.stage++;art.awaitingHold=true;art.releasedAt=null;this.actionEnd=this.now+1600;this.emit('notice','SECOND CUT · hold the same Art button again');}
+      else{this.state.set('ArtRecovery');this.actionEnd=this.now+def.recovery;}
     }
   }
   private movePlayer(dt: number) {

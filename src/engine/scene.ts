@@ -1,7 +1,8 @@
+import {chargeDuration} from '../data/arts';
 import {duelPose} from './duelMotion';
 import {HitIndicator} from './hitIndicator';
 import {enemyPhase} from '../combat/timeline';
-import { AbstractEngine, ArcRotateCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
+import { AbstractEngine, ArcRotateCamera, FreeCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import glslangJs from '@babylonjs/core/assets/glslang/glslang.js?url';
 import glslangWasm from '@babylonjs/core/assets/glslang/glslang.wasm?url';
@@ -16,6 +17,8 @@ export class LabScene {
   engine!: AbstractEngine;
   scene!: Scene;
   camera!: ArcRotateCamera;
+  firstCamera!:FreeCamera;firstPerson=false;
+  togglePerspective(){this.firstPerson=!this.firstPerson;this.scene.activeCamera=this.firstPerson?this.firstCamera:this.camera;this.player.root.setEnabled(!this.firstPerson);this.camera.beta=this.firstPerson?Math.PI/2:1.1;return this.firstPerson;}
   shadow!: ShadowGenerator;
   pipeline!: DefaultRenderingPipeline;
   instrumentation!: SceneInstrumentation;
@@ -55,13 +58,14 @@ export class LabScene {
     this.scene.imageProcessingConfiguration.exposure = 1.05;
     this.scene.imageProcessingConfiguration.contrast = 1.13;
     this.camera = new ArcRotateCamera('camera', -Math.PI / 2, 1.10, 7.5, new Vector3(0,1,-4), this.scene);
+    this.firstCamera=new FreeCamera('first person',new Vector3(0,1.65,-4),this.scene);this.firstCamera.minZ=.05;this.firstCamera.maxZ=220;this.scene.activeCamera=this.camera;
     this.camera.minZ = .1; this.camera.maxZ = 220;
     this.camera.lowerBetaLimit = .4; this.camera.upperBetaLimit = 1.40; this.camera.lowerRadiusLimit = 3.5; this.camera.upperRadiusLimit = 11;
     const sky = new HemisphericLight('sky', new Vector3(0,1,0), this.scene); sky.intensity = .8; sky.groundColor = new Color3(.20,.27,.32);
     const sun = new DirectionalLight('sun', new Vector3(-.45,-1,.55), this.scene); sun.position = new Vector3(12,22,-16); sun.intensity = 1.65; sun.diffuse = new Color3(1,.87,.68);
     this.shadow = new ShadowGenerator(1024, sun); this.shadow.useBlurExponentialShadowMap = true; this.shadow.blurKernel = 16; this.shadow.darkness = .30; this.shadow.bias = .002;
     this.glow = new GlowLayer('aether glow', this.scene, { mainTextureRatio: .35 }); this.glow.intensity = .35;
-    this.pipeline = new DefaultRenderingPipeline('presentation', false, this.scene, [this.camera]); this.pipeline.fxaaEnabled = true;
+    this.pipeline = new DefaultRenderingPipeline('presentation', false, this.scene, [this.camera,this.firstCamera]); this.pipeline.fxaaEnabled = true;
     this.instrumentation = new SceneInstrumentation(this.scene); this.instrumentation.captureFrameTime = true;
     this.environment();
     const hero = await this.asset('/assets/characters/wayfarer.glb');
@@ -169,11 +173,11 @@ export class LabScene {
     else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact)pose=duelPose('basic',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,sim.lastContact.at-chargeTime(sim.attributes.dexterity),sim.lastContact.at);
     else if(sim.art){
       const art=sim.art;
-      if(art.grades[0]===null)pose=duelPose(art.definition.motion,art.start+art.definition.startup*.35,art.start,art.start+art.definition.startup);
+      if(art.grades[art.stage]===null)pose=duelPose(art.definition.motion,art.start+art.definition.startup*.35,art.start,art.start+art.definition.startup);
       else if(art.releasedAt!==null){const contact=art.releasedAt+art.definition.startup;pose=duelPose(art.definition.motion,sim.now<sim.hitStopUntil&&art.resolved.has(0)?contact:sim.now,art.releasedAt,contact);}
     }
     if(this.player.rightArm){this.player.rightArm.rotation.y=pose?.yaw??0;if(pose)this.player.rightArm.rotation.x=pose.pitch;}
-    const artCue=!!sim.art&&sim.art.grades[0]===null&&Math.abs(sim.now-sim.art.start-sim.art.definition.nodes[0].at)<=balance.timing.perfect;
+    const artCue=!!sim.art&&sim.art.grades[sim.art.stage]===null&&Math.abs(sim.now-sim.art.start-chargeDuration(sim.art.definition,sim.art.stage))<=balance.timing.perfect;
     this.timingFlash.setEnabled(artCue);
     if (state==='Dodge') this.player.root.position.y = -.22;
     const target = sim.target;
@@ -186,14 +190,20 @@ export class LabScene {
       indicator.update(enemy.x,enemy.z,enemy.yaw,phase.remaining,enemy.pattern.parryable);
     }
     for(const [id,indicator] of this.hitIndicators)if(!visible.has(id)){indicator.dispose();this.hitIndicators.delete(id);}
-    const preview=sim.art&&sim.art.grades[0]!=='Miss'&&sim.state.state!=='ArtRecovery'?sim.art:undefined;
+    const preview=sim.art&&sim.art.grades[sim.art.stage]!=='Miss'&&sim.state.state!=='ArtRecovery'?sim.art:undefined;
     if(this.showHitboxes||preview){
-      const range=preview?.definition.nodes[0].range??balance.basic.range,arc=preview?.definition.arc??balance.basic.arc;
+      const range=preview?.definition.nodes[preview.stage].range??balance.basic.range,arc=preview?.definition.arc??balance.basic.arc;
       if(this.debugVolume?.shape.range!==range||this.debugVolume?.shape.kind!=='sector'||this.debugVolume.shape.halfArc!==arc){this.debugVolume?.dispose();this.debugVolume=new HitIndicator(this.scene,{kind:'sector',range,halfArc:arc},'player hit footprint');}
-      this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+preview.definition.nodes[0].at-sim.now:100,true,'#80e9ff');
+      this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+chargeDuration(preview.definition,preview.stage)-sim.now:100,true,'#80e9ff');
     }else this.debugVolume?.mesh.setEnabled(false);
+    if(this.firstPerson){
+      this.firstCamera.position.set(sim.player.x,1.65+(state==='Dodge'?-.12:0),sim.player.z);
+      const look=new Vector3(-Math.cos(this.camera.alpha)*Math.sin(this.camera.beta),-Math.cos(this.camera.beta),-Math.sin(this.camera.alpha)*Math.sin(this.camera.beta));
+      this.firstCamera.setTarget(this.firstCamera.position.add(look));
+      if(!sim.target&&sim.free)sim.player.yaw=Math.atan2(look.x,look.z);
+    }
     const desired = new Vector3(sim.player.x,1.2,sim.player.z);
-    if (target) { desired.x += (target.x-sim.player.x)*.18; desired.z += (target.z-sim.player.z)*.18;
+    if (target&&!this.firstPerson) { desired.x += (target.x-sim.player.x)*.18; desired.z += (target.z-sim.player.z)*.18;
       const yaw = Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;
       const diff = Math.atan2(Math.sin(yaw-this.camera.alpha),Math.cos(yaw-this.camera.alpha)); this.camera.alpha += diff*Math.min(1,dt*4);
     }

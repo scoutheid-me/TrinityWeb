@@ -10,7 +10,7 @@ Hold the equipped Art button to charge; release that same button at its target t
 
 A basic attack, dodge or parry may be buffered in the last 100 ms of basic/Art recovery; it executes only upon reaching a legal free state. Pause/reset/hit interruption clears it.
 
-State transitions prevent attack, Art, dodge, and parry overlap. Unreleased charges cancel/refund on pause or focus loss. Released Arts stay committed, except the authored Aether Step dodge cancel after contact. Incoming unavoided damage interrupts into hit reaction; death blocks all combat actions until encounter reset.
+State transitions prevent attack, Art, dodge, and parry overlap. Unreleased charges cancel/refund on pause or focus loss. Released Arts stay committed, until their authored recovery ends. Incoming unavoided damage interrupts into hit reaction; death blocks all combat actions until encounter reset.
 
 ## Defense and enemies
 
@@ -41,3 +41,5 @@ Tests use the target ground center, not the visible mesh or a capsule radius. Th
 Blender-authored rigid-joint clips now replace generic sine-wave attack motion. Each phase samples a contact-marked clip against simulation time. The second refrain cut mirrors its yaw. The sweep uses a horizontal spin and ground wave; the cleave uses a downward slash effect, and player cuts use their configured sector reach. Successful Art resolution records its actual contact timestamp for follow-through; failed charges produce no contact. These are improvements to prototype joint animation, not production skinned clips or continuous blade collision.
 
 Audio and the defensive HUD now share the imminent-skill selector. Ground footprints show all attacking enemies rather than silently selecting just one.
+
+Wayfarer’s Oath is the first paired Art, earned only by completing all Guild trials. Each cut has a separate hold/release charge; after contact one, press and hold the same Art button within 1.6 seconds. Good/Perfect/Miss rules apply to each event. Missing the follow-up ends the chain without undoing the first hit; pausing/cancelling after a landed cut does not refund SP. Basic learned Arts no longer require a prior counter or a special dodge cancel.

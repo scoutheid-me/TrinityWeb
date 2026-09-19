@@ -75,8 +75,14 @@ The current HUD uses a compact floating-glass style based on the supplied visual
 
 ## Guild Trial
 
-Choose **Guild board** from the title screen or right-side menu. Complete Footwork (three basic hits and an evade), Break the guard (Art hit and Break), and Counter discipline (three Perfect Parries) to earn Aether Step, Resonant Cleave, and Stillwater Return. Each challenge describes its reward; completion automatically opens a result screen with the Art's purpose and controls. Equip learned Arts in four unique slots between challenges, then defeat the two-Sentinel Guild Trial.
+Choose **Guild board** from the title screen or right-side menu. Complete Footwork (three basic hits and an evade), Break the guard (Art hit and Break), and Counter discipline (three Perfect Parries) to earn Aether Step, Resonant Cleave, and Stillwater Cut. Each challenge describes its reward; completion automatically opens a result screen with the Art's purpose and controls. Equip learned Arts in four unique slots between challenges, then defeat the two-Sentinel Guild Trial.
 
 Complete two different challenges with a landed Good/Perfect Crescent Break to earn its mastery choice: 200 ms recovery, or +35% Break with 460 ms recovery. Each challenge gives at most one credit; replay can earn a missing credit. Practice modifiers, tutorial activity, resets and whiffs grant no unlocks. Challenges use standard attributes.
 
 The original supplied HUD images are preserved under [References/HUD](References/HUD/README.md), outside shipped runtime assets.
+
+## The Lantern Oath
+
+Ilyra’s induction now leads into the Lantern Guild journal. Four trials teach footing, guard-breaking, nerve and the combined oath. Early rewards are simple single-release Arts. Complete the final trial to earn the **Wayfarer** title and **Wayfarer’s Oath**, a two-event Art: release the first charge, then hold and release the same slot again. Five learned Arts still fit into only four equipped slots.
+
+Use **First person** on the right menu to switch views. Hold your mapped orbit input (right mouse by default) to look. The **Guild journal** becomes a personal screen-mounted window and keeps combat/movement running. Close it with × or Escape; Escape again pauses. Focus loss still pauses safely. Journey and Arts tabs keep the journal compact; highlighted summaries expand, and dotted HUD terms reveal hover/focus/click help.

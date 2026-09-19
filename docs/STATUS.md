@@ -1,3 +1,17 @@
+# September 19: Lantern Guild presentation and first person
+
+Reorganized the journal into Journey and Arts/loadout tabs, with expandable guidance, reward descriptions, combat records and mastery. Tutorial lessons show one short instruction before optional timing details and lead directly to the Guild. Dotted HUD terms show shared hover/focus/click help. Typography, spacing, reward panels and the live journal use the preserved pale-glass reference direction.
+
+Added an eye-level first-person camera and perspective button. Mouse orbit controls become mouse look; the personal journal stays mounted to the viewport while movement, enemies and damage continue. Explicit pause and focus-loss safety remain. Current first-person view hides the third-person body; a dedicated hands/weapon viewmodel is not part of this pass.
+
+Warden Ilyra’s Lantern Oath connects all four trials. The basic reward Arts stay single-event and Stillwater Cut no longer requires a counter opportunity. The final trial grants the Wayfarer title and Wayfarer’s Oath, with two independently graded hold/release events. Existing completed-trial saves receive the new reward without losing unlocks or loadouts.
+
+Verification: 80 unit tests; the existing 15 browser scenarios, full tutorial, and a real-time browser run of all four Guild trials passed. The full journey test earned/saved/equipped the final reward and landed both timed cuts. A first-person hover test exposed pointer interception; fixed the interactive HUD terms and hid underlying menu buttons while the personal journal is open. The corrected first-person scenario and tutorial/reward scenarios passed on rerun. Across the regression and focused runs, all 17 browser scenarios passed. TypeScript/Vite build and production startup passed; journal and first-person screenshots were inspected.
+
+The world, characters and first-person presentation remain prototype assets. This improves the playable presentation and journey; it does not establish AAA production readiness or replace human feel testing.
+
+---
+
 # September 19: Guild Trial and hold/release Arts
 
 Implemented the first progression slice in the existing hall: Footwork, Break the guard, Counter discipline and a two-Sentinel Guild Trial. Earn three original Arts, equip four unique learned sword Arts, and choose a bounded Crescent mastery modifier. Save v3 migrates settings/bindings and preserves unlocks/builds. Typed phase-deduplicated encounter outcomes grant rewards; resets, tutorial practice, debug changes and whiffs do not. One enemy commits at a time and uncommitted bodies separate.

@@ -41,3 +41,9 @@ Save v3 adds learned/acquisition records, prerequisite-validated challenge compl
 The input adapter starts an Art on its slot-button down event and grades that same action's final release. On-screen slots use pointer capture. Unreleased charges time out as Miss; basic attacks cannot satisfy Art timing. Successful release begins the movement/swing; damage resolves once at release time plus startup duration. Pause/focus loss refunds and cancels only unreleased charges. Timing music shares the charge deadline; a failed/cancelled charge clears its scheduled notes. Cyan player footprints share the damage sector definition and follow the actor during the released lunge.
 
 Enemy coordination permits one committed pattern at a time with a 350 ms handoff gap. Pairwise body separation moves uncommitted enemies without sliding active footprints. Camera visibility is not yet part of the coordinator.
+
+## Personal journal and paired Arts
+
+The optional FreeCamera follows eye height and uses the existing orbit angles for look direction. The third-person ArcRotateCamera remains the input orientation source. Only the active camera renders; the third-person player mesh is hidden in first person. GuildBoard takes a live-mode predicate: normal journal entry pauses, first-person entry resumes/keeps the world live. UI state stays outside progression state. Native details elements provide keyboard-accessible nested text. A shared glossary handles hover/focus/click explanations without adding persistent HUD paragraphs.
+
+Arts track a current stage and an explicit awaiting-hold phase. Each stage records a distinct hit/grade under the same attack serial. Relative charge durations derive from authored node times; re-pressing the same slot starts the next charge, and missed/expired follow-ups end the chain. SP is charged once. Save ownership remains derived from challenge completion, so prior successful trial saves acquire the final Art on validation.

@@ -1,5 +1,11 @@
 # Trinity expansion plan — September 19, 2026
 
+## Latest presentation and reward pass
+
+The Lantern Oath now gives the Guild trials an authored narrative and a final two-event Art, Wayfarer’s Oath, plus the Wayfarer title. Starter rewards stay simple single-event cuts. Journey/Arts tabs, expandable guidance and contextual HUD help reduce persistent text. Optional first-person view includes a personal journal that leaves the simulation live. Tutorial completion leads into that journal.
+
+The complete tutorial and all four Guild trials have been exercised in the browser, including persistence and the final paired cut. Remaining art, calibration, offscreen-pressure and human feel gates still apply; first-person hands/weapon viewmodel production is a new art follow-up.
+
 ## Implementation update
 
 The Guild Trial gameplay slice is implemented: three reward-bearing challenges, three earned sword Arts, a paused four-slot loadout board, save v3 migration, typed encounter outcomes, one-attack enemy coordination/body separation, a two-Sentinel trial and a bounded Crescent mastery choice. HUD references are preserved in References/HUD/.

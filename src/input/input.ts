@@ -8,7 +8,7 @@ export class GameInput {
     window.addEventListener('keydown',e=>{
       if(this.suspended)return;
       if(e.code==='Escape'){e.preventDefault();if(!e.repeat)this.togglePause();return;}
-      if((e.target as HTMLElement).closest('input,select,button,textarea'))return;
+      if((e.target as HTMLElement).closest('input,select,textarea'))return;
       const action=this.actionFor(e.code);if(!action||e.ctrlKey||e.altKey||e.metaKey)return;
       e.preventDefault();if(e.repeat)return;this.down(e.code);
     });
@@ -21,7 +21,7 @@ export class GameInput {
     window.addEventListener('pointermove',e=>{
       const dx=e.clientX-this.pointerX,dy=e.clientY-this.pointerY;this.pointerX=e.clientX;this.pointerY=e.clientY;
       if(!this.enabled||this.suspended||!this.held('orbit'))return;
-      this.view.camera.alpha-=dx*.004*this.sensitivity;this.view.camera.beta=Math.max(.4,Math.min(1.4,this.view.camera.beta+dy*.003*this.sensitivity));
+      this.view.camera.alpha-=dx*.004*this.sensitivity;this.view.camera.beta=Math.max(this.view.firstPerson?.3:.4,Math.min(this.view.firstPerson?2.8:1.4,this.view.camera.beta+dy*.003*this.sensitivity));
     });
     view.canvas.addEventListener('contextmenu',e=>e.preventDefault());
     view.canvas.addEventListener('wheel',e=>{e.preventDefault();if(this.enabled&&!this.suspended)view.cameraDistance=Math.max(3.5,Math.min(11,view.cameraDistance+e.deltaY*.005));},{passive:false});

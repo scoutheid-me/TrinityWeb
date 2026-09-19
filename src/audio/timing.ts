@@ -1,3 +1,4 @@
+import {chargeDuration} from '../data/arts';
 import {imminentThreat} from '../combat/timeline';
 import type {CombatSimulation} from '../combat/simulation';
 export interface TimingNote {at:number;frequency:number;accent:boolean; voice?: 'offense' | 'defense';}
@@ -5,14 +6,11 @@ export interface TimingPhrase {id:string;notes:TimingNote[];}
 /** Absolute simulation deadlines shared with hit grading, never frame-count beats. */
 export function timingPhrase(sim:CombatSimulation):TimingPhrase|null {
 
-  if(sim.art&&sim.art.grades[0]===null){
+  if(sim.art&&!sim.art.awaitingHold&&sim.art.grades[sim.art.stage]===null){
     const art=sim.art,notes:TimingNote[]=[];
-    art.definition.nodes.forEach((node,i)=>{
-      const frequency=[440,523.25,659.25][i%3];
-      notes.push({at:art.start+node.at-280,frequency:frequency*.5,accent:false},{at:art.start+node.at,frequency,accent:true});
-    });
-    if(art.definition.finisher)notes.push({at:art.start+art.definition.finisher.at,frequency:880,accent:true});
-    return {id:`art:${art.start}`,notes};
+    const at=art.start+chargeDuration(art.definition,art.stage),frequency=art.stage?659.25:440;
+    notes.push({at:at-280,frequency:frequency*.5,accent:false},{at,frequency,accent:true});
+    return {id:`art:${art.start}:${art.stage}`,notes};
   }
   return null;
 }

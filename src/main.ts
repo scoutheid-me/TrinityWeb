@@ -1,3 +1,4 @@
+import {installGlossary} from './ui/glossary';
 import {GuildBoard} from './ui/guild';
 import './style.css';
 import './interface.css';
@@ -16,6 +17,7 @@ import {validateArts} from './data/arts';
 async function main(){
   validateArts();
   const sim=new CombatSimulation(),hud=new HUD(sim),audio=new CombatAudio();
+  installGlossary();
   let save=defaultSave();
   try{save=await loadSave();}catch(error){console.warn('Local save unavailable; using session settings.',error);hud.notice('Local save unavailable — session mode');}
   sim.progression=save.progression;sim.attributes=save.attributes;sim.loadout=save.loadout;sim.counters=save.counters;sim.reset();
@@ -25,16 +27,17 @@ async function main(){
   let paused=true,started=false,last=performance.now(),lastSave=last;
   const advance=()=>{const current=performance.now();if(!paused){if(hud.slowMotion)sim.invalidateRewards("Slow motion enabled");input.updateMovement();sim.update(Math.min(100,current-last)*(hud.slowMotion?.35:1));}last=current;};
   const overlay=hud.el('overlay'),begin=hud.el('begin') as HTMLButtonElement;
-  function setPaused(value:boolean){if(controls&&!controls.panel.hidden)return;advance();paused=value;input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume training':'Enter the hall';}else{view.canvas.focus();audio.unlock();started=true;}last=performance.now();}
+  function setPaused(value:boolean){if(controls&&!controls.panel.hidden)return;advance();if(value&&guild?.visible){guild.panel.hidden=true;hud.root.classList.remove('journal-open');}paused=value;input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume training':'Enter the hall';}else{view.canvas.focus();audio.unlock();started=true;}last=performance.now();}
   let controls:ControlsMenu|undefined;let guild:GuildBoard|undefined;
   const input=new GameInput(sim,view,advance,()=>guild?.visible?guild.close():setPaused(!paused),()=>hud.toggleDebug(),()=>audio.unlock());
   input.sensitivity=save.settings.sensitivity;input.bindings=save.settings.bindings;hud.setBindings(input.bindings);
   controls=new ControlsMenu(input,()=>setPaused(true),()=>{hud.setBindings(input.bindings);if(tutorial.active)tutorial.render();void persist();});
   for(const [id,parent] of [['open-controls',hud.root.querySelector('header')!],['intro-controls',hud.root.querySelector('.intro')!]] as const){const button=document.createElement('button');button.id=id;button.className='quiet';button.textContent='Controls';button.onclick=()=>controls!.open();parent.append(button);}
-  const tutorial=new CombatTutorial(sim,()=>input.bindings,()=>setPaused(false));
+  const tutorial=new CombatTutorial(sim,()=>input.bindings,()=>setPaused(false),()=>guild?.open());
   for(const parent of [hud.root.querySelector('header')!,hud.root.querySelector('.intro')!]){const b=document.createElement('button');b.className='quiet tutorial-open';b.textContent='Combat tutorial';b.onclick=()=>tutorial.start();parent.append(b);}
-  guild=new GuildBoard(sim,setPaused,()=>void persist());
-  for(const parent of [hud.root.querySelector('header')!,hud.root.querySelector('.intro')!]){const b=document.createElement('button');b.className='quiet guild-open';b.textContent='Guild board';b.onclick=()=>{if(tutorial.active)tutorial.exit();guild!.open();};parent.append(b);}
+  guild=new GuildBoard(sim,setPaused,()=>void persist(),()=>view.firstPerson);
+  for(const parent of [hud.root.querySelector('header')!,hud.root.querySelector('.intro')!]){const b=document.createElement('button');b.className='quiet guild-open';b.textContent='Guild journal';b.onclick=()=>{if(tutorial.active)tutorial.exit();guild!.open();};parent.append(b);}
+  const perspective=document.createElement('button');perspective.id='perspective';perspective.className='quiet';perspective.textContent='First person';perspective.onclick=()=>{view.togglePerspective();perspective.textContent=view.firstPerson?'Third person':'First person';perspective.setAttribute('aria-pressed',String(view.firstPerson));document.getElementById('ui')!.classList.toggle('first-person',view.firstPerson);view.canvas.setAttribute('aria-label',view.firstPerson?'Trinity first-person combat arena':'Trinity third-person combat arena');hud.notice(view.firstPerson?'Hold '+bindingText(input.bindings,'orbit')+' to look · journal stays live':'Third-person view');if(guild?.visible)guild.open();view.update(sim,.016);perspective.blur();view.canvas.focus();};hud.root.querySelector('header')!.append(perspective);
   const musicLabel=document.createElement('label');musicLabel.innerHTML='<input id="timing-music" type="checkbox"> Musical timing cues';hud.el('debug').append(musicLabel);
   hud.input('timing-music').checked=audio.timingMusic;hud.input('timing-music').onchange=()=>{audio.timingMusic=hud.input('timing-music').checked;audio.stopTiming();void persist();};
   begin.disabled=false;begin.textContent='Enter the hall';hud.el('load-status').textContent=`${view.backend} ready · Headphones recommended`;

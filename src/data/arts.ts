@@ -12,10 +12,12 @@ export const arts: Record<string, ArtDefinition> = {
   },
 };
 Object.assign(arts,{
- 'aether-step':{id:'aether-step',name:'Aether Step',description:'Close distance with a quick, narrow cut. Dodge may cancel after the hit.',weapon:'sword',cost:20,startup:300,recovery:230,movement:3,arc:.75,armor:false,motion:'basic',cancelAfter:360,nodes:[{at:440,damage:42,break:12,range:2.5,input:'press'}]},
+ 'aether-step':{id:'aether-step',name:'Aether Step',description:'A short forward step and a single light cut.',weapon:'sword',cost:20,startup:300,recovery:230,movement:3,arc:.75,armor:false,motion:'basic',nodes:[{at:440,damage:42,break:12,range:2.5,input:'press'}]},
  'resonant-cleave':{id:'resonant-cleave',name:'Resonant Cleave',description:'A committed heavy cut that crushes Break. Long recovery.',weapon:'sword',cost:35,startup:320,recovery:600,movement:.6,arc:1.1,armor:true,motion:'art',nodes:[{at:820,damage:54,break:72,range:3,input:'press'}]},
- 'stillwater-return':{id:'stillwater-return',name:'Stillwater Return',description:'Spend a recent Perfect Parry opportunity on a swift counter-cut.',weapon:'sword',cost:15,startup:150,recovery:260,movement:1,arc:1.2,armor:true,motion:'basic',counterWindow:2200,nodes:[{at:400,damage:82,break:28,range:3,input:'press'}]},
+ 'stillwater-return':{id:'stillwater-return',name:'Stillwater Cut',description:'A quick, inexpensive cut for a small opening.',weapon:'sword',cost:18,startup:150,recovery:260,movement:1,arc:1.2,armor:true,motion:'basic',nodes:[{at:400,damage:45,break:18,range:3,input:'press'}]},
+ 'wayfarer-oath':{id:'wayfarer-oath',name:"Wayfarer's Oath",description:'Two measured cuts. Release the first charge, then hold and release the same slot again for the returning strike.',weapon:'sword',cost:40,startup:220,recovery:420,movement:1,arc:1.3,armor:true,motion:'art',nodes:[{at:620,damage:45,break:20,range:3.2,input:'press'},{at:1420,damage:65,break:30,range:3.4,input:'press'}]},
 } satisfies Record<string,ArtDefinition>);
+export function chargeDuration(art:ArtDefinition,stage=0){return art.nodes[stage].at-(art.nodes[stage-1]?.at??0);}
 export function validateArts() {
   for (const art of Object.values(arts)) {
     if (art.cost < 0 || art.nodes.length === 0 || art.nodes.some((n, i) => n.at <= (art.nodes[i - 1]?.at ?? art.startup)) || (art.finisher && art.finisher.at <= art.nodes.at(-1)!.at)) throw new Error(`Invalid Art: ${art.id}`);

@@ -7,7 +7,7 @@ export class CombatTutorial {
   active=false; step=0; completed=false;
   private loadout:(string|null)[]|null=null;
   private flags:CombatSimulation['flags']|null=null;
-  constructor(private sim:CombatSimulation,private bindings:()=>Bindings,private resume:()=>void){
+  constructor(private sim:CombatSimulation,private bindings:()=>Bindings,private resume:()=>void,private finish:()=>void=()=>{}){
     this.panel.id='tutorial';this.panel.hidden=true;document.querySelector('#ui')!.append(this.panel);
   }
   get persistentLoadout(){return this.active&&this.loadout?this.loadout:this.sim.loadout;}
@@ -40,9 +40,10 @@ export class CombatTutorial {
       ['Break & the combat loop',`This sentinel starts at 80 Break. Hold ${k('art1')} and release at the bright note to fill the meter. At 100 Break the enemy staggers for 3.4 seconds and takes ×1.6 damage. In free combat: build SP with basics or parries, spend it on Arts, then punish the opening. Recover stamina between defenses.`, 'Break the sentinel.'],
     ];
     const [title,body,goal]=lessons[this.step];
-    this.panel.innerHTML=`<small>COMBAT TUTORIAL · ${this.step+1} / ${lessons.length}</small><h2>${title}</h2><p>${body}</p><strong role="status">${this.completed?'Complete ✓':goal}</strong><div><button id="tutorial-retry">Retry lesson</button><button id="tutorial-next" ${this.completed?'':'disabled'}>${this.step===4?'Finish':'Next lesson'}</button><button id="tutorial-exit">Exit tutorial</button></div>`;
+    const brief=['Tap '+k('attack')+' to build SP.','Step clear with '+k('dodge')+' as the sweep arrives.','Face the blade. Press '+k('parry')+' just before contact.','Hold '+k('art1')+'. Release when the squares meet.','Fill the Break meter, then punish the opening.'][this.step];
+    this.panel.innerHTML=`<small>ILYRA’S INDUCTION · ${this.step+1} / ${lessons.length}</small><h2>${title}</h2><p class="lesson-brief">${brief}</p><details class="nested-info"><summary>Ilyra’s lesson · controls & timing</summary><p>${body}</p></details><strong role="status">${this.completed?'Complete ✓':goal}</strong><div><button id="tutorial-retry">Retry lesson</button><button id="tutorial-next" ${this.completed?'':'disabled'}>${this.step===4?'Visit the Guild':'Next lesson'}</button><button id="tutorial-exit">Exit tutorial</button></div>`;
     this.panel.querySelector<HTMLButtonElement>('#tutorial-retry')!.onclick=()=>this.prepare();
-    this.panel.querySelector<HTMLButtonElement>('#tutorial-next')!.onclick=()=>{if(this.step===4)this.exit();else{this.step++;this.prepare();}};
+    this.panel.querySelector<HTMLButtonElement>('#tutorial-next')!.onclick=()=>{if(this.step===4){this.exit();this.finish();}else{this.step++;this.prepare();}};
     this.panel.querySelector<HTMLButtonElement>('#tutorial-exit')!.onclick=()=>this.exit();
   }
 }
