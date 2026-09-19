@@ -168,12 +168,12 @@ export class LabScene {
     if(state==='BasicAttackStartup')pose=duelPose('basic',sim.now,sim.actionStart,sim.actionEnd);
     else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact)pose=duelPose('basic',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,sim.lastContact.at-chargeTime(sim.attributes.dexterity),sim.lastContact.at);
     else if(sim.art){
-      const art=sim.art,index=art.definition.nodes.findIndex((_,i)=>!art.resolved.has(i));
-      if(index>=0){const target=art.start+art.definition.nodes[index].at;const contact=art.grades[index]?target:Math.max(target,sim.now+16);pose=duelPose('art',sim.now,art.start,contact);}
-      else if(sim.lastContact)pose=duelPose('art',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,art.start,sim.lastContact.at);
+      const art=sim.art;
+      if(art.grades[0]===null)pose=duelPose(art.definition.motion,art.start+art.definition.startup*.35,art.start,art.start+art.definition.startup);
+      else if(art.releasedAt!==null){const contact=art.releasedAt+art.definition.startup;pose=duelPose(art.definition.motion,sim.now<sim.hitStopUntil&&art.resolved.has(0)?contact:sim.now,art.releasedAt,contact);}
     }
     if(this.player.rightArm){this.player.rightArm.rotation.y=pose?.yaw??0;if(pose)this.player.rightArm.rotation.x=pose.pitch;}
-    const artCue=sim.art?.definition.nodes.some(n=>Math.abs(sim.now-sim.art!.start-n.at)<=balance.timing.perfect)??false;
+    const artCue=!!sim.art&&sim.art.grades[0]===null&&Math.abs(sim.now-sim.art.start-sim.art.definition.nodes[0].at)<=balance.timing.perfect;
     this.timingFlash.setEnabled(artCue);
     if (state==='Dodge') this.player.root.position.y = -.22;
     const target = sim.target;
@@ -186,10 +186,11 @@ export class LabScene {
       indicator.update(enemy.x,enemy.z,enemy.yaw,phase.remaining,enemy.pattern.parryable);
     }
     for(const [id,indicator] of this.hitIndicators)if(!visible.has(id)){indicator.dispose();this.hitIndicators.delete(id);}
-    if(this.showHitboxes){
-      const range=sim.art?.definition.nodes.find((_,i)=>!sim.art!.resolved.has(i))?.range??balance.basic.range;
-      if(this.debugVolume?.shape.range!==range){this.debugVolume?.dispose();this.debugVolume=new HitIndicator(this.scene,{kind:'sector',range,halfArc:balance.basic.arc},'player hit footprint');}
-      this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,100,true);
+    const preview=sim.art&&sim.art.grades[0]!=='Miss'&&sim.state.state!=='ArtRecovery'?sim.art:undefined;
+    if(this.showHitboxes||preview){
+      const range=preview?.definition.nodes[0].range??balance.basic.range,arc=preview?.definition.arc??balance.basic.arc;
+      if(this.debugVolume?.shape.range!==range||this.debugVolume?.shape.kind!=='sector'||this.debugVolume.shape.halfArc!==arc){this.debugVolume?.dispose();this.debugVolume=new HitIndicator(this.scene,{kind:'sector',range,halfArc:arc},'player hit footprint');}
+      this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+preview.definition.nodes[0].at-sim.now:100,true,'#80e9ff');
     }else this.debugVolume?.mesh.setEnabled(false);
     const desired = new Vector3(sim.player.x,1.2,sim.player.z);
     if (target) { desired.x += (target.x-sim.player.x)*.18; desired.z += (target.z-sim.player.z)*.18;

@@ -13,9 +13,9 @@ export class HitIndicator {
     this.edge=MeshBuilder.CreateLines(name+' boundary',{points:[...outline,outline[0]].map(p=>new Vector3(p.x,.06,p.z))},scene);this.edge.parent=this.mesh;this.edge.isPickable=false;
     this.mesh.metadata={hitShape:shape};
   }
-  update(x:number,z:number,yaw:number,remaining:number,parryable:boolean){
+  update(x:number,z:number,yaw:number,remaining:number,parryable:boolean,tint?:string){
     this.mesh.position.set(x,0,z);this.mesh.rotation.y=yaw;
-    const color=Color3.FromHexString(parryable?'#ffdb83':'#ff686f');this.material.emissiveColor=color;
+    const color=Color3.FromHexString(tint??(parryable?'#ffdb83':'#ff686f'));this.material.emissiveColor=color;
     this.material.alpha=remaining<=0?.32:remaining<180?.24:.13;
     (this.edge as import('@babylonjs/core').LinesMesh).color=color;
     this.mesh.setEnabled(true);

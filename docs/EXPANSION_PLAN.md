@@ -1,6 +1,14 @@
 # Trinity expansion plan — September 19, 2026
 
-## Assessment
+## Implementation update
+
+The Guild Trial gameplay slice is implemented: three reward-bearing challenges, three earned sword Arts, a paused four-slot loadout board, save v3 migration, typed encounter outcomes, one-attack enemy coordination/body separation, a two-Sentinel trial and a bounded Crescent mastery choice. HUD references are preserved in References/HUD/.
+
+Latest combat direction: hold the equipped Art button, then release on its charge cue. Perfect gives full power, Good 60%, and Miss fails with no strike. A cyan footprint shows the actual sector while charging/executing. Challenge cards describe the awarded Art and the automatic result screen explains its use.
+
+Still open: production rigs/reactions, calibration/accessibility controls, camera/offscreen-pressure validation, practice previews, physical world-board/NPC interaction, balance and human feel testing. The functional menu board is not a trainer NPC. The planned 10–15 minute session duration has not been measured in human playtesting.
+
+## Assessment (historical baseline)
 
 The current game demonstrates combat, not yet the complete Combat → Discovery → Mastery loop in `PROJECT_BRIEF.md`. It has one Art, four slots, three Sentinel patterns, a tutorial, configurable controls, shared attack footprints, authored rigid-joint motion, counter risk, and saved settings. There are no learned-Art records, meaningful equipment choices, progression rewards, trainers, quests, or world facts yet.
 
@@ -41,7 +49,7 @@ Keep Crescent Break as the starter. Proposed original Arts for the trial:
 | Resonant Cleave | Heavy Break, longer recovery | One readable heavy cut | Break challenge |
 | Stillwater Return | Convert a successful counter into pressure | One timed follow-up with an earned activation opportunity | Counter challenge |
 
-These are proposed designs, not implemented abilities. Prototype two earned Arts first; introduce the fourth when its follow-up rule is clear. Costs, ranges and rewards should be tuned from play rather than presented as final numbers now. A tactical difference must be visible in actual combat, not just in a tooltip.
+These original designs are now implemented as hold/release Arts. Prototype two earned Arts first; introduce the fourth when its follow-up rule is clear. Costs, ranges and rewards should be tuned from play rather than presented as final numbers now. A tactical difference must be visible in actual combat, not just in a tooltip.
 
 Add a functional collection/loadout panel with learned/locked distinction, cost, role, weapon requirement and practice preview. Equip only while safely paused. Keep exactly four active slots as the collection grows.
 
@@ -71,4 +79,4 @@ Keep the original 1080p/60 FPS target and 45 FPS prototype floor. Existing short
 
 Each stage requires unit tests for rules/migrations, real browser interactions, screenshot review, and an honest human playtest before calling combat feel complete. See `COMBAT_AUDIT.md` for the detailed baseline gaps.
 
-**Recommended next implementation:** per-Art execution policies and validated encounter outcomes, followed by the first earned mobility Art and a functional four-slot loadout menu. Keep the work inside the existing hall until the Guild Trial exit gates pass.
+**Next gate:** playtest the Guild Trial and charge/release combat, then camera/offscreen-pressure checks, audio/accessibility calibration and authored reactions. Keep the work inside the existing hall until those gates pass.

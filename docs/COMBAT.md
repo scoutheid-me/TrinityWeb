@@ -6,11 +6,11 @@ Central configuration: `src/data/balance.ts`; formulas for Strength damage, Dext
 
 Basic attacks commit on press and automatically strike after Dexterity-adjusted startup (100 ms base, 60 ms floor). No timing grade or release is required. Base damage is 4 (5 at initial Strength), Break is 2, and a landed phase grants 10 SP once regardless of victim count. SP caps at 100.
 
-Crescent Break spends 30 SP, then asks for one tap at 620 ms (Perfect ±55 ms; Good ±120 ms). One strike deals 70 base damage and 40 Break, modified by grade. There is no automatic extra finisher. Recovery is 340 ms. Nonlethal incoming damage still reduces HP but does not interrupt Art startup/sequence; lethal damage always cancels it.
+Hold the equipped Art button to charge; release that same button at its target time. Crescent Break spends 30 SP and targets 620 ms (Perfect ±55 ms; Good ±120 ms). Perfect gives 100% damage/Break, Good 60%, and Miss fails with no strike. Holding too long also fails. Successful release begins the movement/swing; Crescent contacts after another 280 ms for 70 base damage / 40 Break before grade/stat modifiers. Recovery is 340 ms. There is no second tap or automatic finisher. Per-Art protection determines interruption; lethal damage always cancels it. Cyan sectors show the actual range/arc and move with the released lunge.
 
-A single action may be buffered in the last 100 ms of basic/Art recovery; it executes only upon reaching a legal free state. Pause/reset/hit interruption clears it.
+A basic attack, dodge or parry may be buffered in the last 100 ms of basic/Art recovery; it executes only upon reaching a legal free state. Pause/reset/hit interruption clears it.
 
-State transitions prevent attack, Art, dodge, and parry overlap. Current Art phases cannot be freely cancelled. Incoming unavoided damage interrupts into hit reaction; death blocks all combat actions until encounter reset.
+State transitions prevent attack, Art, dodge, and parry overlap. Unreleased charges cancel/refund on pause or focus loss. Released Arts stay committed, except the authored Aether Step dodge cancel after contact. Incoming unavoided damage interrupts into hit reaction; death blocks all combat actions until encounter reset.
 
 ## Defense and enemies
 
@@ -22,7 +22,7 @@ Hit volumes are horizontal range-and-angle sectors evaluated by the renderer-ind
 
 Visual feedback includes weapon timing flashes, trails, impact sparks, floating damage, brief pose hit-stop, restrained camera shake, procedural hit/stagger/death poses, and synthesized cues. No production animation clips yet.
 
-Timing guide: converging squares mark Art taps. Defensive diamonds mark parries and open rings mark dodges, with explicit action labels. Rising original enemy phrases culminate 80 ms before a parryable impact or 150 ms before a sweep; these lead times fit the defensive windows. Each hit of a combo has its own phrase. Pause, reset, death, AI freeze, and Break cancel obsolete enemy notes. These synthesized action phrases are not a full background score.
+Timing guide: converging squares and a bright note mark the release of the held Art slot button. Defensive diamonds mark parries and open rings mark dodges, with explicit action labels. Rising original enemy phrases culminate 80 ms before a parryable impact or 150 ms before a sweep; these lead times fit the defensive windows. Each hit of a combo has its own phrase. Pause, reset, death, AI freeze, and Break cancel obsolete enemy notes. These synthesized action phrases are not a full background score.
 
 A successful parry within its attack-specific window (260 ms basic / 170 ms skill) is explicitly labeled **Perfect Parry**: all incoming damage is negated, 14 SP is awarded up to the 100 cap, and 32 Break is applied. This names the existing successful outcome; it does not add a second, undocumented defensive timing tier. Late inputs and the un-parryable red sweep retain their previous behavior.
 
@@ -38,6 +38,6 @@ Enemy indicators are the fixed-size ground projection of the shapes used by dama
 
 Tests use the target ground center, not the visible mesh or a capsule radius. This is a deliberate simplified gameplay volume: toe/weapon overlap alone does not cause a hit. Curved boundaries are rendered with 64 segments (sub-centimeter approximation at these radii). Damage still resolves once per phase at its contact timestamp; the short flash is visual persistence, not another active damage window.
 
-Blender-authored rigid-joint clips now replace generic sine-wave attack motion. Each phase samples a contact-marked clip against simulation time. The second refrain cut mirrors its yaw. The sweep uses a horizontal spin and ground wave; the cleave uses a downward slash effect, and player cuts use their configured sector reach. Late/missed Art resolution records its actual contact timestamp for follow-through. These are improvements to prototype joint animation, not production skinned clips or continuous blade collision.
+Blender-authored rigid-joint clips now replace generic sine-wave attack motion. Each phase samples a contact-marked clip against simulation time. The second refrain cut mirrors its yaw. The sweep uses a horizontal spin and ground wave; the cleave uses a downward slash effect, and player cuts use their configured sector reach. Successful Art resolution records its actual contact timestamp for follow-through; failed charges produce no contact. These are improvements to prototype joint animation, not production skinned clips or continuous blade collision.
 
 Audio and the defensive HUD now share the imminent-skill selector. Ground footprints show all attacking enemies rather than silently selecting just one.

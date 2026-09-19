@@ -6,7 +6,9 @@ These instructions apply to the Combat Lab and all future work in this repositor
 
 - Build an original, real-time, third-person anime action RPG. The immediate scope is one playable Combat Lab; prioritize combat feel before world expansion. Do not add multiplayer or copy assets from other games.
 - Use TypeScript, Vite, and Babylon.js with WebGPU detection and WebGL fallback. Keep simulation, rendering, input, UI, balance data, and saves separate. Define Combat Arts and enemy attacks through data, with exactly four equipped Art slots.
-- Core loop: untimed low-damage basics generate SP, beginner Arts use one timing event and spend SP and build Break, stagger creates an opening. Use elapsed milliseconds, explicit legal state transitions, and phase-level hit deduplication.
+- Core loop: untimed low-damage basics generate SP. Hold an equipped Art's selection button to charge, then release that same button at its single musical/visual timing event. Perfect gives full damage/Break, Good gives 60%, Miss produces no strike and spends SP. Show the actual Art hit footprint while charging/executing. Stagger creates an opening. Use elapsed milliseconds, explicit legal state transitions, and phase-level hit deduplication.
+- Guild challenges must clearly describe the awarded Art before entry and show its name, purpose, cost and usage on completion. Unlocks/mastery come from eligible encounter outcomes, never tutorial/debug telemetry. Keep four unique learned, weapon-compatible equipped slots and migrate saved controls/progress.
+- Preserve the user's original GUI/HUD reference images in `References/HUD/`; consult them for visual direction while building original runtime UI.
 - Perfect Parry negates damage and rewards SP/Break; a hit during failed parry commitment deals extra damage. Keep counter windows and the failure multiplier in balance data.
 - Preserve a playable build. Run core combat tests and browser integration checks, inspect the actual scene, and report measured results and honest limitations. Do not claim milestones complete based only on compilation. Keep the design and implementation documents in `docs/` current.
 

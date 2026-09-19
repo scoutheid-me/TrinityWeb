@@ -5,7 +5,7 @@ export interface TimingPhrase {id:string;notes:TimingNote[];}
 /** Absolute simulation deadlines shared with hit grading, never frame-count beats. */
 export function timingPhrase(sim:CombatSimulation):TimingPhrase|null {
 
-  if(sim.art&&['ArtStartup','ArtSequence','ArtRecovery'].includes(sim.state.state)){
+  if(sim.art&&sim.art.grades[0]===null){
     const art=sim.art,notes:TimingNote[]=[];
     art.definition.nodes.forEach((node,i)=>{
       const frequency=[440,523.25,659.25][i%3];

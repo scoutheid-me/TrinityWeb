@@ -24,8 +24,8 @@ test('real controls, assets, timing, Arts, camera, debug and save',async({page},
  }
  expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBeGreaterThanOrEqual(30);
  const sp=await page.evaluate(()=>window.trinity.sim.player.sp);
- await page.keyboard.press('1');expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBe(sp-30);
- for(const at of [620]){await page.waitForFunction(at=>{const a=window.trinity.sim.art;return a&&window.trinity.sim.now-a.start>=at-20;},at,{polling:'raf'});await page.keyboard.press('j');}
+ await page.keyboard.down('1');expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBe(sp-30);
+ for(const at of [620]){await page.waitForFunction(at=>{const a=window.trinity.sim.art;return a&&window.trinity.sim.now-a.start>=at-20;},at,{polling:'raf'});await page.keyboard.up('1');}
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.art?.grades.filter((g:string)=>g==='Good'||g==='Perfect').length??0)).toBe(1);
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
  expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBeLessThan(380);
@@ -114,7 +114,7 @@ test('basics are untimed and Art cues align with musical deadlines and stop on p
  expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(0);
  await page.waitForTimeout(160);await page.screenshot({path:'test-results/timing-ring.png'});await page.keyboard.up('j');
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
- await page.evaluate(()=>window.trinity.sim.player.sp=100);await page.keyboard.press('1');
+ await page.evaluate(()=>window.trinity.sim.player.sp=100);await page.keyboard.down('1');
  await expect(page.locator('#timing-geometry')).toHaveClass(/art/);
  expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toContain(await page.evaluate(()=>window.trinity.sim.art.start+620));
  await page.waitForTimeout(170);await page.screenshot({path:'test-results/timing-square.png'});
@@ -147,9 +147,9 @@ test('all tutorial lessons can be completed through combat',async({page})=>{
  await page.keyboard.press('Space');await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();
  await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&e.attackStart+e.pattern.hits[0]-s.now<110;},null,{polling:'raf'});
  await page.keyboard.press('q');await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();
- await page.keyboard.press('1');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>600;},null,{polling:'raf'});await page.keyboard.press('j');
+ await page.keyboard.down('1');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>600;},null,{polling:'raf'});await page.keyboard.up('1');
  await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();
- await page.keyboard.press('1');await expect(page.locator('#tutorial-next')).toBeEnabled({timeout:5000});
+ await page.keyboard.down('1');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>600;},null,{polling:'raf'});await page.keyboard.up('1');await expect(page.locator('#tutorial-next')).toBeEnabled({timeout:5000});
  await page.locator('#tutorial-next').click();await expect(page.locator('#tutorial')).toBeHidden();expect(await page.evaluate(()=>window.trinity.sim.flags.freezeAI)).toBe(false);
 });
 
@@ -160,7 +160,7 @@ test('enemy basics are animation-led and player Art suppresses competing cues',a
  await page.waitForFunction(()=>window.trinity.sim.enemies[0].pattern?.kind==='basic');
  await expect(page.locator('#defense-cue')).toBeHidden();expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toEqual([]);
  await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.player.z=0;s.enemies[0].z=2;s.enemies[0].nextPattern=1;s.enemies[0].until=0;s.player.sp=30;});
- await expect(page.locator('#defense-cue')).toBeVisible();await page.keyboard.press('1');
+ await expect(page.locator('#defense-cue')).toBeVisible();await page.keyboard.down('1');
  await expect(page.locator('#defense-cue')).toBeHidden();await expect(page.locator('#timing')).toHaveCSS('opacity','1');
  expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(2);
  await page.screenshot({path:'test-results/single-art.png'});
@@ -204,4 +204,58 @@ test('visible cleave lane predicts live hit and miss after facing locks',async({
   await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hits.size)).toBe(1);
   expect(await page.evaluate(()=>window.trinity.sim.player.hp)).toBe(hp);
  }
+});
+
+test('Guild Footwork unlock, loadout, paused board and reload',async({page})=>{
+ await ready(page,true);
+ await page.locator('header .guild-open').click();
+ await expect(page.locator('#guild-board')).toBeVisible();
+ await expect(page.locator('[data-challenge="breaking"]')).toBeDisabled();
+ await page.locator('[data-challenge="positioning"]').click();
+ // Stage only starting positions; all outcomes use real input and live enemy AI.
+ await page.evaluate(()=>{const s=window.trinity.sim;s.player.z=0;s.player.yaw=0;s.enemies[0].z=2;});
+ await expect(page.locator('#trial-tracker')).toContainText('Footwork');
+ for(let i=0;i<3;i++){await page.keyboard.press('j');await page.waitForTimeout(510);}
+ await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&s.now-e.attackStart>e.pattern.telegraph-170;},null,{polling:'raf'});
+ await page.keyboard.press('Space');
+ await expect(page.locator('#guild-board')).toBeVisible();
+ await expect(page.locator('.guild-result')).toContainText('Challenge complete');
+ await expect(page.locator('.guild-reward')).toContainText('Aether Step');await expect(page.locator('.guild-reward')).toContainText('Close distance');
+ expect(await page.evaluate(()=>window.trinity.sim.progression.learned['aether-step'])).toBe('positioning');
+ await page.locator('[data-equip="1"]').selectOption('aether-step');await page.locator('#guild-equip').click();
+ await expect(page.locator('#guild-message')).toHaveText('Loadout saved.');
+ await page.locator('#guild-board').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'test-results/guild-board.png'});
+ await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();
+ expect(await page.evaluate(()=>window.trinity.sim.loadout)).toEqual(['crescent-break','aether-step',null,null]);
+ await page.locator('#begin').click();await page.locator('header .guild-open').click();
+ await expect(page.locator('[data-challenge="breaking"]')).toBeEnabled();
+ await page.keyboard.press('Escape');await expect(page.locator('#guild-board')).toBeHidden();
+});
+
+test('held Art buttons show the actual sector, release once, and fail a mistimed charge',async({page})=>{
+ await ready(page,true);await setupClose(page);await page.evaluate(()=>window.trinity.sim.player.sp=100);
+ await page.keyboard.down('1');
+ await expect(page.locator('#timing-action')).toContainText('RELEASE 1');
+ expect(await page.evaluate(()=>{const t=window.trinity;return {enabled:t.view.debugVolume.mesh.isEnabled(),shape:t.view.debugVolume.shape,charging:t.sim.art.releasedAt===null};})).toEqual({enabled:true,shape:{kind:'sector',range:3.5,halfArc:1.4},charging:true});
+ await page.screenshot({path:'test-results/art-charge-hitbox.png'});
+ await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('1');
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(372);
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
+ await page.keyboard.press('1');await expect.poll(()=>page.evaluate(()=>window.trinity.sim.lastGrade)).toBe('Miss');
+ await page.waitForTimeout(900);expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(372);
+ expect(await page.evaluate(()=>window.trinity.view.debugVolume.mesh.isEnabled())).toBe(false);
+ await page.keyboard.down('1');await page.keyboard.press('Escape');await page.keyboard.up('1');
+ expect(await page.evaluate(()=>window.trinity.sim.art)).toBeNull();expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBe(40);
+});
+
+test('remapped and on-screen Art holds both release through the combat executor',async({page})=>{
+ await ready(page,true);await setupClose(page);
+ await page.evaluate(()=>{const t=window.trinity;t.sim.player.sp=100;t.input.bindings.art1=['KeyG',null];t.hud.setBindings(t.input.bindings);});
+ await page.keyboard.down('g');await expect(page.locator('#timing-action')).toContainText('RELEASE G');
+ await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('g');
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(372);
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
+ await page.locator('#slot-0').hover();await page.mouse.down();
+ await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.mouse.up();
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(284);
 });

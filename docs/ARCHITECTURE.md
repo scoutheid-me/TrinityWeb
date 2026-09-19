@@ -31,3 +31,13 @@ Procedural posing is intentionally isolated from combat rules so a skinned GLB a
 See `COMBAT_AUDIT.md` for required extraction boundaries before expanding content: shared attack/contact timeline, authoritative threat selection, typed progression-eligible outcomes, and learned/equipped Art validation. Existing counters are telemetry, not validated mastery or quest facts.
 
 September 19: `combat/geometry.ts` owns box/sector/disk containment and footprint boundaries; `engine/hitIndicator.ts` renders those boundaries without changing their reach. `combat/timeline.ts` shares phase contact deadlines and skill threat selection. `engine/duelMotion.ts` samples Blender-authored curves using those phase times. Attack events now carry their actual shape to VFX, and player strikes record actual contact time for late-input follow-through.
+
+## Guild Trial and charged Arts
+
+Save v3 adds learned/acquisition records, prerequisite-validated challenge completions and bounded mastery sources/choice. v1/v2 migrate controls, settings, valid loadouts and counters. Ownership, sword compatibility and unique slots are checked at save, equip and execution boundaries. Tutorial practice temporarily equips Crescent while persisting/restoring the real loadout.
+
+`combat/encounter.ts` records phase-deduplicated gameplay outcomes separately from presentation events and lifetime counters. Recent outcomes are capped at 128; totals and deduplication live only for that encounter. `progression/guild.ts` owns reward rules. `ui/guild.ts` pauses the game, displays reward descriptions/results and edits validated loadouts. Reset ends a run; debug resource/stat actions, practice flags and slow motion invalidate rewards. Local saves are not an anti-tamper service.
+
+The input adapter starts an Art on its slot-button down event and grades that same action's final release. On-screen slots use pointer capture. Unreleased charges time out as Miss; basic attacks cannot satisfy Art timing. Successful release begins the movement/swing; damage resolves once at release time plus startup duration. Pause/focus loss refunds and cancels only unreleased charges. Timing music shares the charge deadline; a failed/cancelled charge clears its scheduled notes. Cyan player footprints share the damage sector definition and follow the actor during the released lunge.
+
+Enemy coordination permits one committed pattern at a time with a 350 ms handoff gap. Pairwise body separation moves uncommitted enemies without sliding active footprints. Camera visibility is not yet part of the coordinator.

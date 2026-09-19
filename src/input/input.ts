@@ -40,10 +40,11 @@ export class GameInput {
   }
   private up(code:string){
     const wasHeld=this.keys.has(code);this.sync();this.keys.delete(code);
+    const action=this.actionFor(code);if(wasHeld&&action?.startsWith('art')&&!this.held(action)&&this.enabled&&!this.suspended)this.sim.releaseArt(Number(action.at(-1))-1);
     if(wasHeld&&this.actionFor(code)==='attack'&&!this.held('attack')&&this.enabled&&!this.suspended)this.sim.releaseAttack();
     this.dragging=this.held('orbit');this.updateMovement();
   }
-  clear(){this.sim.cancelBufferedInput();this.keys.clear();this.dragging=false;this.sim.input={x:0,z:0,sprint:false,guard:false};}
+  clear(){this.sim.cancelArtCharge();this.sim.cancelBufferedInput();this.keys.clear();this.dragging=false;this.sim.input={x:0,z:0,sprint:false,guard:false};}
   updateMovement(){
     if(!this.enabled||this.suspended){this.clear();return;}
     const forward=Number(this.held('forward'))-Number(this.held('backward')),right=Number(this.held('right'))-Number(this.held('left'));

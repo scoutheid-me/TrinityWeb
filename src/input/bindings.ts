@@ -1,6 +1,6 @@
 export const actionLabels = {
   forward: 'Move forward', backward: 'Move backward', left: 'Move left', right: 'Move right', sprint: 'Sprint',
-  attack: 'Attack / timing input', dodge: 'Dodge', parry: 'Parry', guard: 'Guard',
+  attack: 'Basic attack', dodge: 'Dodge', parry: 'Parry', guard: 'Guard',
   lock: 'Toggle lock', switchTarget: 'Switch target', art1: 'Combat Art 1', art2: 'Combat Art 2',
   art3: 'Combat Art 3', art4: 'Combat Art 4', orbit: 'Orbit camera (hold)', reset: 'Reset encounter', pause: 'Pause', debug: 'Lab tools',
 } as const;

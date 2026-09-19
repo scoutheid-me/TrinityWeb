@@ -26,7 +26,7 @@ describe('state and defense',()=>{
 describe('encounter',()=>{
  it('accumulates Break, staggers and resets after vulnerability',()=>{const s=encounter(),e=s.enemies[0];s.applyBreak(e,60);expect(e.state).not.toBe('Broken');s.applyBreak(e,40);expect(e.state).toBe('Broken');s.hitEnemy(e,10,0,'Normal','a');expect(e.hp).toBe(e.maxHp-16);s.flags.freezeAI=false;advance(s,balance.enemy.stagger+20);expect(e.state).toBe('Recovery');expect(e.break).toBe(0);});
  it('timed Art has one input and stronger perfect outcome',()=>{
-  const run=(perfect:boolean)=>{const s=encounter();s.player.sp=100;s.activateArt(0);const art=s.art!;if(perfect)for(const node of art.definition.nodes){advance(s,node.at-(s.now-art.start));s.artInput();}advance(s,2800-(s.now-art.start));return s;};
+  const run=(perfect:boolean)=>{const s=encounter();s.player.sp=100;s.activateArt(0);const art=s.art!;if(perfect)for(const node of art.definition.nodes){advance(s,node.at-(s.now-art.start));s.releaseArt(0);}advance(s,2800-(s.now-art.start));return s;};
   const p=run(true),m=run(false);expect(p.enemies[0].hp).toBeLessThan(m.enemies[0].hp);expect(p.counters.perfects).toBe(1);expect(p.player.sp).toBe(70);expect(p.state.state).toBe('Idle');
  });
  it('handles enemy death once, player death, and reset',()=>{const s=encounter();s.hitEnemy(s.enemies[0],999,0,'Perfect','kill');s.hitEnemy(s.enemies[0],999,0,'Perfect','again');expect(s.counters.kills).toBe(1);expect(s.enemies[0].state).toBe('Dead');s.player.hp=1;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.state.state).toBe('Dead');expect(s.player.hp).toBe(0);s.reset();expect(s.state.state).toBe('Idle');expect(s.enemies[0].hp).toBe(460);expect(s.player.hp).toBe(s.hpMax);});
@@ -56,7 +56,7 @@ describe('recovery input buffer',()=>{
 describe('readable beginner combat',()=>{
  it('keeps a committed Art through damage but never through death',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);const art=s.art;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.art).toBe(art);expect(s.player.hp).toBe(s.hpMax-24);expect(s.state.state).toBe('ArtStartup');s.player.hp=1;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.art).toBeNull();expect(s.state.state).toBe('Dead');});
  it('gives basics a wider parry window than skills',()=>{for(const index of [0,1]){const s=encounter();s.parry();advance(s,220);s.receiveAttack(s.enemies[0],sentinelPatterns[index]);expect(s.counters.parries).toBe(index===0?1:0);}});
- it('resolves only one Art strike, without a hidden finisher',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,620);s.artInput();advance(s,1400);expect(s.events.filter(e=>e.type==='hit'&&e.target!=='player')).toHaveLength(1);expect(s.state.state).toBe('Idle');});
+ it('resolves only one Art strike, without a hidden finisher',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,620);s.releaseArt(0);advance(s,1400);expect(s.events.filter(e=>e.type==='hit'&&e.target!=='player')).toHaveLength(1);expect(s.state.state).toBe('Idle');});
 });
 
 
@@ -77,7 +77,18 @@ describe('counter risk and combat audit',()=>{
  const success=encounter();success.parry();success.receiveAttack(success.enemies[0],sentinelPatterns[0]);success.receiveAttack(success.enemies[0],sentinelPatterns[0]);expect(success.player.hp).toBe(success.hpMax-24);expect(success.player.sp).toBe(14);
  });
  it.each([30,60,120])('preserves a Perfect Art outcome under %i Hz updates',hz=>{
- const s=encounter();s.player.sp=30;s.activateArt(0);while(s.now<620)s.update(Math.min(1000/hz,620-s.now));s.artInput();while(s.now<1300)s.update(1000/hz);
- expect(s.counters.perfects).toBe(1);expect(s.enemies[0].hp).toBe(351);expect(s.player.sp).toBe(0);
+ const s=encounter();s.player.sp=30;s.activateArt(0);while(s.now<620)s.update(Math.min(1000/hz,620-s.now));s.releaseArt(0);while(s.now<1300)s.update(1000/hz);
+ expect(s.counters.perfects).toBe(1);expect(s.enemies[0].hp).toBe(372);expect(s.player.sp).toBe(0);
  });
+});
+
+describe('hold and release Arts',()=>{
+ it.each([[620,'Perfect',88,40],[530,'Good',53,24],[0,'Miss',0,0],[800,'Miss',0,0]] as const)('grades release at %i ms with matching damage and Break',(at,grade,damage,breakAmount)=>{
+  const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,at);s.releaseArt(0);advance(s,1500);
+  expect(s.enemies[0].hp).toBe(460-damage);expect(s.enemies[0].break).toBe(breakAmount);expect(s.player.sp).toBe(0);expect(s.lastGrade).toBe(grade);
+  expect(s.events.filter(e=>e.type==='slash')).toHaveLength(grade==='Miss'?0:1);
+ });
+ it('requires release of the correct Art slot and ignores basic attack timing',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,620);s.pressAttack();s.releaseArt(1);expect(s.art!.releasedAt).toBeNull();s.releaseArt(0);s.releaseArt(0);advance(s,1000);expect(s.events.filter(e=>e.type==='slash')).toHaveLength(1);});
+ it('holding indefinitely fails without attacking or moving',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,1800);expect(s.enemies[0].hp).toBe(460);expect(s.player.z).toBe(0);expect(s.state.state).toBe('Idle');expect(s.player.sp).toBe(0);});
+ it('cancels an unreleased charge with a refund but cannot cancel a released strike',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,300);s.cancelArtCharge();expect(s.art).toBeNull();expect(s.player.sp).toBe(30);s.activateArt(0);advance(s,620);s.releaseArt(0);s.cancelArtCharge();expect(s.art).not.toBeNull();expect(s.player.sp).toBe(0);});
 });

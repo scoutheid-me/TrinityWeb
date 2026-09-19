@@ -1,3 +1,17 @@
+# September 19: Guild Trial and hold/release Arts
+
+Implemented the first progression slice in the existing hall: Footwork, Break the guard, Counter discipline and a two-Sentinel Guild Trial. Earn three original Arts, equip four unique learned sword Arts, and choose a bounded Crescent mastery modifier. Save v3 migrates settings/bindings and preserves unlocks/builds. Typed phase-deduplicated encounter outcomes grant rewards; resets, tutorial practice, debug changes and whiffs do not. One enemy commits at a time and uncommitted bodies separate.
+
+Arts now require holding their equipped slot button and releasing on the musical/visual charge event. Perfect gives full damage/Break, Good 60%, and Miss completely fails with no strike while spending SP. Successful release starts the swing/lunge; basics remain untimed. The cyan sector uses actual damage range and arc. Keyboard remaps and on-screen pointer holds use the same executor. Pause/focus loss refunds and cancels unreleased charges. Tutorial and HUD explain these rules.
+
+Challenge cards explicitly connect their reward Art to its purpose and cost. Completion pauses into an acquisition panel with the skill name, description and usage. Preserved both original user-supplied HUD reference PNGs under References/HUD and documented them in AGENTS.md.
+
+Validation: 77 unit tests, all 15 Edge browser scenarios, TypeScript/Vite build and production startup passed. The simulation test completes all four authored challenges through live AI/action rules; browser tests earn, equip and reload Aether Step, finish all tutorial lessons, and exercise key/mouse charging, failure, cancellation and matching hitbox geometry. Inspected reward and charge-preview screenshots; corrected the new Guild button placement. Three focused browser checks and production startup rerun after the layout fix.
+
+Limitations: this is the Guild Trial slice, not the complete RPG. Production rigs/reactions, offscreen-pressure validation, calibration/accessibility, trainer/world interaction, equipment and region/quest expansion remain tracked in EXPANSION_PLAN.md. Human timing/feel and session-length validation are still needed. Existing Babylon bundle-size warning remains.
+
+---
+
 # September 19: floating-glass HUD and expansion plan
 
 Restyled the HUD and menus from the supplied visual references using original CSS: pale translucent panels, angular green HP, gold highlights, upper-left resources, upper-right target information, compact bottom Art slots, and a functional right-side menu rail. Removed persistent combat instructions and hid performance telemetry by default (available in Lab tools). Art labels/costs now read the equipped definitions.

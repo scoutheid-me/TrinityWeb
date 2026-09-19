@@ -4,7 +4,7 @@ export function timingGrade(offset: number, art = false): Grade {
   return Math.abs(offset) <= balance.timing.perfect ? 'Perfect' : Math.abs(offset) <= balance.timing.good ? 'Good' : art ? 'Miss' : 'Normal';
 }
 export const basicMultiplier = (grade: Grade) => grade === 'Perfect' ? 1.25 : grade === 'Good' ? 1.1 : 1;
-export const artMultiplier = (grade: Grade) => grade === 'Perfect' ? 1.25 : grade === 'Good' ? 1 : 0.7;
+export const artMultiplier = (grade: Grade) => grade === 'Perfect' ? 1 : grade === 'Good' ? .6 : 0;
 export function gainSp(current: number, amount: number) { return clamp(current + Math.max(0, amount), 0, balance.sp.max); }
 export function spendSp(current: number, cost: number): number | null { return cost < 0 || current < cost ? null : current - cost; }
 export function equipArts(ids: (string | null)[]): (string | null)[] {
@@ -19,7 +19,7 @@ const actions: CombatState[] = ['Idle', 'Movement', 'BasicAttackStartup', 'ArtSt
 const transitions: Record<CombatState, CombatState[]> = {
   Idle: actions, Movement: actions,
   BasicAttackStartup: ['BasicAttackActive'], BasicAttackActive: ['BasicAttackRecovery'], BasicAttackRecovery: free,
-  ArtStartup: ['ArtSequence'], ArtSequence: ['ArtRecovery'], ArtRecovery: free,
+  ArtStartup: ['ArtSequence', 'ArtRecovery'], ArtSequence: ['ArtRecovery'], ArtRecovery: free,
   Guard: [...free, 'Parry', 'Dodge'], Dodge: free, Parry: [...free, 'Guard'],
   HitReaction: free, Staggered: free, KnockedDown: free, Dead: [],
 };
