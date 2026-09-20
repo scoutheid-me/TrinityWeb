@@ -2,6 +2,7 @@ import type {CombatSimulation} from '../combat/simulation';
 import type {LabScene} from '../engine/scene';
 import {actions,defaultBindings,movementIntent,type Action} from './bindings';
 export class GameInput {
+  private lookAt=performance.now();
   keys=new Set<string>(); sensitivity=1; enabled=false; suspended=false; dragging=false; pointerX=0; pointerY=0;
   bindings=defaultBindings();
   constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void){
@@ -9,6 +10,7 @@ export class GameInput {
       if(this.suspended)return;
       if(e.code==='Escape'){e.preventDefault();if(!e.repeat)this.togglePause();return;}
       if((e.target as HTMLElement).closest('input,select,textarea'))return;
+      if(this.view.firstPerson&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)){e.preventDefault();this.keys.add(e.code);return;}
       const action=this.actionFor(e.code);if(!action||e.ctrlKey||e.altKey||e.metaKey)return;
       e.preventDefault();if(e.repeat)return;this.down(e.code);
     });
@@ -20,7 +22,7 @@ export class GameInput {
     window.addEventListener('pointerup',e=>this.up(`Mouse${e.button}`));
     window.addEventListener('pointermove',e=>{
       const dx=e.clientX-this.pointerX,dy=e.clientY-this.pointerY;this.pointerX=e.clientX;this.pointerY=e.clientY;
-      if(!this.enabled||this.suspended||!this.held('orbit'))return;
+      if(!this.enabled||this.suspended||!this.held('orbit')||this.view.firstPerson&&this.sim.target)return;
       this.view.camera.alpha-=dx*.004*this.sensitivity;this.view.camera.beta=Math.max(this.view.firstPerson?.3:.4,Math.min(this.view.firstPerson?2.8:1.4,this.view.camera.beta+dy*.003*this.sensitivity));
     });
     view.canvas.addEventListener('contextmenu',e=>e.preventDefault());
@@ -47,6 +49,8 @@ export class GameInput {
   clear(){this.sim.cancelArtCharge();this.sim.cancelBufferedInput();this.keys.clear();this.dragging=false;this.sim.input={x:0,z:0,sprint:false,guard:false};}
   updateMovement(){
     if(!this.enabled||this.suspended){this.clear();return;}
+    const lookNow=performance.now(),lookDt=Math.min(.05,(lookNow-this.lookAt)/1000);this.lookAt=lookNow;
+    if(this.view.firstPerson&&!this.sim.target){this.view.camera.alpha+=(Number(this.keys.has('ArrowLeft'))-Number(this.keys.has('ArrowRight')))*1.8*lookDt;this.view.camera.beta=Math.max(.3,Math.min(2.8,this.view.camera.beta+(Number(this.keys.has('ArrowDown'))-Number(this.keys.has('ArrowUp')))*1.5*lookDt));}
     const forward=Number(this.held('forward'))-Number(this.held('backward')),right=Number(this.held('right'))-Number(this.held('left'));
     this.sim.input={...movementIntent(this.view.camera.alpha,forward,right),sprint:this.held('sprint'),guard:this.held('guard')};
   }

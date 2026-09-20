@@ -102,3 +102,9 @@ Verification: all five GLBs load in WebGPU and WebGL browser tests, with no fall
 `Tools/Blender/build_duel_motion.py` opens the existing character sources, authors right-arm pitch/yaw actions with explicit start/contact/end markers, and saves separate `art/blender/{aether_sentinel,wayfarer}_combat.blend` files. The existing GLB geometry is retained. The exporter samples Blender curves at 60 Hz into `public/assets/animations/duel_motion.json`; the runtime interpolates those samples using simulation time. This compact adapter is for the current rigid-part pivots, not a skinned animation solution. Frame 36 is contact and frame 54 is clip end; runtime anticipation stretches to each attack deadline and follow-through remains 300 ms. Blender X/Z become runtime X/Y. Keep this mapping explicit when replacing the pivots with a production rig.
 
 Run: `& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --factory-startup --python-exit-code 1 --python Tools/Blender/build_duel_motion.py`. Blender MCP was not exposed during this pass; installed Blender 5.2.2 generated the editable sources and sampled curves successfully. Its thumbnail cache reported a write warning; the actual source saves and curve export succeeded.
+
+## September 20 training armory
+
+The rack is intentionally limited to one-handed sword, rapier and two-handed sword. Original low-poly sources are `art/blender/training_{sword,rapier,greatsword}.blend`; runtime exports are under `public/assets/weapons/`. Rebuild using Blender in background mode with `Tools/Blender/build_armory.py`. All three use a shared grip origin and are loaded by the existing Babylon asset loader. First-person presentation reuses these meshes; dedicated hands and weapon-specific grips remain prototype work.
+
+For interactive Blender access, see [BLENDER_MCP_SETUP.md](BLENDER_MCP_SETUP.md). The headless exporter was used for this pass because no Blender MCP tools were connected.

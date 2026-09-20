@@ -1,3 +1,15 @@
+# September 20: training skills, three weapons and first-person control
+
+Fresh saves start with Focused Strike; finishing induction awards only Linear. Perfect Linear travels six meters through one target; Good travels one meter with reduced damage; Miss does not move or strike. Other Arts have distinct roles: lateral movement, wide coverage, heavy Break, stamina restoration, or a two-event chain. Eligible regular combat also unlocks skills independently of tutorials. Old v3 starter ownership is preserved.
+
+Added a direct HUD Art editor and three-weapon rack (one-handed sword, rapier, two-handed sword), known-skill statistics/radar cards and a generated downloadable bank. Renamed the location Guild Hall Training Room, within the planned Town of Beginnings Guild Hall. First person supports mouse-look, arrow-key look and automatic locked-target orientation. Original Blender exports supply the weapon meshes. MCP setup is documented; it was not installed or connected during this pass.
+
+Validation: 87 unit tests pass. All 18 browser scenarios passed across regression and focused runs, including the full tutorial, four live Guild challenges, saved rewards, three weapon loads, direct slot editing, camera lock and responsive skill cards. Two initial browser failures were resolved: an outdated Aether description assertion and a development reload during the journey run. The complete journey passed on rerun. TypeScript/Vite build and production startup pass. Desktop/compact skill cards and first-person weapon screenshots were inspected; a wrapping menu label was corrected.
+
+Limits: this remains a prototype. Weapon types share the rigid-part animation rig; dedicated two-handed grip animation and skinned first-person hands are not implemented. The town is not built. The existing Babylon bundle-size warning remains. Next work is animation/contact polish and a small Guild foyer before outdoor expansion.
+
+---
+
 # September 19: Lantern Guild presentation and first person
 
 Reorganized the journal into Journey and Arts/loadout tabs, with expandable guidance, reward descriptions, combat records and mastery. Tutorial lessons show one short instruction before optional timing details and lead directly to the Guild. Dotted HUD terms show shared hover/focus/click help. Typography, spacing, reward panels and the live journal use the preserved pale-glass reference direction.

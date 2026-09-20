@@ -1,4 +1,5 @@
-import {chargeDuration} from '../data/arts';
+import {weapons} from '../data/weapons';
+import {artShape,chargeDuration} from '../data/arts';
 import {duelPose} from './duelMotion';
 import {HitIndicator} from './hitIndicator';
 import {enemyPhase} from '../combat/timeline';
@@ -18,7 +19,7 @@ export class LabScene {
   scene!: Scene;
   camera!: ArcRotateCamera;
   firstCamera!:FreeCamera;firstPerson=false;
-  togglePerspective(){this.firstPerson=!this.firstPerson;this.scene.activeCamera=this.firstPerson?this.firstCamera:this.camera;this.player.root.setEnabled(!this.firstPerson);this.camera.beta=this.firstPerson?Math.PI/2:1.1;return this.firstPerson;}
+  togglePerspective(){this.firstPerson=!this.firstPerson;this.scene.activeCamera=this.firstPerson?this.firstCamera:this.camera;this.player.root.setEnabled(!this.firstPerson);this.firstWeapon?.setEnabled(this.firstPerson);this.camera.beta=this.firstPerson?Math.PI/2:1.1;return this.firstPerson;}
   shadow!: ShadowGenerator;
   pipeline!: DefaultRenderingPipeline;
   instrumentation!: SceneInstrumentation;
@@ -26,6 +27,14 @@ export class LabScene {
   actors = new Map<string, Actor>();
   enemyTemplate!: TransformNode;
   swordTemplate!: TransformNode;
+  weaponTemplates=new Map<string,Promise<TransformNode>>();weaponRequested='';equippedWeapon='';firstWeapon:TransformNode|null=null;
+  private async syncWeapon(id:string){
+    if(this.weaponRequested===id)return;this.weaponRequested=id;
+    let promise=this.weaponTemplates.get(id);if(!promise){promise=this.asset(weapons[id].model).then(model=>{model.setEnabled(false);return model;});this.weaponTemplates.set(id,promise);}
+    const model=await promise;if(this.weaponRequested!==id)return;
+    this.player.sword.dispose();this.player.sword=model.clone('equipped '+id,this.player.rightArm??this.player.root)!;this.player.sword.setEnabled(true);this.player.sword.position.set(0,-.64,.06);this.player.sword.rotation.x=-.55;this.cast(this.player.sword);
+    this.firstWeapon?.dispose();this.firstWeapon=model.clone('first-person '+id,this.firstCamera)!;this.firstWeapon.position.set(.32,-.34,-.6);this.firstWeapon.rotation.y=Math.PI;this.firstWeapon.setEnabled(this.firstPerson);this.equippedWeapon=id;
+  }
   ring!: Mesh;
   hitIndicators = new Map<string, HitIndicator>();
   debugVolume:HitIndicator|null=null;
@@ -154,6 +163,7 @@ export class LabScene {
     actor.root.position.y = dead ? .25 : Math.abs(stride)*.035;
   }
   update(sim: CombatSimulation, dt: number) {
+    void this.syncWeapon(sim.weapon);
     const poseDt=sim.now<sim.hitStopUntil?0:dt;
     for (const [id, actor] of this.actors) if (!sim.enemies.some(e => e.id === id)) { actor.root.dispose(); this.actors.delete(id); }
     for (const enemy of sim.enemies) {
@@ -170,13 +180,14 @@ export class LabScene {
     this.animate(this.player,sim.player.x,sim.player.z,sim.player.yaw,Math.hypot(sim.player.vx,sim.player.vz),swing,state==='Guard'||state==='Parry',state==='Dead',state==='HitReaction',poseDt);
     let pose:ReturnType<typeof duelPose>|null=null;
     if(state==='BasicAttackStartup')pose=duelPose('basic',sim.now,sim.actionStart,sim.actionEnd);
-    else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact)pose=duelPose('basic',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,sim.lastContact.at-chargeTime(sim.attributes.dexterity),sim.lastContact.at);
+    else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact)pose=duelPose('basic',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,sim.lastContact.at-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87,sim.lastContact.at);
     else if(sim.art){
       const art=sim.art;
       if(art.grades[art.stage]===null)pose=duelPose(art.definition.motion,art.start+art.definition.startup*.35,art.start,art.start+art.definition.startup);
       else if(art.releasedAt!==null){const contact=art.releasedAt+art.definition.startup;pose=duelPose(art.definition.motion,sim.now<sim.hitStopUntil&&art.resolved.has(0)?contact:sim.now,art.releasedAt,contact);}
     }
     if(this.player.rightArm){this.player.rightArm.rotation.y=pose?.yaw??0;if(pose)this.player.rightArm.rotation.x=pose.pitch;}
+    if(this.firstWeapon){this.firstWeapon.setEnabled(this.firstPerson);this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.45;this.firstWeapon.rotation.z=(pose?.yaw??0)*.25;}
     const artCue=!!sim.art&&sim.art.grades[sim.art.stage]===null&&Math.abs(sim.now-sim.art.start-chargeDuration(sim.art.definition,sim.art.stage))<=balance.timing.perfect;
     this.timingFlash.setEnabled(artCue);
     if (state==='Dodge') this.player.root.position.y = -.22;
@@ -192,11 +203,12 @@ export class LabScene {
     for(const [id,indicator] of this.hitIndicators)if(!visible.has(id)){indicator.dispose();this.hitIndicators.delete(id);}
     const preview=sim.art&&sim.art.grades[sim.art.stage]!=='Miss'&&sim.state.state!=='ArtRecovery'?sim.art:undefined;
     if(this.showHitboxes||preview){
-      const range=preview?.definition.nodes[preview.stage].range??balance.basic.range,arc=preview?.definition.arc??balance.basic.arc;
-      if(this.debugVolume?.shape.range!==range||this.debugVolume?.shape.kind!=='sector'||this.debugVolume.shape.halfArc!==arc){this.debugVolume?.dispose();this.debugVolume=new HitIndicator(this.scene,{kind:'sector',range,halfArc:arc},'player hit footprint');}
+      const shape=preview?artShape(preview.definition,preview.stage):sim.weaponDefinition.shape;
+      if(JSON.stringify(this.debugVolume?.shape)!==JSON.stringify(shape)){this.debugVolume?.dispose();this.debugVolume=new HitIndicator(this.scene,shape,'player hit footprint');}
       this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+chargeDuration(preview.definition,preview.stage)-sim.now:100,true,'#80e9ff');
     }else this.debugVolume?.mesh.setEnabled(false);
     if(this.firstPerson){
+      if(target){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,.35);this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
       this.firstCamera.position.set(sim.player.x,1.65+(state==='Dodge'?-.12:0),sim.player.z);
       const look=new Vector3(-Math.cos(this.camera.alpha)*Math.sin(this.camera.beta),-Math.cos(this.camera.beta),-Math.sin(this.camera.alpha)*Math.sin(this.camera.beta));
       this.firstCamera.setTarget(this.firstCamera.position.add(look));

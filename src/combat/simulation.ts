@@ -1,8 +1,9 @@
-import {EncounterLedger,type OutcomeKind} from './encounter';
-import {freshProgression,canStart,awardChallenge,validLoadout,type ChallengeId} from '../progression/guild';
+import {weapons} from '../data/weapons';
+import {EncounterLedger,type OutcomeKind,type CombatOutcome} from './encounter';
+import {freshProgression,awardFieldSkills,canStart,awardChallenge,validLoadout,type ChallengeId} from '../progression/guild';
 import {containsHit,type HitShape} from './geometry';
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
-import { arts, chargeDuration, type ArtDefinition } from '../data/arts';
+import { arts, artShape, chargeDuration, type ArtDefinition } from '../data/arts';
 import { sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
@@ -11,15 +12,24 @@ export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodg
 export interface Enemy extends Point { id: string; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
   now = 0;
-  progression=freshProgression();weapon:string="sword";encounter=new EncounterLedger();lastParryAt=-Infinity;nextEnemyAttackAt=0;
-  invalidateRewards(reason="Lab modifications"){this.encounter.invalidate(reason);}
-  equipLoadout(ids:(string|null)[]){if(this.encounter.active||!this.free||!validLoadout(ids,this.progression,this.weapon))return false;this.loadout=equipArts(ids);return true;}
+  private fieldEligible=true;practiceMode=false;progression=freshProgression();weapon:string="sword";encounter=new EncounterLedger();lastParryAt=-Infinity;nextEnemyAttackAt=0;
+  get weaponDefinition(){return weapons[this.weapon]??weapons.sword;}
+  setWeapon(id:string){if(!weapons[id]||!this.free||this.encounter.active||this.practiceMode)return false;this.weapon=id;this.loadout=this.loadout.map(key=>key&&(arts[key]?.weapon==='any'||arts[key]?.weapon===id)?key:null);if(!this.loadout.some(Boolean))this.loadout=['focused-strike',null,null,null];return true;}
+  private recordOutcome(o:Omit<CombatOutcome,'encounterId'|'eligible'>){
+    this.encounter.record(o);
+    if(!this.fieldEligible||this.practiceMode||Object.values(this.flags).some(Boolean)||Object.entries(defaultAttributes).some(([k,v])=>this.attributes[k as keyof Attributes]!==v)||this.encounter.active&&!this.encounter.eligible)return;
+    const f=this.progression.field;
+    if(o.kind==='basic-hit')f.hits++;if(o.kind==='evade')f.evades++;if(o.kind==='parry')f.parries++;if(o.kind==='break')f.breaks++;if(o.kind==='defeat')f.kills++;
+    const before=Object.keys(this.progression.learned).length;awardFieldSkills(this.progression);if(Object.keys(this.progression.learned).length>before)this.emit('notice','NEW ART LEARNED · check your skill bank');
+  }
+  invalidateRewards(reason="Lab modifications"){this.fieldEligible=false;this.encounter.invalidate(reason);}
+  equipLoadout(ids:(string|null)[]){if(this.practiceMode||this.encounter.active||!this.free||!validLoadout(ids,this.progression,this.weapon))return false;this.loadout=equipArts(ids);return true;}
   beginChallenge(id:ChallengeId){if(!canStart(this.progression,id))return false;this.reset();this.flags={invulnerable:false,infiniteSp:false,freezeAI:false};this.attributes={...defaultAttributes};this.player.hp=this.hpMax;this.player.stamina=this.staminaMax;this.encounter.start(id);if(id==="trial"){this.spawnEnemy();for(const e of this.enemies)e.hp=e.maxHp=300;}return true;}
   attributes: Attributes = { ...defaultAttributes };
   player = { x: 0, z: -4, yaw: 0, hp: maxHp(10), stamina: maxStamina(10), sp: 0, vx: 0, vz: 0 };
   state = new StateMachine();
   enemies: Enemy[] = [];
-  loadout = equipArts(['crescent-break', null, null, null]);
+  loadout = equipArts(['focused-strike', null, null, null]);
   lockedId: string | null = null;
   flags = { invulnerable: false, infiniteSp: false, freezeAI: false };
   counters = { kills: 0, parries: 0, breaks: 0, perfects: 0, arts: 0 };
@@ -40,7 +50,7 @@ export class CombatSimulation {
   basicHit = false;
   attackSerial = 0;
   hits = new HitRegistry();
-  art: { definition: ArtDefinition; slot:number; stage:number; awaitingHold:boolean; releasedAt:number|null; start: number; grades: (Grade | null)[]; offsets:number[]; resolved: Set<number>; finisher: boolean } | null = null;
+  art: { definition: ArtDefinition; slot:number; stage:number; awaitingHold:boolean; releasedAt:number|null; releaseYaw:number; victims:Set<string>; start: number; grades: (Grade | null)[]; offsets:number[]; resolved: Set<number>; finisher: boolean } | null = null;
   dodgeOrigin:Point={x:0,z:0};
   dodgeVector: Point = { x: 0, z: 1 };
   lastGrade = '';
@@ -54,7 +64,7 @@ export class CombatSimulation {
   emit(type: CombatEvent['type'], text: string, point: Point = this.player, extra: Partial<CombatEvent> = {}) { this.events.push({ type, text, x: point.x, z: point.z, ...extra }); }
   grade(grade: Grade) { this.lastGrade = grade; this.lastGradeAt = this.now; if (grade === 'Perfect') this.counters.perfects++; this.emit('grade', grade, this.player, { grade }); }
   reset() {
-    this.encounter.end("abandoned");this.lastParryAt=-Infinity;this.nextEnemyAttackAt=0;
+    this.fieldEligible=true;this.encounter.end("abandoned");this.lastParryAt=-Infinity;this.nextEnemyAttackAt=0;
     this.player = { x: 0, z: -4, yaw: 0, hp: this.hpMax, stamina: this.staminaMax, sp: 0, vx: 0, vz: 0 };
     this.lastContact=null; this.cancelBufferedInput(); this.state.reset(); this.art = null; this.actionEnd = 0; this.hits.clear(); this.lockedId = null; this.events = []; this.hitStopUntil = 0;
     this.input = { x: 0, z: 0, sprint: false, guard: false }; this.enemies = []; this.spawnEnemy();
@@ -76,14 +86,14 @@ export class CombatSimulation {
     if (this.art && this.state.state !== 'ArtRecovery') return;
     if(this.buffer('attack'))return;
     if (!this.state.set('BasicAttackStartup')) return;
-    this.faceTarget(); this.actionStart = this.now; this.actionEnd = this.now + chargeTime(this.attributes.dexterity);
+    this.faceTarget(); this.actionStart = this.now; this.actionEnd = this.now + chargeTime(this.attributes.dexterity)*(this.weaponDefinition.startup/87);
   }
   releaseAttack() { /* Basic attacks commit on press; release has no timing role. */ }
   private beginBasicImpact() {
     if (this.state.state !== 'BasicAttackStartup') return;
     this.basicGrade = 'Normal';
     this.state.set('BasicAttackActive'); this.actionStart = this.now; this.actionEnd = this.now + balance.basic.active; this.basicHit = false; this.attackSerial++; this.hits.clear();
-    this.lastContact={at:this.now,shape:{kind:'sector',range:balance.basic.range,halfArc:balance.basic.arc}};
+    this.lastContact={at:this.now,shape:this.weaponDefinition.shape};
     this.emit('slash', 'Basic', this.player, { grade: this.basicGrade,shape:this.lastContact.shape,motion:'basic' });
   }
   activateArt(slot: number) {
@@ -91,7 +101,7 @@ export class CombatSimulation {
     if(!validLoadout(this.loadout,this.progression,this.weapon)){this.emit('notice','Invalid loadout — visit the Guild board');return false;}
     const id = this.loadout[slot], base = id ? arts[id] : null;
     let def=base?structuredClone(base):null;
-    if(def&&(!this.progression.learned[def.id]||this.weapon!==def.weapon)){this.emit("notice","Art not learned or wrong weapon");return false;}
+    if(def&&(!this.progression.learned[def.id]||def.weapon!=='any'&&this.weapon!==def.weapon)){this.emit("notice","Art not learned or wrong weapon");return false;}
     if(def?.id==="crescent-break"){if(this.progression.masteryChoice==="recovery")def.recovery=200;if(this.progression.masteryChoice==="break"){def.recovery=460;for(const node of def.nodes)node.break*=1.35;}}
     if(def?.counterWindow&&this.now-this.lastParryAt>def.counterWindow){this.emit("notice","Perfect Parry first · counter opportunity required");return false;}
     if (!def) { this.emit('notice', 'No Art equipped'); return false; }
@@ -100,19 +110,19 @@ export class CombatSimulation {
     if (after === null && !this.flags.infiniteSp) { this.emit('notice', `Requires ${def.cost} SP`); return false; }
     this.player.sp = this.flags.infiniteSp ? this.player.sp : after!;
     if(def.counterWindow)this.lastParryAt=-Infinity;
-    this.state.set('ArtStartup'); this.faceTarget(); this.actionStart = this.now;
-    this.art = { definition: def, slot, stage:0, awaitingHold:false, releasedAt:null, start: this.now, grades: def.nodes.map(() => null), offsets:[], resolved: new Set(), finisher: false };
+    this.state.set('ArtStartup');this.player.vx=0;this.player.vz=0; this.faceTarget(); this.actionStart = this.now;
+    this.art = { definition: def, slot, stage:0, awaitingHold:false, releasedAt:null,releaseYaw:0,victims:new Set(), start: this.now, grades: def.nodes.map(() => null), offsets:[], resolved: new Set(), finisher: false };
     this.attackSerial++; this.hits.clear(); this.counters.arts++; this.emit('art', def.name); return true;
   }
   releaseArt(slot:number) {
     const art=this.art;if(!art||art.awaitingHold||art.slot!==slot||art.grades[art.stage]!==null)return;
     const offset=this.now-art.start-chargeDuration(art.definition,art.stage);
     const grade=timingGrade(offset,true);art.offsets[art.stage]=offset;art.grades[art.stage]=grade;this.grade(grade);
-    this.encounter.record({kind:'art-phase',actor:'player',target:'phase',attackId:this.attackSerial,phase:String(art.stage),at:this.now,amount:0,artId:art.definition.id,grade,offsetMs:offset});
+    this.recordOutcome({kind:'art-phase',actor:'player',target:'phase',attackId:this.attackSerial,phase:String(art.stage),at:this.now,amount:0,artId:art.definition.id,grade,offsetMs:offset});
     if(grade==='Miss'){
       art.resolved.add(art.stage);this.state.set('ArtRecovery');this.actionEnd=this.now+art.definition.recovery;
       this.emit('notice','CHARGE FAILED · no strike · SP spent');
-    }else{art.releasedAt=this.now;this.state.set('ArtSequence');this.emit('notice',grade==='Perfect'?'PERFECT RELEASE · full power':'GOOD RELEASE · 60% power');}
+    }else{art.releasedAt=this.now;art.releaseYaw=this.player.yaw;this.state.set('ArtSequence');this.emit('notice',grade==='Perfect'?'PERFECT RELEASE · full power':'GOOD RELEASE · 60% power');}
   }
   cancelArtCharge(){
     if(!this.art||this.art.grades[this.art.stage]!==null)return;
@@ -137,29 +147,30 @@ export class CombatSimulation {
   applyBreak(enemy: Enemy, amount: number) {
     if (enemy.hp <= 0 || enemy.state === 'Broken') return;
     enemy.break = clamp(enemy.break + amount, 0, balance.enemy.breakThreshold);
-    if (enemy.break >= balance.enemy.breakThreshold) { enemy.state = 'Broken'; enemy.until = this.now + balance.enemy.stagger; enemy.pattern = null; this.encounter.record({kind:'break',actor:'player',target:enemy.id,attackId:this.now,phase:'break',at:this.now,amount:amount});this.counters.breaks++; this.emit('break', 'BREAK · punish the opening', enemy, { strong: true }); }
+    if (enemy.break >= balance.enemy.breakThreshold) { enemy.state = 'Broken'; enemy.until = this.now + balance.enemy.stagger; enemy.pattern = null; this.recordOutcome({kind:'break',actor:'player',target:enemy.id,attackId:this.now,phase:'break',at:this.now,amount:amount});this.counters.breaks++; this.emit('break', 'BREAK · punish the opening', enemy, { strong: true }); }
   }
   hitEnemy(enemy: Enemy, damage: number, breakDamage: number, grade: Grade, phase: string) {
     if (enemy.hp <= 0 || !this.hits.accept(`${this.attackSerial}:${phase}`, enemy.id)) return false;
     const actual = Math.round(damage * (enemy.state === 'Broken' ? 1.6 : 1));
-    this.encounter.record({kind:phase==='basic'?'basic-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
+    this.recordOutcome({kind:phase==='basic'?'basic-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
     this.emit('hit', String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect' });
     this.hitStopUntil = this.now + balance.hitStop;
-    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.encounter.record({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', 'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
+    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', 'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
     else this.applyBreak(enemy, breakDamage);
     return true;
   }
   strike(damage: number, breakDamage: number, range: number, grade: Grade, phase: string, basic = false) {
-    const shape:HitShape={kind:'sector',range,halfArc:basic?balance.basic.arc:this.art?.definition.arc??balance.basic.arc};
+    const shape:HitShape=basic?this.weaponDefinition.shape:this.art?artShape(this.art.definition,this.art.stage):{kind:'sector',range,halfArc:balance.basic.arc};
     this.lastContact={at:this.now,shape};
     let landed = false;
-    for (const enemy of this.enemies) if (containsHit(shape,this.player,this.player.yaw,enemy)) {
-      landed = this.hitEnemy(enemy, physicalDamage(damage, this.attributes.strength), breakDamage, grade, phase) || landed;
+    for (const enemy of [...this.enemies].sort((a,b)=>Math.hypot(a.x-this.player.x,a.z-this.player.z)-Math.hypot(b.x-this.player.x,b.z-this.player.z))) if (containsHit(shape,this.player,this.player.yaw,enemy)) {
+      if(!basic&&this.art?.definition.maxTargets&&this.art.victims.size>=this.art.definition.maxTargets)break;
+      const hit=this.hitEnemy(enemy,physicalDamage(damage,this.attributes.strength),breakDamage,grade,phase);if(hit&&!basic&&this.art){this.art.victims.add(enemy.id);if(this.art.definition.restoreStamina)this.player.stamina=Math.min(this.staminaMax,this.player.stamina+this.art.definition.restoreStamina*artMultiplier(grade));}landed=hit||landed;
     }
     if (basic && landed) this.player.sp = gainSp(this.player.sp, balance.sp.normal);
   }
-  defenseOutcome(kind:OutcomeKind,enemy:Enemy,amount=0,failedCounter=false){this.encounter.record({kind,actor:'player',target:enemy.id,attackId:enemy.attackStart,phase:String([...enemy.hits].at(-1)??0),at:this.now,amount,failedCounter});}
+  defenseOutcome(kind:OutcomeKind,enemy:Enemy,amount=0,failedCounter=false){this.recordOutcome({kind,actor:'player',target:enemy.id,attackId:enemy.attackStart,phase:String([...enemy.hits].at(-1)??0),at:this.now,amount,failedCounter});}
   receiveAttack(enemy: Enemy, pattern: AttackPattern) {
     if (this.state.state === 'Dead' || this.flags.invulnerable) return;
     const elapsed = this.now - this.actionStart;
@@ -171,7 +182,7 @@ export class CombatSimulation {
     const failedCounter = this.state.state === 'Parry';
     let damage = pattern.damage * (failedCounter ? balance.parry.failureDamageMultiplier : 1);
     if (failedCounter) this.emit('notice', `COUNTER FAILED · ${Math.round((balance.parry.failureDamageMultiplier - 1) * 100)}% EXTRA DAMAGE`);
-    if (this.state.state === 'Guard' && this.useStamina(balance.guard.cost)) damage *= balance.guard.damageMultiplier;
+    if (this.state.state === 'Guard' && this.useStamina(balance.guard.cost)) damage *= this.weaponDefinition.guard;
     this.defenseOutcome('damage',enemy,damage,failedCounter);
     this.player.hp = Math.max(0, this.player.hp - damage); this.emit('hit', `−${Math.round(damage)}`, this.player, { amount: damage, target: 'player', strong: true });
     // A committed Art retains its timing through nonlethal hits; damage still matters.
@@ -194,8 +205,8 @@ export class CombatSimulation {
     if (this.now - this.lastStaminaUse > 650) this.player.stamina = Math.min(this.staminaMax, this.player.stamina + balance.staminaRegen * dt);
     if (state === 'BasicAttackStartup' && this.now >= this.actionEnd) this.beginBasicImpact();
     if (state === 'BasicAttackActive') {
-      if (!this.basicHit) { this.strike(balance.basic.damage, balance.basic.break, balance.basic.range, this.basicGrade, 'basic', true); this.basicHit = true; }
-      if (this.now >= this.actionEnd) { this.state.set('BasicAttackRecovery'); this.actionEnd = this.now + balance.basic.recovery; }
+      if (!this.basicHit) { this.strike(this.weaponDefinition.damage, this.weaponDefinition.break, this.weaponDefinition.shape.range, this.basicGrade, 'basic', true); this.basicHit = true; }
+      if (this.now >= this.actionEnd) { this.state.set('BasicAttackRecovery'); this.actionEnd = this.now + this.weaponDefinition.recovery; }
     }
     if (['BasicAttackRecovery', 'ArtRecovery', 'Dodge', 'Parry', 'HitReaction', 'Staggered', 'KnockedDown'].includes(state) && this.now >= this.actionEnd) { this.state.set('Idle'); if (state === 'ArtRecovery') this.art = null; }
     if (this.art && (state === 'ArtStartup' || state === 'ArtSequence')) this.updateArt(dt);
@@ -212,17 +223,20 @@ export class CombatSimulation {
     const def=art.definition,node=def.nodes[art.stage];
     if(art.awaitingHold){if(this.now>=this.actionEnd){art.awaitingHold=false;art.start=this.now-chargeDuration(def,art.stage)-1000;this.releaseArt(art.slot);}return;}
     if(art.releasedAt===null){if(this.now-art.start>chargeDuration(def,art.stage)+balance.timing.good)this.releaseArt(art.slot);return;}
-    const elapsed=this.now-art.releasedAt;
-    if(elapsed<def.startup){
-      this.player.x+=Math.sin(this.player.yaw)*def.movement/(def.startup/1000)*dt;
-      this.player.z+=Math.cos(this.player.yaw)*def.movement/(def.startup/1000)*dt;
+    const elapsed=this.now-art.releasedAt;this.player.yaw=art.releaseYaw;
+    const travelDt=Math.max(0,Math.min(dt,(def.startup-elapsed+dt*1000)/1000));
+    if(travelDt>0){
+      const travel=art.grades[art.stage]==='Good'?(def.goodMovement??def.movement):def.movement;
+      this.player.x+=(Math.sin(art.releaseYaw)*travel+Math.cos(art.releaseYaw)*(def.sideMovement??0))/(def.startup/1000)*travelDt;
+      this.player.z+=(Math.cos(art.releaseYaw)*travel-Math.sin(art.releaseYaw)*(def.sideMovement??0))/(def.startup/1000)*travelDt;
+      if(def.travelStrike)this.strike(node.damage*artMultiplier(art.grades[art.stage]!),node.break*artMultiplier(art.grades[art.stage]!),node.range,art.grades[art.stage]!,'art-'+art.stage);
       this.bound(this.player);this.resolveBodies();
     }
     if(elapsed>=def.startup&&!art.resolved.has(art.stage)){
       art.resolved.add(art.stage);const grade=art.grades[art.stage]!,power=artMultiplier(grade);
       this.strike(node.damage*power,node.break*power,node.range,grade,'art-'+art.stage);
       this.emit('slash',def.name,this.player,{grade,shape:this.lastContact!.shape,motion:def.motion});
-      if(art.stage+1<def.nodes.length){art.stage++;art.awaitingHold=true;art.releasedAt=null;this.actionEnd=this.now+1600;this.emit('notice','SECOND CUT · hold the same Art button again');}
+      if(art.stage+1<def.nodes.length){art.victims.clear();art.stage++;art.awaitingHold=true;art.releasedAt=null;this.actionEnd=this.now+1600;this.emit('notice','SECOND CUT · hold the same Art button again');}
       else{this.state.set('ArtRecovery');this.actionEnd=this.now+def.recovery;}
     }
   }
@@ -257,6 +271,7 @@ export class CombatSimulation {
     }
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0) continue;
+      if(this.art?.definition.travelStrike&&this.art.releasedAt!==null&&this.art.grades[this.art.stage]==='Perfect'&&this.state.state==='ArtSequence')continue;
       const dx = this.player.x - enemy.x, dz = this.player.z - enemy.z, distance = Math.hypot(dx, dz);
       if (distance < 1 && distance > 0.001) { this.player.x += dx / distance * (1 - distance); this.player.z += dz / distance * (1 - distance); }
     }

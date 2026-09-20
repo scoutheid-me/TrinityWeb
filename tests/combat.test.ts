@@ -5,7 +5,7 @@ import {balance,chargeTime} from '../src/data/balance';
 import {sentinelPatterns} from '../src/data/enemies';
 import {defaultSave,migrateSave} from '../src/save/save';
 const advance=(sim:CombatSimulation,ms:number)=>{for(let t=0;t<ms;t+=10)sim.update(Math.min(10,ms-t));};
-function encounter(){const s=new CombatSimulation();s.flags.freezeAI=true;s.player.z=0;s.enemies[0].z=2;return s;}
+function encounter(){const s=new CombatSimulation();s.progression.learned["crescent-break"]="legacy";s.loadout=["crescent-break",null,null,null];s.flags.freezeAI=true;s.player.z=0;s.enemies[0].z=2;return s;}
 function basic(s:CombatSimulation,offset=0){s.pressAttack();advance(s,chargeTime(s.attributes.dexterity)+offset);s.releaseAttack();advance(s,400);}
 describe('resources and timing',()=>{
  it('generates fixed SP on actual hits and caps at 100',()=>{const s=encounter();basic(s);expect(s.player.sp).toBe(10);s.player.sp=96;basic(s);expect(s.player.sp).toBe(100);expect(gainSp(95,16)).toBe(100);});

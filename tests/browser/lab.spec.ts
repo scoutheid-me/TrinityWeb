@@ -3,10 +3,10 @@ import {test,expect,type Page} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
 declare global {interface Window {trinity:any;}}
 async function ready(page:Page,webgl=false){await page.goto(webgl?'/?webgl':'/');await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await expect(page.locator('#overlay')).toBeHidden();}
-async function setupClose(page:Page){await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.flags.freezeAI=true;s.player.x=0;s.player.z=0;s.player.yaw=0;s.enemies[0].x=0;s.enemies[0].z=2;});}
+async function setupClose(page:Page){await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.progression.learned['crescent-break']='legacy';s.loadout[0]='crescent-break';s.flags.freezeAI=true;s.player.x=0;s.player.z=0;s.player.yaw=0;s.enemies[0].x=0;s.enemies[0].z=2;});}
 test('real controls, assets, timing, Arts, camera, debug and save',async({page},info)=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
- await ready(page);await expect.poll(()=>page.evaluate(()=>window.trinity.view.loadedAssets.length)).toBe(5);
+ await ready(page);await expect.poll(()=>page.evaluate(()=>window.trinity.view.loadedAssets.length)).toBe(6);
  await page.evaluate(()=>window.trinity.sim.flags.invulnerable=true);
  const start=await page.evaluate(()=>window.trinity.sim.player.z);
  await page.keyboard.down('w');await page.waitForTimeout(500);await page.keyboard.up('w');
@@ -147,10 +147,10 @@ test('all tutorial lessons can be completed through combat',async({page})=>{
  await page.keyboard.press('Space');await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();
  await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&e.attackStart+e.pattern.hits[0]-s.now<110;},null,{polling:'raf'});
  await page.keyboard.press('q');await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();
- await page.keyboard.down('1');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>600;},null,{polling:'raf'});await page.keyboard.up('1');
+ await page.keyboard.down('1');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>500;},null,{polling:'raf'});await page.keyboard.up('1');
  await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();
- await page.keyboard.down('1');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>600;},null,{polling:'raf'});await page.keyboard.up('1');await expect(page.locator('#tutorial-next')).toBeEnabled({timeout:5000});
- await page.locator('#tutorial-next').click();await expect(page.locator('#tutorial')).toBeHidden();expect(await page.evaluate(()=>window.trinity.sim.flags.freezeAI)).toBe(false);
+ await page.keyboard.down('1');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>500;},null,{polling:'raf'});await page.keyboard.up('1');await expect(page.locator('#tutorial-next')).toBeEnabled({timeout:5000});
+ await page.locator('#tutorial-next').click();await expect(page.locator('#tutorial')).toBeHidden();expect(await page.evaluate(()=>window.trinity.sim.flags.freezeAI)).toBe(false);expect(await page.evaluate(()=>Object.keys(window.trinity.sim.progression.learned))).toEqual(['focused-strike','linear']);await page.evaluate(()=>window.trinity.persist());
 });
 
 
@@ -220,13 +220,13 @@ test('Guild Footwork unlock, loadout, paused board and reload',async({page})=>{
  await page.keyboard.press('Space');
  await expect(page.locator('#guild-board')).toBeVisible();
  await expect(page.locator('.guild-result')).toContainText('CHALLENGE COMPLETE');
- await expect(page.locator('.guild-reward')).toContainText('Aether Step');await page.locator('.guild-reward summary').click();await expect(page.locator('.guild-reward')).toContainText('A short forward step');
+ await expect(page.locator('.guild-reward')).toContainText('Aether Step');await page.locator('.guild-reward summary').click();await expect(page.locator('.guild-reward')).toContainText('Sidestep right');
  expect(await page.evaluate(()=>window.trinity.sim.progression.learned['aether-step'])).toBe('positioning');
  await page.locator('[data-tab="arts"]').click();await page.locator('[data-equip="1"]').selectOption('aether-step');await page.locator('#guild-equip').click();
  await expect(page.locator('#guild-message')).toHaveText('Loadout saved.');
  await page.locator('#guild-board').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'test-results/guild-board.png'});
  await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();
- expect(await page.evaluate(()=>window.trinity.sim.loadout)).toEqual(['crescent-break','aether-step',null,null]);
+ expect(await page.evaluate(()=>window.trinity.sim.loadout)).toEqual(['focused-strike','aether-step',null,null]);
  await page.locator('#begin').click();await page.locator('header .guild-open').click();
  await expect(page.locator('[data-challenge="breaking"]')).toBeEnabled();
  await page.keyboard.press('Escape');await expect(page.locator('#guild-board')).toBeHidden();

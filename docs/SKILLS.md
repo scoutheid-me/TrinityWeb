@@ -1,19 +1,25 @@
-# Combat Arts and Guild mastery
+# Training skills and equipment
 
-Exactly four unique equipped slots, initially Crescent Break and three empty slots. The paused Guild board edits learned sword Arts between challenges. Save v3 validates ownership and prerequisites; activation rechecks weapon and loadout legality. Invalid saves recover safely. Tutorial practice cannot unlock Arts.
+Fresh characters start with **Focused Strike**. Finishing Ilyra's induction grants **only Linear** as the new reward. Tutorial/debug practice does not advance regular-play unlock counters. Existing v3 characters retain their old Crescent starter.
 
-| Art | Earned from | Cost | Role |
+**Guild Hall Training Room** is planned inside the Town of Beginnings Guild Hall; the town itself is not built. Three weapons are available under **Edit Arts · Weapon rack**: one-handed sword, rapier, two-handed sword. Their basics differ in shape, reach, speed, damage and guard efficiency. Focused Strike and Linear work with all three; other Guild forms currently require the one-handed sword.
+
+| Art | Early acquisition | Regular combat alternative | Unique role |
 | --- | --- | --- | --- |
-| Crescent Break | Starter | 30 SP | Armored committed cut, charge release at 620 ms |
-| Aether Step | Footwork | 20 SP | 3 m approach, narrow charge release at 440 ms, interruptible; no follow-up requirement |
-| Resonant Cleave | Break the guard | 35 SP | 72 base Break, charge release at 820 ms, 600 ms recovery |
-| Stillwater Cut | Counter discipline | 18 SP | Simple fast cut, release at 400 ms; no counter prerequisite |
-| Wayfarer’s Oath | Final Guild Trial | 40 SP | Two cuts: hold/release at 620 ms, then hold/release again at 800 ms |
+| Focused Strike | Starter | Starter | 15 SP, 520 ms hold; compact single-target strike |
+| Linear | Finish induction | 12 basic hits + 2 evades | 25 SP, 680 ms hold; Perfect travels 6 m through a target, Good travels 1 m |
+| Crescent Break | — | 20 basic hits | 30 SP, 620 ms hold; wide multi-target fan |
+| Aether Step | Footwork | 6 evades | 20 SP, 440 ms hold; 2 m right sidestep with diagonal cut, interruptible |
+| Resonant Cleave | Break the guard | 3 Breaks | 35 SP, 820 ms hold; narrow heavy guard-breaker, 600 ms recovery |
+| Stillwater Cut | Counter discipline | 6 Perfect Parries | 18 SP, 400 ms hold; compact cut restores 14 stamina on Perfect hit, 8.4 on Good |
+| Wayfarer's Oath | Final Guild Trial | 8 defeats + 8 parries + 4 Breaks | 40 SP; 620 ms first hold, then 800 ms second hold; two cuts |
 
-All beginner Arts charge while holding their equipped slot button and grade the release of that same button. Perfect applies 100% damage/Break; Good applies 60%; Miss performs no attack and spends the SP. Holding beyond the Good window also fails. Successful release starts the authored lunge/swing, then contact after the definition startup duration. Basics cannot supply the Art timing input. Their movement, arc, interruption protection, animation reference, cancel/counter windows and recovery live in Art data. Damage still applies during protected Arts. Pause/focus loss cancels an unreleased charge and refunds its SP; released swings remain committed. The cyan preview uses the same sector range and arc as damage. Motion references reuse the prototype rigid-part clips; these are not bespoke skinned animation sets.
+Hold an Art button and release on its visual/musical event. Perfect is ±55 ms; Good is within ±120 ms, outside Perfect. Good damage/Break is 60%; Miss does not strike and spends SP. Linear locks direction at release, samples its moving hitbox and hits at most one target once. Arena edges shorten travel. Other Arts strike on their contact frame. Indicators use collision geometry.
 
-Crescent mastery: complete two distinct challenges with a landed Good/Perfect Crescent hit. A unique challenge contributes at most one credit, including replays. Choose 200 ms recovery or +35% Break with 460 ms recovery; modifiers do not stack, and may be changed between challenges. Whiffs and practice/debug sessions provide no credit. Challenge telemetry and earned sources are separate from lifetime counters.
+Four unique learned, compatible slots can be edited on the HUD or Guild journal. Expanded cards show current-Strength damage, Break, travel, hold windows, shape, targets, recovery, protection and fixed-scale radar charts. Download the bank from either menu: `/data/skill-bank.json`. `npm run export:skills` regenerates it from definitions; every build runs the export.
 
-Future acquisition tiers, trainers, branching inputs, additional weapon categories and secret quest discoveries remain in the broader design. The current weapon is a sword; no equipment inventory or hidden-quest system is implemented.
+Crescent mastery requires a landed Crescent hit in two distinct completed trials: choose 200 ms recovery or +35% Break with 460 ms recovery. The final trial grants the Wayfarer title. The second Oath hold must start within 1.6 seconds of first contact. Missing ends the remaining chain; cancelling after contact does not refund SP.
 
-The final trial also earns the visible Wayfarer title. Oath deals 45 + 65 base damage and 20 + 30 Break before grade/stat modifiers. Each release is graded independently; a miss ends the remaining chain and never undoes a hit already landed. The second hold must begin within 1.6 seconds of the first contact. Pausing before the first release refunds SP; cancelling after the first strike never refunds the shared cost. Old saves with the final trial completed acquire the new reward through progression validation. Stillwater retains its original save ID for compatibility.
+First person supports held mouse-look and arrow keys. Target lock automatically faces the enemy. The personal journal stays live; explicit pause and focus loss still pause safely.
+
+Weapons are original Blender exports. Motion reuses the prototype rigid-part rig. Dedicated two-handed grips, skinned first-person hands, impact polish, inventory and outdoor progression remain future work.

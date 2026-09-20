@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+test('three weapons, direct Art editor, responsive skill profiles and first-person lock',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/?webgl');await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();
+ await page.evaluate(()=>{window.trinity.sim.flags.freezeAI=true;});
+ await page.locator('#edit-arts').click();await expect(page.locator('#rack-weapon option')).toHaveCount(3);
+ for(const id of ['rapier','greatsword','sword']){await page.locator('#rack-weapon').selectOption(id);await expect.poll(()=>page.evaluate(()=>window.trinity.view.equippedWeapon)).toBe(id);}
+ await page.evaluate(()=>{window.trinity.sim.progression.tutorialCompleted=true;window.trinity.sim.progression.learned.linear='induction';window.trinity.loadoutTray.open(1);});
+ await page.locator('#quick-art').selectOption('linear');await page.locator('#quick-equip').click();
+ expect(await page.evaluate(()=>window.trinity.sim.loadout[1])).toBe('linear');
+ await page.locator('#quick-card summary').click();await expect(page.locator('#quick-card svg')).toBeVisible();
+ await expect(page.locator('#quick-card')).toContainText('6.00 / 1.00 m');
+ await page.screenshot({path:'test-results/skill-bank.png'});
+ await page.setViewportSize({width:640,height:720});await page.screenshot({path:'test-results/skill-bank-compact.png'});
+ expect(await page.locator('#loadout-tray').evaluate(e=>e.scrollWidth<=e.clientWidth+1)).toBe(true);
+ await page.locator('#tray-close').click();await page.setViewportSize({width:1440,height:900});await page.locator('#perspective').click();
+ const alpha=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.keyboard.down('ArrowRight');await page.waitForTimeout(250);await page.keyboard.up('ArrowRight');
+ expect(Math.abs(await page.evaluate(()=>window.trinity.view.camera.alpha)-alpha)).toBeGreaterThan(.1);
+ await page.evaluate(()=>{const s=window.trinity.sim;s.player.x=0;s.player.z=0;s.enemies[0].x=2;s.enemies[0].z=2;s.lockedId=s.enemies[0].id;});
+ await expect.poll(()=>page.evaluate(()=>{const t=window.trinity,v=t.view,s=t.sim;const desired=Math.atan2(s.target.z-s.player.z,s.target.x-s.player.x)+Math.PI;return Math.abs(Math.atan2(Math.sin(v.camera.alpha-desired),Math.cos(v.camera.alpha-desired)));})).toBeLessThan(.03);
+ await page.screenshot({path:'test-results/first-person-weapon.png'});
+ const bank=await page.request.get('/data/skill-bank.json');expect(bank.ok()).toBe(true);const data=await bank.json();expect(data.weapons).toHaveLength(3);expect(data.skills).toHaveLength(7);
+ expect(await page.evaluate(()=>window.trinity.view.assetErrors)).toEqual([]);expect(errors).toEqual([]);
+});

@@ -86,3 +86,9 @@ Keep the original 1080p/60 FPS target and 45 FPS prototype floor. Existing short
 Each stage requires unit tests for rules/migrations, real browser interactions, screenshot review, and an honest human playtest before calling combat feel complete. See `COMBAT_AUDIT.md` for the detailed baseline gaps.
 
 **Next gate:** playtest the Guild Trial and charge/release combat, then camera/offscreen-pressure checks, audio/accessibility calibration and authored reactions. Keep the work inside the existing hall until those gates pass.
+
+## September 20 scope update
+
+Training progression now starts with a small single-target Focused Strike and awards Linear on induction completion. Three test weapons only: one-handed sword, rapier and two-handed sword. Direct HUD slot editing, skill radar/stat cards, regular-combat skill acquisition and a downloadable bank support this slice. First-person rotation and automatic locked-target orientation are implemented.
+
+Next priority: weapon-specific contact/grip animations and first-person hands, then a small walkable Guild foyer with Ilyra and a physical rack. Link that space to a minimal Town of Beginnings street and a first outdoor encounter using the same saved skills. Preserve the current training room as a replayable teaching space. Do not expand weapon count before these three feel distinct and readable in human playtests.

@@ -25,3 +25,10 @@ These instructions apply to the Combat Lab and all future work in this repositor
 - If Blender MCP is unavailable or fails, diagnose the tool/connection state and attempt reasonable available corrections. Use available repository Blender automation where appropriate, or continue gameplay with clearly documented temporary placeholders. Never claim an uncreated or untested production asset is complete; revisit placeholders when tooling is restored.
 
 Keep this section persistent so future sessions do not need the user to repeat these rules.
+
+## Current training scope
+
+- Fresh characters begin with Focused Strike; induction awards only Linear. Keep normal-combat unlocks separate from tutorial/debug practice.
+- Limit the test rack to one-handed sword, rapier and two-handed sword. Focused Strike and Linear are shared training forms; other Guild forms currently require the one-handed sword.
+- Call the location Guild Hall Training Room, planned in the Town of Beginnings Guild Hall. Do not imply the surrounding town is implemented.
+- Regenerate the downloadable skill bank from balance data with `npm run export:skills`; builds do this automatically. See `docs/SKILLS.md` and `docs/BLENDER_MCP_SETUP.md`.
