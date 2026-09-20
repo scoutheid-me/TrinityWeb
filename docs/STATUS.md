@@ -1,3 +1,15 @@
+# September 20: overhead greatsword and floating equipment interface
+
+The greatsword now deals 12 base damage (15 at Strength 10), compared with the one-handed sword's 4 base. Its slower 420 ms nominal wind-up and 520 ms recovery accompany a dedicated overhead cut. A 2.2 m by 0.96 m forward footprint replaces the wide fan, with blade-edge orientation corrected in both perspectives. Both hand constraints remain intact.
+
+The M menu now presents an original silhouette/equipment window, inspectable weapon and cosmetic attire sockets, circular icon rail and hover/focus/click character branches. Combat Arts can be edited directly from the character branch. First-person panels remain translucent, viewport-mounted and live, including right-drag camera movement over the windows. HP, SP and stamina now form one stepped status display inspired by the preserved reference sheets. All six additional image attachments were archived under References/HUD; they are reference material only. Final visual checks are under docs/screenshots.
+
+Validation: 94 unit tests pass. All 21 browser scenarios passed across regression and focused runs, including the full tutorial and Guild journey, equipment branching, actual weapon stats, movement while the personal menu is open, and both-hand grip checks through complete basic/Art cycles in both views (under 1 cm separation). One old camera test clicked the new icon rail; it now closes the menu before arena drag and passes. Desktop and compact layouts plus both weapon perspectives were visually inspected and iterated. TypeScript/Vite build and the production startup check pass with the pre-existing bundle-size warning.
+
+Limits: the interface is an original reference-inspired DOM artifact, not a world-occluded 3D panel. The character remains the stylized rigid-part prototype with procedural grip-driven motion; this does not establish production/AAA animation quality. Cosmetic attire is identified as such.
+
+---
+
 # September 20: physical armory, two-handed grip and personal menu
 
 The hall now starts empty. Lessons and Guild trials explicitly spawn opponents; reset, tutorial exit and completed-trial cleanup return to an empty room. Weapon selection moved out of the HUD Art editor and into a proximity-gated physical rack (G / Interact). Walking away closes the rack.

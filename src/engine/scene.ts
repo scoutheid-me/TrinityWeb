@@ -1,3 +1,4 @@
+import {greatswordPose} from './greatswordMotion';
 import {holdGrip} from './twoHandGrip';
 import {weaponRack} from '../data/room';
 import {weapons} from '../data/weapons';
@@ -5,7 +6,7 @@ import {artShape,chargeDuration} from '../data/arts';
 import {duelPose} from './duelMotion';
 import {HitIndicator} from './hitIndicator';
 import {enemyPhase} from '../combat/timeline';
-import { AbstractEngine, ArcRotateCamera, FreeCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
+import { Quaternion, AbstractEngine, ArcRotateCamera, FreeCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import glslangJs from '@babylonjs/core/assets/glslang/glslang.js?url';
 import glslangWasm from '@babylonjs/core/assets/glslang/glslang.wasm?url';
@@ -192,11 +193,18 @@ export class LabScene {
     if(this.player.rightArm){this.player.rightArm.rotation.y=pose?.yaw??0;if(pose)this.player.rightArm.rotation.x=pose.pitch;}
     if(this.firstWeapon){this.firstWeapon.setEnabled(this.firstPerson);this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.45;this.firstWeapon.rotation.z=(pose?.yaw??0)*.25;}
     for(const arm of [this.player.leftArm,this.player.rightArm]){if(!arm)continue;const elbow=arm.getDescendants().find(n=>n.name.endsWith('_elbow')) as TransformNode|undefined;if(elbow)elbow.rotationQuaternion=null;}
-    if(this.equippedWeapon==='greatsword'){
-      const sword=this.player.sword;sword.rotation.set(-.95+(pose?.pitch??0)*.55,(pose?.yaw??0)*.75,0);
-      for(const side of ['left','right'] as const){const arm=side==='left'?this.player.leftArm:this.player.rightArm;if(arm)holdGrip(arm,sword,side);}
-      if(this.firstWeapon){this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.3;this.firstWeapon.rotation.z=(pose?.yaw??0)*.25;}
-    }
+      if(this.equippedWeapon==='greatsword'){
+        let heavy={pitch:-.95,lift:0};
+        if(state==='BasicAttackStartup')heavy=greatswordPose(sim.now,sim.actionStart,sim.actionEnd);
+        else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact){const at=sim.lastContact.at;heavy=greatswordPose(sim.now<sim.hitStopUntil?at:sim.now,at-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87,at);}
+        else if(pose)heavy={pitch:-.95+pose.pitch*.55,lift:0};
+        // The authored edge is local X; roll 90 degrees so the edge, not the flat,
+        // leads the vertical Y/Z cutting plane. Keep the grip sockets on local Z.
+        const orientation=Quaternion.RotationAxis(Vector3.Right(),heavy.pitch).multiply(Quaternion.RotationAxis(Vector3.Forward(),Math.PI/2));
+        const sword=this.player.sword;sword.position.set(0,1.28+heavy.lift,.20);sword.rotationQuaternion=orientation;
+        for(const side of ['left','right'] as const){const arm=side==='left'?this.player.leftArm:this.player.rightArm;if(arm)holdGrip(arm,sword,side);}
+        if(this.firstWeapon){this.firstWeapon.position.set(.14,-.30+heavy.lift*.65,-.48);this.firstWeapon.rotationQuaternion=Quaternion.RotationAxis(Vector3.Up(),Math.PI).multiply(orientation);}
+      }
     for(const [i,arm] of this.firstArms.entries()){arm.setEnabled(this.firstPerson&&this.equippedWeapon==='greatsword');if(this.firstWeapon&&this.equippedWeapon==='greatsword')holdGrip(arm,this.firstWeapon,i===0?'left':'right');}
     const artCue=!!sim.art&&sim.art.grades[sim.art.stage]===null&&Math.abs(sim.now-sim.art.start-chargeDuration(sim.art.definition,sim.art.stage))<=balance.timing.perfect;
     this.timingFlash.setEnabled(artCue);

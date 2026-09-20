@@ -112,3 +112,7 @@ For interactive Blender access, see [BLENDER_MCP_SETUP.md](BLENDER_MCP_SETUP.md)
 ## Articulated two-handed grip
 
 `Tools/Blender/articulated_arms.py` defines the Wayfarer's shoulder/elbow hierarchy (two 0.32 m segments). `build_player_arms.py` upgrades only the player source and GLB; `build_lab.py` also uses the shared hierarchy for full rebuilds. `twoHandGrip.ts` solves both hands to separate greatsword grip points every pose update. The weapon drives the shared swing, and both arms follow it; first-person arm clones use the same exported geometry. This remains a rigid-part prototype rig, not a skinned production character. Blender MCP was not exposed in this session, so regeneration used the installed headless Blender executable.
+
+## Greatsword edge orientation
+
+The training blade's broad axis is local X, thickness is Y and length is Z. A 90-degree local-Z roll aligns its cutting edge to the runtime vertical swing plane. greatswordMotion.ts samples the simulation deadline, including impact hold, while scene.ts composes the orientation in each perspective. Runtime transforms are intentional: no mesh export change is needed. Blender MCP tool discovery returned no exposed tools for this pass; the existing Blender-authored meshes and articulated elbows are retained.

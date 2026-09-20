@@ -15,6 +15,7 @@ test('real controls, assets, timing, Arts, camera, debug and save',async({page},
  await page.keyboard.down('Shift');await page.keyboard.down('w');await page.waitForTimeout(300);await page.keyboard.up('w');await page.keyboard.up('Shift');
  expect(await page.evaluate(()=>window.trinity.sim.player.stamina)).toBeLessThan(stamina);
  await page.keyboard.press('Tab');expect(await page.evaluate(()=>window.trinity.sim.lockedId)).not.toBeNull();
+ await page.keyboard.press('m'); // Close the equipment artifact before dragging through the arena.
  const alpha=await page.evaluate(()=>window.trinity.view.camera.alpha);
  await page.keyboard.press('Tab');await page.mouse.move(700,420);await page.mouse.down({button:'right'});await page.mouse.move(810,450,{steps:10});await page.mouse.up({button:'right'});
  expect(Math.abs(await page.evaluate(()=>window.trinity.view.camera.alpha)-alpha)).toBeGreaterThan(.1);

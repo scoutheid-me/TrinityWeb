@@ -20,6 +20,13 @@ export class GameInput {
       if(!this.enabled||this.suspended)return;e.preventDefault();view.canvas.focus();
       this.pointerX=e.clientX;this.pointerY=e.clientY;this.down(`Mouse${e.button}`);
     });
+    // A live personal window accepts UI clicks while camera drag remains available.
+    window.addEventListener('pointerdown',e=>{
+      if(e.target===view.canvas||!this.view.firstPerson||!this.enabled||this.suspended||this.actionFor(`Mouse${e.button}`)!=='orbit')return;
+      if(!(e.target as HTMLElement).closest('#personal-artifact,header,#controls-menu,#guild-board,#loadout-tray'))return;
+      e.preventDefault();this.pointerX=e.clientX;this.pointerY=e.clientY;this.down(`Mouse${e.button}`);
+    });
+    window.addEventListener('contextmenu',e=>{if(this.view.firstPerson&&(e.target as HTMLElement).closest('#ui'))e.preventDefault();});
     window.addEventListener('pointerup',e=>this.up(`Mouse${e.button}`));
     window.addEventListener('pointermove',e=>{
       const dx=e.clientX-this.pointerX,dy=e.clientY-this.pointerY;this.pointerX=e.clientX;this.pointerY=e.clientY;

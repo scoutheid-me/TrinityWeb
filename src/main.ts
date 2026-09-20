@@ -1,9 +1,11 @@
+import {PersonalMenu} from './ui/personalMenu';
 import {WeaponRack} from './ui/weaponRack';
 import {LoadoutTray} from './ui/loadout';
 import {installGlossary} from './ui/glossary';
 import {GuildBoard} from './ui/guild';
 import './style.css';
 import './interface.css';
+import './personal-interface.css';
 import {CombatTutorial} from './ui/tutorial';
 import {Matrix,Vector3} from '@babylonjs/core';
 import {CombatSimulation} from './combat/simulation';
@@ -41,9 +43,10 @@ async function main(){
   guild=new GuildBoard(sim,setPaused,()=>void persist(),()=>view.firstPerson);
   for(const parent of [hud.root.querySelector('header')!,hud.root.querySelector('.intro')!]){const b=document.createElement('button');b.className='quiet guild-open';b.textContent='Guild journal';b.onclick=()=>{if(tutorial.active)tutorial.exit();guild!.open();};parent.append(b);}
   const perspective=document.createElement('button');perspective.id='perspective';perspective.className='quiet';perspective.textContent='First person';perspective.onclick=()=>{view.togglePerspective();perspective.textContent=view.firstPerson?'Third person':'First person';perspective.setAttribute('aria-pressed',String(view.firstPerson));document.getElementById('ui')!.classList.toggle('first-person',view.firstPerson);view.canvas.setAttribute('aria-label',view.firstPerson?'Trinity first-person combat arena':'Trinity third-person combat arena');hud.notice(view.firstPerson?'Hold '+bindingText(input.bindings,'orbit')+' or arrow keys to look · Tab locks facing':'Third-person view');if(guild?.visible)guild.open();view.update(sim,.016);perspective.blur();view.canvas.focus();};hud.root.querySelector('header')!.append(perspective);
-  function togglePersonalMenu(){const open=hud.root.classList.toggle('personal-menu-open');if(!open){controls?.close();if(guild?.visible)guild.close();}view.canvas.focus();}
+  function togglePersonalMenu(){const open=hud.root.classList.toggle('personal-menu-open');if(!open){controls?.close();if(guild?.visible)guild.close();const tray=document.getElementById('loadout-tray');if(tray)tray.hidden=true;}view.canvas.focus();}
   const menuButton=document.createElement('button');menuButton.id='personal-menu-toggle';menuButton.textContent='M · Menu';menuButton.onclick=togglePersonalMenu;hud.root.querySelector('header')!.append(menuButton);
   const loadoutTray=new LoadoutTray(sim,()=>void persist());const editArts=document.createElement('button');editArts.id='edit-arts';editArts.textContent='Edit Arts';editArts.onclick=()=>loadoutTray.open();hud.root.querySelector('.arts-panel')!.prepend(editArts);
+  const personalMenu=new PersonalMenu(sim,()=>loadoutTray.open());
   rack=new WeaponRack(sim,()=>input.bindings,()=>void persist());
   const musicLabel=document.createElement('label');musicLabel.innerHTML='<input id="timing-music" type="checkbox"> Musical timing cues';hud.el('debug').append(musicLabel);
   hud.input('timing-music').checked=audio.timingMusic;hud.input('timing-music').onchange=()=>{audio.timingMusic=hud.input('timing-music').checked;audio.stopTiming();void persist();};
@@ -79,7 +82,7 @@ async function main(){
       }sim.events=[];
       if(sim.player.hp<=0){hud.notice(`You fell · Press ${bindingText(input.bindings,'reset')} to rise again`);}
     }
-    menuButton.textContent=bindingText(input.bindings,'menu')+' · Menu';guild.observe();rack.update(!paused&&!guild.visible);hud.update(view);view.scene.render();
+    menuButton.textContent=bindingText(input.bindings,'menu')+' · Menu';personalMenu.update();guild.observe();rack.update(!paused&&!guild.visible);hud.update(view);view.scene.render();
     if(performance.now()-lastSave>5000){lastSave=performance.now();void persist();}
   });
   // Stable development-only automation surface: tests use the real simulation and renderer.

@@ -46,15 +46,15 @@
     {
       "id": "greatsword",
       "name": "Two-handed sword",
-      "description": "Long, heavy swings with exposed recovery.",
-      "damage": 7,
-      "startup": 210,
-      "recovery": 430,
+      "description": "A powerful overhead cut down a narrow lane; slow wind-up and exposed recovery.",
+      "damage": 12,
+      "startup": 420,
+      "recovery": 520,
       "break": 5,
       "shape": {
-        "kind": "sector",
-        "range": 3.5,
-        "halfArc": 1.05
+        "kind": "box",
+        "range": 2.2,
+        "halfWidth": 0.48
       },
       "guard": 0.25,
       "model": "/assets/weapons/training_greatsword.glb"

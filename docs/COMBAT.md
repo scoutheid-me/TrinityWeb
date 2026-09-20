@@ -43,3 +43,7 @@ Blender-authored rigid-joint clips now replace generic sine-wave attack motion. 
 Audio and the defensive HUD now share the imminent-skill selector. Ground footprints show all attacking enemies rather than silently selecting just one.
 
 Wayfarer’s Oath is the first paired Art, earned only by completing all Guild trials. Each cut has a separate hold/release charge; after contact one, press and hold the same Art button within 1.6 seconds. Good/Perfect/Miss rules apply to each event. Missing the follow-up ends the chain without undoing the first hit; pausing/cancelling after a landed cut does not refund SP. Basic learned Arts no longer require a prior counter or a special dodge cancel.
+
+## Two-handed overhead basic
+
+The training greatsword uses 12 base damage (15 at Strength 10), a 420 ms nominal startup scaled by Dexterity, and 520 ms recovery. This compares with 4 base damage for the one-handed sword and 3 for the rapier. It remains untimed and grants the usual 10 SP only on contact. Its footprint is a 2.2 m forward box, 0.96 m wide, matching a vertical cut rather than the former broad fan. The dedicated motion lifts into anticipation, accelerates down through the contact deadline, follows through and returns to guard. Both hands stay constrained to the existing Blender-authored grip/arm hierarchy.
