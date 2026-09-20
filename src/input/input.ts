@@ -5,11 +5,12 @@ export class GameInput {
   private lookAt=performance.now();
   keys=new Set<string>(); sensitivity=1; enabled=false; suspended=false; dragging=false; pointerX=0; pointerY=0;
   bindings=defaultBindings();
-  constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void){
+  constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void,private interact:()=>void=()=>{},private menu:()=>void=()=>{}){
     window.addEventListener('keydown',e=>{
       if(this.suspended)return;
       if(e.code==='Escape'){e.preventDefault();if(!e.repeat)this.togglePause();return;}
-      if((e.target as HTMLElement).closest('input,select,textarea'))return;
+      if((e.target as HTMLElement).closest('input:not([type="checkbox"]),select,textarea'))return;
+      if((e.target as HTMLElement).matches('input[type="checkbox"]')&&['Space','Enter'].includes(e.code))return;
       if(this.view.firstPerson&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)){e.preventDefault();this.keys.add(e.code);return;}
       const action=this.actionFor(e.code);if(!action||e.ctrlKey||e.altKey||e.metaKey)return;
       e.preventDefault();if(e.repeat)return;this.down(e.code);
@@ -22,8 +23,8 @@ export class GameInput {
     window.addEventListener('pointerup',e=>this.up(`Mouse${e.button}`));
     window.addEventListener('pointermove',e=>{
       const dx=e.clientX-this.pointerX,dy=e.clientY-this.pointerY;this.pointerX=e.clientX;this.pointerY=e.clientY;
-      if(!this.enabled||this.suspended||!this.held('orbit')||this.view.firstPerson&&this.sim.target)return;
-      this.view.camera.alpha-=dx*.004*this.sensitivity;this.view.camera.beta=Math.max(this.view.firstPerson?.3:.4,Math.min(this.view.firstPerson?2.8:1.4,this.view.camera.beta+dy*.003*this.sensitivity));
+      if(!this.enabled||this.suspended||!this.held('orbit')||this.sim.autoFaceTarget&&this.sim.target)return;
+      this.view.camera.alpha+=dx*.004*this.sensitivity;this.view.camera.beta=Math.max(this.view.firstPerson?.3:.4,Math.min(this.view.firstPerson?2.8:1.4,this.view.camera.beta-dy*.003*this.sensitivity));
     });
     view.canvas.addEventListener('contextmenu',e=>e.preventDefault());
     view.canvas.addEventListener('wheel',e=>{e.preventDefault();if(this.enabled&&!this.suspended)view.cameraDistance=Math.max(3.5,Math.min(11,view.cameraDistance+e.deltaY*.005));},{passive:false});
@@ -33,8 +34,9 @@ export class GameInput {
   held(action:Action){return this.bindings[action].some(code=>code!==null&&this.keys.has(code));}
   private down(code:string){
     if(this.suspended)return;const action=this.actionFor(code);if(!action)return;
-    if(action==='pause'){this.togglePause();return;}if(action==='debug'){this.toggleDebug();return;}
+    if(action==='menu'){this.menu();return;}if(action==='pause'){this.togglePause();return;}if(action==='debug'){this.toggleDebug();return;}
     if(!this.enabled)return;this.sync();this.unlock();const already=this.held(action);this.keys.add(code);this.updateMovement();if(already)return;
+    if(action==='interact')this.interact();
     if(action==='attack')this.sim.pressAttack();if(action==='dodge')this.sim.dodge();if(action==='parry')this.sim.parry();
     if(action==='lock')this.sim.toggleLock();if(action==='switchTarget')this.sim.toggleLock(true);if(action==='reset')this.sim.reset();
     if(action.startsWith('art'))this.sim.activateArt(Number(action.at(-1))-1);
@@ -50,7 +52,7 @@ export class GameInput {
   updateMovement(){
     if(!this.enabled||this.suspended){this.clear();return;}
     const lookNow=performance.now(),lookDt=Math.min(.05,(lookNow-this.lookAt)/1000);this.lookAt=lookNow;
-    if(this.view.firstPerson&&!this.sim.target){this.view.camera.alpha+=(Number(this.keys.has('ArrowLeft'))-Number(this.keys.has('ArrowRight')))*1.8*lookDt;this.view.camera.beta=Math.max(.3,Math.min(2.8,this.view.camera.beta+(Number(this.keys.has('ArrowDown'))-Number(this.keys.has('ArrowUp')))*1.5*lookDt));}
+    if(this.view.firstPerson&&(!this.sim.target||!this.sim.autoFaceTarget)){this.view.camera.alpha+=(Number(this.keys.has('ArrowLeft'))-Number(this.keys.has('ArrowRight')))*1.8*lookDt;this.view.camera.beta=Math.max(.3,Math.min(2.8,this.view.camera.beta+(Number(this.keys.has('ArrowDown'))-Number(this.keys.has('ArrowUp')))*1.5*lookDt));}
     const forward=Number(this.held('forward'))-Number(this.held('backward')),right=Number(this.held('right'))-Number(this.held('left'));
     this.sim.input={...movementIntent(this.view.camera.alpha,forward,right),sprint:this.held('sprint'),guard:this.held('guard')};
   }

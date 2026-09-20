@@ -5,7 +5,7 @@ import {balance,chargeTime} from '../src/data/balance';
 import {sentinelPatterns} from '../src/data/enemies';
 import {defaultSave,migrateSave} from '../src/save/save';
 const advance=(sim:CombatSimulation,ms:number)=>{for(let t=0;t<ms;t+=10)sim.update(Math.min(10,ms-t));};
-function encounter(){const s=new CombatSimulation();s.progression.learned["crescent-break"]="legacy";s.loadout=["crescent-break",null,null,null];s.flags.freezeAI=true;s.player.z=0;s.enemies[0].z=2;return s;}
+function encounter(){const s=combatFixture();s.progression.learned["crescent-break"]="legacy";s.loadout=["crescent-break",null,null,null];s.flags.freezeAI=true;s.player.z=0;s.enemies[0].z=2;return s;}
 function basic(s:CombatSimulation,offset=0){s.pressAttack();advance(s,chargeTime(s.attributes.dexterity)+offset);s.releaseAttack();advance(s,400);}
 describe('resources and timing',()=>{
  it('generates fixed SP on actual hits and caps at 100',()=>{const s=encounter();basic(s);expect(s.player.sp).toBe(10);s.player.sp=96;basic(s);expect(s.player.sp).toBe(100);expect(gainSp(95,16)).toBe(100);});
@@ -29,8 +29,8 @@ describe('encounter',()=>{
   const run=(perfect:boolean)=>{const s=encounter();s.player.sp=100;s.activateArt(0);const art=s.art!;if(perfect)for(const node of art.definition.nodes){advance(s,node.at-(s.now-art.start));s.releaseArt(0);}advance(s,2800-(s.now-art.start));return s;};
   const p=run(true),m=run(false);expect(p.enemies[0].hp).toBeLessThan(m.enemies[0].hp);expect(p.counters.perfects).toBe(1);expect(p.player.sp).toBe(70);expect(p.state.state).toBe('Idle');
  });
- it('handles enemy death once, player death, and reset',()=>{const s=encounter();s.hitEnemy(s.enemies[0],999,0,'Perfect','kill');s.hitEnemy(s.enemies[0],999,0,'Perfect','again');expect(s.counters.kills).toBe(1);expect(s.enemies[0].state).toBe('Dead');s.player.hp=1;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.state.state).toBe('Dead');expect(s.player.hp).toBe(0);s.reset();expect(s.state.state).toBe('Idle');expect(s.enemies[0].hp).toBe(460);expect(s.player.hp).toBe(s.hpMax);});
- it('enemy approaches, telegraphs and damages the player',()=>{const s=new CombatSimulation();advance(s,7000);expect(s.player.hp).toBeLessThan(s.hpMax);expect(s.enemies[0].nextPattern).toBeGreaterThan(0);});
+ it('handles enemy death once, player death, and reset',()=>{const s=encounter();s.hitEnemy(s.enemies[0],999,0,'Perfect','kill');s.hitEnemy(s.enemies[0],999,0,'Perfect','again');expect(s.counters.kills).toBe(1);expect(s.enemies[0].state).toBe('Dead');s.player.hp=1;s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.state.state).toBe('Dead');expect(s.player.hp).toBe(0);s.reset();expect(s.state.state).toBe('Idle');expect(s.enemies).toHaveLength(0);expect(s.player.hp).toBe(s.hpMax);});
+ it('enemy approaches, telegraphs and damages the player',()=>{const s=combatFixture();advance(s,7000);expect(s.player.hp).toBeLessThan(s.hpMax);expect(s.enemies[0].nextPattern).toBeGreaterThan(0);});
  it('volume rejects enemies behind the player or outside range',()=>{expect(inHitVolume(0,0,0,0,-2,3,1.4)).toBe(false);expect(inHitVolume(0,0,0,0,4,3,1.4)).toBe(false);expect(inHitVolume(0,0,0,1,2,3,1.4)).toBe(true);const hits=new HitRegistry();expect(hits.accept('a','e')).toBe(true);expect(hits.accept('a','e')).toBe(false);expect(hits.accept('b','e')).toBe(true);});
  it('bounded updates prevent focus-loss catchup',()=>{const s=encounter();s.update(10000);expect(s.now).toBeCloseTo(100);});
 });
@@ -70,7 +70,7 @@ describe('counter risk and combat audit',()=>{
  it('punishes wrong-facing and unparryable attempts and permits lethal failure',()=>{
  const s=encounter();s.player.yaw=Math.PI;s.parry();s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBe(s.hpMax-36);
  const sweep=encounter();sweep.parry();sweep.receiveAttack(sweep.enemies[0],sentinelPatterns[2]);expect(sweep.player.hp).toBe(sweep.hpMax-54);
- const lethal=encounter();lethal.player.hp=30;lethal.parry();advance(lethal,300);lethal.receiveAttack(lethal.enemies[0],sentinelPatterns[0]);expect(lethal.state.state).toBe('Dead');lethal.reset();lethal.receiveAttack(lethal.enemies[0],sentinelPatterns[0]);expect(lethal.player.hp).toBe(lethal.hpMax-24);
+ const lethal=encounter();lethal.player.hp=30;lethal.parry();advance(lethal,300);lethal.receiveAttack(lethal.enemies[0],sentinelPatterns[0]);expect(lethal.state.state).toBe('Dead');lethal.reset();lethal.spawnEnemy();lethal.receiveAttack(lethal.enemies[0],sentinelPatterns[0]);expect(lethal.player.hp).toBe(lethal.hpMax-24);
  });
  it('does not punish a rejected counter or later unrelated damage',()=>{
  const s=encounter();s.player.stamina=0;expect(s.parry()).toBe(false);s.receiveAttack(s.enemies[0],sentinelPatterns[0]);expect(s.player.hp).toBe(s.hpMax-24);
@@ -92,3 +92,5 @@ describe('hold and release Arts',()=>{
  it('holding indefinitely fails without attacking or moving',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,1800);expect(s.enemies[0].hp).toBe(460);expect(s.player.z).toBe(0);expect(s.state.state).toBe('Idle');expect(s.player.sp).toBe(0);});
  it('cancels an unreleased charge with a refund but cannot cancel a released strike',()=>{const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,300);s.cancelArtCharge();expect(s.art).toBeNull();expect(s.player.sp).toBe(30);s.activateArt(0);advance(s,620);s.releaseArt(0);s.cancelArtCharge();expect(s.art).not.toBeNull();expect(s.player.sp).toBe(0);});
 });
+
+function combatFixture(){const sim=new CombatSimulation();sim.spawnEnemy();return sim;}

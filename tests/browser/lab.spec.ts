@@ -2,8 +2,8 @@ import {sentinelPatterns} from '../../src/data/enemies';
 import {test,expect,type Page} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
 declare global {interface Window {trinity:any;}}
-async function ready(page:Page,webgl=false){await page.goto(webgl?'/?webgl':'/');await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await expect(page.locator('#overlay')).toBeHidden();}
-async function setupClose(page:Page){await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.progression.learned['crescent-break']='legacy';s.loadout[0]='crescent-break';s.flags.freezeAI=true;s.player.x=0;s.player.z=0;s.player.yaw=0;s.enemies[0].x=0;s.enemies[0].z=2;});}
+async function ready(page:Page,webgl=false){await page.goto(webgl?'/?webgl':'/');await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await expect(page.locator('#overlay')).toBeHidden();await page.evaluate(()=>window.trinity.sim.spawnEnemy());await page.keyboard.press('m');}
+async function setupClose(page:Page){await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.spawnEnemy();s.progression.learned['crescent-break']='legacy';s.loadout[0]='crescent-break';s.flags.freezeAI=true;s.player.x=0;s.player.z=0;s.player.yaw=0;s.enemies[0].x=0;s.enemies[0].z=2;});}
 test('real controls, assets, timing, Arts, camera, debug and save',async({page},info)=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await ready(page);await expect.poll(()=>page.evaluate(()=>window.trinity.view.loadedAssets.length)).toBe(6);
@@ -61,7 +61,7 @@ test('live enemy parry, dodge, Break, deaths, restart and focus pause',async({pa
  await expect(page.locator('#enemy-state')).toContainText('BROKEN');
  await page.evaluate(()=>{const s=window.trinity.sim;s.enemies[0].hp=1;s.state.reset();s.player.x=0;s.player.z=0;s.enemies[0].z=2;s.player.yaw=0;});
  await page.keyboard.press('j');await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(0);
- await page.keyboard.press('r');expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(460);
+ await page.keyboard.press('r');expect(await page.evaluate(()=>window.trinity.sim.enemies.length)).toBe(0);await page.evaluate(()=>window.trinity.sim.spawnEnemy());
  await page.evaluate(()=>{const s=window.trinity.sim;s.flags.freezeAI=false;s.player.hp=1;s.player.z=0;s.enemies[0].z=2;s.enemies[0].until=0;});
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state),{timeout:5000}).toBe('Dead');
  await page.keyboard.press('r');expect(await page.evaluate(()=>window.trinity.sim.player.hp)).toBe(200);
@@ -79,7 +79,7 @@ test('1080p render benchmark and repeated reset remain stable',async({page},info
  });
  writeFileSync('test-results/performance-1080p.json',JSON.stringify(sample,null,2));await info.attach('performance-1080p.json',{body:JSON.stringify(sample),contentType:'application/json'});
  for(let i=0;i<5;i++){await page.keyboard.press('r');await page.keyboard.press('Tab');await page.waitForTimeout(80);}
- expect(await page.evaluate(()=>window.trinity.sim.enemies.length)).toBe(1);
+ expect(await page.evaluate(()=>window.trinity.sim.enemies.length)).toBe(0);
  expect(await page.evaluate(()=>window.trinity.view.assetErrors)).toEqual([]);
  await page.evaluate(()=>{window.trinity.sim.reset();window.trinity.sim.flags.freezeAI=true;});await page.waitForTimeout(500);
  await page.screenshot({path:'test-results/combat-lab-1080p.png'});
@@ -159,7 +159,7 @@ test('enemy basics are animation-led and player Art suppresses competing cues',a
  await page.evaluate(()=>{const s=window.trinity.sim;s.flags.freezeAI=false;s.enemies[0].until=0;});
  await page.waitForFunction(()=>window.trinity.sim.enemies[0].pattern?.kind==='basic');
  await expect(page.locator('#defense-cue')).toBeHidden();expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toEqual([]);
- await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.player.z=0;s.enemies[0].z=2;s.enemies[0].nextPattern=1;s.enemies[0].until=0;s.player.sp=30;});
+ await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.spawnEnemy();s.player.z=0;s.enemies[0].z=2;s.enemies[0].nextPattern=1;s.enemies[0].until=0;s.player.sp=30;});
  await expect(page.locator('#defense-cue')).toBeVisible();await page.keyboard.down('1');
  await expect(page.locator('#defense-cue')).toBeHidden();await expect(page.locator('#timing')).toHaveCSS('opacity','1');
  expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(2);
@@ -188,7 +188,7 @@ test('five-enemy audit benchmark stays bounded and renders without exceptions',a
 test('attack footprints match actual shapes and disappear on reset',async({page})=>{
  await ready(page);await page.evaluate(()=>window.trinity.pause(true));
  for(const pattern of sentinelPatterns){
-  const result=await page.evaluate(pattern=>{const {sim:s,view}=window.trinity;s.reset();s.player.z=-2;s.enemies[0].z=1;s.enemies[0].yaw=Math.PI;s.enemies[0].pattern=pattern;s.enemies[0].attackStart=s.now-pattern.hits[0]+200;s.enemies[0].state='Telegraph';view.update(s,.016);const indicator=view.hitIndicators.get(s.enemies[0].id);return {shape:indicator.mesh.metadata.hitShape,scale:indicator.mesh.scaling.asArray(),yaw:indicator.mesh.rotation.y};},pattern);
+  const result=await page.evaluate(pattern=>{const {sim:s,view}=window.trinity;s.reset();s.spawnEnemy();s.player.z=-2;s.enemies[0].z=1;s.enemies[0].yaw=Math.PI;s.enemies[0].pattern=pattern;s.enemies[0].attackStart=s.now-pattern.hits[0]+200;s.enemies[0].state='Telegraph';view.update(s,.016);const indicator=view.hitIndicators.get(s.enemies[0].id);return {shape:indicator.mesh.metadata.hitShape,scale:indicator.mesh.scaling.asArray(),yaw:indicator.mesh.rotation.y};},pattern);
   expect(result.shape).toEqual(pattern.shape);expect(result.scale).toEqual([1,1,1]);expect(result.yaw).toBeCloseTo(Math.PI);
   // Hide the pause overlay only for visual inspection; simulation remains paused.
   await page.locator('#overlay').evaluate(e=>(e as HTMLElement).hidden=true);
@@ -200,7 +200,7 @@ test('attack footprints match actual shapes and disappear on reset',async({page}
 test('visible cleave lane predicts live hit and miss after facing locks',async({page})=>{
  await ready(page);
  for(const [x,hp] of [[.25,176],[.8,200]]){
-  await page.evaluate(({pattern,x})=>{const s=window.trinity.sim;s.reset();s.player.x=x;s.player.z=2;const e=s.enemies[0];e.x=0;e.z=0;e.yaw=0;e.pattern=pattern;e.attackStart=s.now-800;e.state='Telegraph';}, {pattern:sentinelPatterns[0],x});
+  await page.evaluate(({pattern,x})=>{const s=window.trinity.sim;s.reset();s.spawnEnemy();s.player.x=x;s.player.z=2;const e=s.enemies[0];e.x=0;e.z=0;e.yaw=0;e.pattern=pattern;e.attackStart=s.now-800;e.state='Telegraph';}, {pattern:sentinelPatterns[0],x});
   await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hits.size)).toBe(1);
   expect(await page.evaluate(()=>window.trinity.sim.player.hp)).toBe(hp);
  }
@@ -227,7 +227,7 @@ test('Guild Footwork unlock, loadout, paused board and reload',async({page})=>{
  await page.locator('#guild-board').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'test-results/guild-board.png'});
  await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();
  expect(await page.evaluate(()=>window.trinity.sim.loadout)).toEqual(['focused-strike','aether-step',null,null]);
- await page.locator('#begin').click();await page.locator('header .guild-open').click();
+ await page.locator('#begin').click();await page.keyboard.press('m');await page.locator('header .guild-open').click();
  await expect(page.locator('[data-challenge="breaking"]')).toBeEnabled();
  await page.keyboard.press('Escape');await expect(page.locator('#guild-board')).toBeHidden();
 });
@@ -250,9 +250,9 @@ test('held Art buttons show the actual sector, release once, and fail a mistimed
 
 test('remapped and on-screen Art holds both release through the combat executor',async({page})=>{
  await ready(page,true);await setupClose(page);
- await page.evaluate(()=>{const t=window.trinity;t.sim.player.sp=100;t.input.bindings.art1=['KeyG',null];t.hud.setBindings(t.input.bindings);});
- await page.keyboard.down('g');await expect(page.locator('#timing-action')).toContainText('RELEASE G');
- await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('g');
+ await page.evaluate(()=>{const t=window.trinity;t.sim.player.sp=100;t.input.bindings.art1=['KeyH',null];t.hud.setBindings(t.input.bindings);});
+ await page.keyboard.down('h');await expect(page.locator('#timing-action')).toContainText('RELEASE H');
+ await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('h');
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(372);
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
  await page.locator('#slot-0').hover();await page.mouse.down();

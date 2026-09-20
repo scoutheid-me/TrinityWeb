@@ -32,3 +32,7 @@ Keep this section persistent so future sessions do not need the user to repeat t
 - Limit the test rack to one-handed sword, rapier and two-handed sword. Focused Strike and Linear are shared training forms; other Guild forms currently require the one-handed sword.
 - Call the location Guild Hall Training Room, planned in the Town of Beginnings Guild Hall. Do not imply the surrounding town is implemented.
 - Regenerate the downloadable skill bank from balance data with `npm run export:skills`; builds do this automatically. See `docs/SKILLS.md` and `docs/BLENDER_MCP_SETUP.md`.
+
+- Keep the hall empty outside explicitly started lessons/trials. Weapon selection belongs to the physical rack with proximity validation, never the HUD Art editor.
+- Preserve both greatsword grip constraints and articulated elbows through animation/equipment changes. Test hand-to-grip contact in both views.
+- M opens the personal menu; first-person settings stay live and viewport-mounted. Persist the optional target-facing preference in both perspectives. Right-drag camera movement is inverted on both axes.

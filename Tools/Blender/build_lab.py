@@ -79,6 +79,8 @@ def export(name, category):
     bpy.ops.export_scene.gltf(filepath=str(directory / (name + '.glb')), export_format='GLB', export_yup=True, export_apply=True, export_animations=False)
     print('TRINITY_ASSET', name, sum(len(o.data.polygons) for o in bpy.context.scene.objects if o.type == 'MESH'), 'polygons')
 
+exec((ROOT/'Tools/Blender/articulated_arms.py').read_text())
+
 clear()
 stone = material('shared_mat_ivory', (.52,.61,.66), rough=.72)
 dark = material('shared_mat_slate', (.045,.105,.16), metal=.2)
@@ -125,10 +127,13 @@ for enemy in [False, True]:
         cube('coat_tail_left', (-.19,.80,-.07), (.27,.36,.33), white, .04)
         cube('coat_tail_right', (.19,.80,-.07), (.27,.36,.33), white, .04)
     for side, x in [('left',-.4),('right',.4)]:
-        arm = pivot(side + '_arm', (x,1.49,0))
-        sphere(side + '_pauldron', (x,1.45,0), (.19,.19,.23), body, arm)
-        cube(side + '_forearm', (x,1.1,.025), (.18,.44,.19), body, .07, arm)
-        sphere(side + '_hand', (x,.85,.045), (.1,.115,.095), dark if enemy else skin, arm)
+        if not enemy:
+            articulated_arm(side,x,body,skin)
+        else:
+            arm = pivot(side + '_arm', (x,1.49,0))
+            sphere(side + '_pauldron', (x,1.45,0), (.19,.19,.23), body, arm)
+            cube(side + '_forearm', (x,1.1,.025), (.18,.44,.19), body, .07, arm)
+            sphere(side + '_hand', (x,.85,.045), (.1,.115,.095), dark if enemy else skin, arm)
         leg = pivot(side + '_leg', (x*.48,.93,0))
         cube(side + '_leg_mesh', (x*.48,.57,0), (.21,.65,.23), cloth if not enemy else stone, .075, leg)
         cube(side + '_boot', (x*.48,.16,.08), (.24,.29,.39), dark, .06, leg)

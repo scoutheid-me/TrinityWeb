@@ -25,16 +25,16 @@ describe('attack footprints',()=>{
   for(const p of outline)expect(containsHit(pattern.shape,origin,0,{x:p.x*.999999,z:p.z*.999999})).toBe(true);
  });
  it('the live simulation uses the lane instead of its old radial reach',()=>{
-  for(const [x,damage] of [[.3,24],[.8,0]]){const s=new CombatSimulation(),e=s.enemies[0];e.x=0;e.z=0;e.yaw=0;e.pattern=sentinelPatterns[0];e.attackStart=-1000;s.player.x=x;s.player.z=2;s.update(10);expect(s.player.hp).toBe(s.hpMax-damage);}
+  for(const [x,damage] of [[.3,24],[.8,0]]){const s=combatFixture(),e=s.enemies[0];e.x=0;e.z=0;e.yaw=0;e.pattern=sentinelPatterns[0];e.attackStart=-1000;s.player.x=x;s.player.z=2;s.update(10);expect(s.player.hp).toBe(s.hpMax-damage);}
  });
 });
 describe('contact timeline and authored motion',()=>{
  it('selects the second contact independently and clears after the last',()=>{
-  const s=new CombatSimulation(),e=s.enemies[0];e.pattern=sentinelPatterns[1];e.attackStart=100;
+  const s=combatFixture(),e=s.enemies[0];e.pattern=sentinelPatterns[1];e.attackStart=100;
   expect(enemyPhase(e,900)!.contactAt).toBe(1000);expect(enemyPhase(e,1200)!.contactAt).toBe(1600);expect(enemyPhase(e,1800)).toBeNull();
  });
  it('selects imminent skill consistently rather than nearest enemy',()=>{
-  const s=new CombatSimulation();s.spawnEnemy();const [a,b]=s.enemies;a.pattern=sentinelPatterns[2];b.pattern=sentinelPatterns[1];a.attackStart=b.attackStart=0;a.z=1;b.z=8;
+  const s=combatFixture();s.spawnEnemy();const [a,b]=s.enemies;a.pattern=sentinelPatterns[2];b.pattern=sentinelPatterns[1];a.attackStart=b.attackStart=0;a.z=1;b.z=8;
   expect(imminentThreat(s,true)!.enemy.id).toBe(b.id);
  });
  it('hits the authored contact pose regardless of anticipation length or frame rate',()=>{
@@ -42,3 +42,5 @@ describe('contact timeline and authored motion',()=>{
   const before=duelPose('refrain',700,0,900);expect(before.yaw).toBeLessThan(0);expect(duelPose('refrain',700,0,900,-1).yaw).toBeGreaterThan(0);
  });
 });
+
+function combatFixture(){const sim=new CombatSimulation();sim.spawnEnemy();return sim;}

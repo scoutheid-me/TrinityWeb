@@ -1,6 +1,6 @@
 export const actionLabels = {
   forward: 'Move forward', backward: 'Move backward', left: 'Move left', right: 'Move right', sprint: 'Sprint',
-  attack: 'Basic attack', dodge: 'Dodge', parry: 'Parry', guard: 'Guard',
+  menu: 'Personal menu', interact: 'Interact', attack: 'Basic attack', dodge: 'Dodge', parry: 'Parry', guard: 'Guard',
   lock: 'Toggle lock', switchTarget: 'Switch target', art1: 'Combat Art 1', art2: 'Combat Art 2',
   art3: 'Combat Art 3', art4: 'Combat Art 4', orbit: 'Orbit camera (hold)', reset: 'Reset encounter', pause: 'Pause', debug: 'Lab tools',
 } as const;
@@ -9,7 +9,7 @@ export type Bindings = Record<Action, [string | null, string | null]>;
 export const actions = Object.keys(actionLabels) as Action[];
 export function defaultBindings(): Bindings {
   return {forward:['KeyW',null],backward:['KeyS',null],left:['KeyA',null],right:['KeyD',null],sprint:['ShiftLeft','ShiftRight'],
-    attack:['Mouse0','KeyJ'],dodge:['Space',null],parry:['KeyQ',null],guard:['KeyF',null],lock:['Tab',null],switchTarget:['KeyE',null],
+    menu:['KeyM',null],interact:['KeyG',null],attack:['Mouse0','KeyJ'],dodge:['Space',null],parry:['KeyQ',null],guard:['KeyF',null],lock:['Tab',null],switchTarget:['KeyE',null],
     art1:['Digit1',null],art2:['Digit2',null],art3:['Digit3',null],art4:['Digit4',null],orbit:['Mouse2',null],reset:['KeyR',null],pause:['Escape',null],debug:['Backquote',null]};
 }
 export function supportedBinding(code: unknown): code is string {
@@ -29,7 +29,7 @@ export function assignBinding(bindings:Bindings,action:Action,slot:0|1,code:stri
 export function validateBindings(raw:unknown):Bindings {
   if(!raw||typeof raw!=='object')return defaultBindings();
   const values=raw as Record<string,unknown>,result=defaultBindings(),used=new Set<string>();
-  for(const action of actions){const pair=values[action];if(!Array.isArray(pair)||pair.length!==2)return defaultBindings();
+  for(const action of actions){const pair=values[action]??(['interact','menu'].includes(action)?[Object.values(values).flat().includes(defaultBindings()[action][0])?null:defaultBindings()[action][0],null]:undefined);if(!Array.isArray(pair)||pair.length!==2)return defaultBindings();
     for(const code of pair){if(code===null)continue;if(!supportedBinding(code)||used.has(code)||(code==='Escape'&&action!=='pause'))return defaultBindings();used.add(code);}
     result[action]=[pair[0],pair[1]];
   }

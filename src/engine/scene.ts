@@ -1,3 +1,5 @@
+import {holdGrip} from './twoHandGrip';
+import {weaponRack} from '../data/room';
 import {weapons} from '../data/weapons';
 import {artShape,chargeDuration} from '../data/arts';
 import {duelPose} from './duelMotion';
@@ -27,13 +29,13 @@ export class LabScene {
   actors = new Map<string, Actor>();
   enemyTemplate!: TransformNode;
   swordTemplate!: TransformNode;
-  weaponTemplates=new Map<string,Promise<TransformNode>>();weaponRequested='';equippedWeapon='';firstWeapon:TransformNode|null=null;
+  weaponTemplates=new Map<string,Promise<TransformNode>>();weaponRequested='';equippedWeapon='';firstWeapon:TransformNode|null=null;firstArms:TransformNode[]=[];
   private async syncWeapon(id:string){
     if(this.weaponRequested===id)return;this.weaponRequested=id;
     let promise=this.weaponTemplates.get(id);if(!promise){promise=this.asset(weapons[id].model).then(model=>{model.setEnabled(false);return model;});this.weaponTemplates.set(id,promise);}
     const model=await promise;if(this.weaponRequested!==id)return;
-    this.player.sword.dispose();this.player.sword=model.clone('equipped '+id,this.player.rightArm??this.player.root)!;this.player.sword.setEnabled(true);this.player.sword.position.set(0,-.64,.06);this.player.sword.rotation.x=-.55;this.cast(this.player.sword);
-    this.firstWeapon?.dispose();this.firstWeapon=model.clone('first-person '+id,this.firstCamera)!;this.firstWeapon.position.set(.32,-.34,-.6);this.firstWeapon.rotation.y=Math.PI;this.firstWeapon.setEnabled(this.firstPerson);this.equippedWeapon=id;
+    if(this.timingFlash)this.timingFlash.parent=null;this.player.sword.dispose();this.player.sword=model.clone('equipped '+id,this.player.rightArm??this.player.root)!;this.player.sword.setEnabled(true);this.player.sword.position.set(0,-.64,.06);this.player.sword.rotation.x=-.55;this.cast(this.player.sword);if(this.timingFlash)this.timingFlash.parent=this.player.sword;if(id==='greatsword'){this.player.sword.parent=this.player.root;this.player.sword.position.set(0,1.28,.20);}
+    this.firstWeapon?.dispose();this.firstWeapon=model.clone('first-person '+id,this.firstCamera)!;this.firstWeapon.position.set(id==='greatsword'?.16:.32,-.38,id==='greatsword'?-.52:-.6);this.firstWeapon.rotation.y=Math.PI;this.firstWeapon.setEnabled(this.firstPerson);this.equippedWeapon=id;
   }
   ring!: Mesh;
   hitIndicators = new Map<string, HitIndicator>();
@@ -81,10 +83,11 @@ export class LabScene {
     this.swordTemplate = await this.asset('/assets/weapons/aether_sword.glb'); this.swordTemplate.setEnabled(false);
     this.enemyTemplate = await this.asset('/assets/enemies/aether_sentinel.glb'); this.enemyTemplate.setEnabled(false);
     this.player = this.actor(hero, 'wayfarer', false);
+    for(const [i,arm] of [this.player.leftArm,this.player.rightArm].entries()){if(arm){const copy=arm.clone('view '+arm.name,this.firstCamera)!;copy.position.set(i===0?-.22:.22,-.12,-.25);for(const mesh of copy.getChildMeshes())if(/pauldron|upper_arm/.test(mesh.name))mesh.setEnabled(false);copy.setEnabled(false);this.firstArms.push(copy);}}
     this.timingFlash = MeshBuilder.CreateSphere('blade timing cue',{diameter:.16,segments:8},this.scene);this.timingFlash.parent=this.player.sword;this.timingFlash.position.set(0,0,1.25);this.timingFlash.material=this.material('timing light','#ceffff',2);
     const column = await this.asset('/assets/environments/guild_column.glb'); column.setEnabled(false);
     for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; const copy = column.clone(`column-${i}`, null)!; copy.setEnabled(true); copy.position.set(Math.sin(a)*13.4,0,Math.cos(a)*13.4); this.cast(copy); }
-    const rack = await this.asset('/assets/props/weapon_rack.glb'); rack.position.set(-8,0,9); rack.rotation.y = -.7; this.cast(rack);
+    const rack = await this.asset('/assets/props/weapon_rack.glb'); rack.position.set(weaponRack.x,0,weaponRack.z); rack.rotation.y = weaponRack.yaw; this.cast(rack);
     this.ring = MeshBuilder.CreateTorus('lock indicator', { diameter: 1.8, thickness: .035, tessellation: 48 }, this.scene); this.ring.material = this.material('lock', '#72e6ef', 1); this.ring.position.y = .07;
     this.setQuality('medium');
     window.addEventListener('resize', () => this.engine.resize());
@@ -188,6 +191,13 @@ export class LabScene {
     }
     if(this.player.rightArm){this.player.rightArm.rotation.y=pose?.yaw??0;if(pose)this.player.rightArm.rotation.x=pose.pitch;}
     if(this.firstWeapon){this.firstWeapon.setEnabled(this.firstPerson);this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.45;this.firstWeapon.rotation.z=(pose?.yaw??0)*.25;}
+    for(const arm of [this.player.leftArm,this.player.rightArm]){if(!arm)continue;const elbow=arm.getDescendants().find(n=>n.name.endsWith('_elbow')) as TransformNode|undefined;if(elbow)elbow.rotationQuaternion=null;}
+    if(this.equippedWeapon==='greatsword'){
+      const sword=this.player.sword;sword.rotation.set(-.95+(pose?.pitch??0)*.55,(pose?.yaw??0)*.75,0);
+      for(const side of ['left','right'] as const){const arm=side==='left'?this.player.leftArm:this.player.rightArm;if(arm)holdGrip(arm,sword,side);}
+      if(this.firstWeapon){this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.3;this.firstWeapon.rotation.z=(pose?.yaw??0)*.25;}
+    }
+    for(const [i,arm] of this.firstArms.entries()){arm.setEnabled(this.firstPerson&&this.equippedWeapon==='greatsword');if(this.firstWeapon&&this.equippedWeapon==='greatsword')holdGrip(arm,this.firstWeapon,i===0?'left':'right');}
     const artCue=!!sim.art&&sim.art.grades[sim.art.stage]===null&&Math.abs(sim.now-sim.art.start-chargeDuration(sim.art.definition,sim.art.stage))<=balance.timing.perfect;
     this.timingFlash.setEnabled(artCue);
     if (state==='Dodge') this.player.root.position.y = -.22;
@@ -208,14 +218,14 @@ export class LabScene {
       this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+chargeDuration(preview.definition,preview.stage)-sim.now:100,true,'#80e9ff');
     }else this.debugVolume?.mesh.setEnabled(false);
     if(this.firstPerson){
-      if(target){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,.35);this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
+      if(target&&sim.autoFaceTarget){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,.35);this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
       this.firstCamera.position.set(sim.player.x,1.65+(state==='Dodge'?-.12:0),sim.player.z);
       const look=new Vector3(-Math.cos(this.camera.alpha)*Math.sin(this.camera.beta),-Math.cos(this.camera.beta),-Math.sin(this.camera.alpha)*Math.sin(this.camera.beta));
       this.firstCamera.setTarget(this.firstCamera.position.add(look));
-      if(!sim.target&&sim.free)sim.player.yaw=Math.atan2(look.x,look.z);
+      if((!sim.target||!sim.autoFaceTarget)&&sim.free)sim.player.yaw=Math.atan2(look.x,look.z);
     }
     const desired = new Vector3(sim.player.x,1.2,sim.player.z);
-    if (target&&!this.firstPerson) { desired.x += (target.x-sim.player.x)*.18; desired.z += (target.z-sim.player.z)*.18;
+    if (target&&sim.autoFaceTarget&&!this.firstPerson) { desired.x += (target.x-sim.player.x)*.18; desired.z += (target.z-sim.player.z)*.18;
       const yaw = Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;
       const diff = Math.atan2(Math.sin(yaw-this.camera.alpha),Math.cos(yaw-this.camera.alpha)); this.camera.alpha += diff*Math.min(1,dt*4);
     }

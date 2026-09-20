@@ -108,3 +108,7 @@ Run: `& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --backgrou
 The rack is intentionally limited to one-handed sword, rapier and two-handed sword. Original low-poly sources are `art/blender/training_{sword,rapier,greatsword}.blend`; runtime exports are under `public/assets/weapons/`. Rebuild using Blender in background mode with `Tools/Blender/build_armory.py`. All three use a shared grip origin and are loaded by the existing Babylon asset loader. First-person presentation reuses these meshes; dedicated hands and weapon-specific grips remain prototype work.
 
 For interactive Blender access, see [BLENDER_MCP_SETUP.md](BLENDER_MCP_SETUP.md). The headless exporter was used for this pass because no Blender MCP tools were connected.
+
+## Articulated two-handed grip
+
+`Tools/Blender/articulated_arms.py` defines the Wayfarer's shoulder/elbow hierarchy (two 0.32 m segments). `build_player_arms.py` upgrades only the player source and GLB; `build_lab.py` also uses the shared hierarchy for full rebuilds. `twoHandGrip.ts` solves both hands to separate greatsword grip points every pose update. The weapon drives the shared swing, and both arms follow it; first-person arm clones use the same exported geometry. This remains a rigid-part prototype rig, not a skinned production character. Blender MCP was not exposed in this session, so regeneration used the installed headless Blender executable.

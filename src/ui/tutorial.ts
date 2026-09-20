@@ -16,7 +16,7 @@ export class CombatTutorial {
   start(){if(!this.active){this.weapon=this.sim.weapon;this.flags={...this.sim.flags};this.loadout=[...this.sim.loadout];}this.sim.practiceMode=true;this.sim.weapon='sword';this.sim.loadout=['focused-strike',null,null,null];this.active=true;this.step=0;this.prepare();}
   exit(){this.sim.practiceMode=false;this.sim.weapon=this.weapon;if(this.loadout)this.sim.loadout=this.loadout;this.active=false;this.panel.hidden=true;if(this.flags)Object.assign(this.sim.flags,this.flags);this.sim.reset();this.resume();}
   prepare(){
-    const s=this.sim;s.reset();s.flags.invulnerable=false;s.flags.infiniteSp=false;s.flags.freezeAI=this.step===0||this.step===3||this.step===4;
+    const s=this.sim;s.reset();s.spawnEnemy();s.flags.invulnerable=false;s.flags.infiniteSp=false;s.flags.freezeAI=this.step===0||this.step===3||this.step===4;
     s.player.z=0;s.enemies[0].z=2;s.lockedId=s.enemies[0].id;s.faceTarget();
     s.enemies[0].nextPattern=this.step===1?3:0;
     if(this.step>=3)s.player.sp=100;
@@ -25,7 +25,7 @@ export class CombatTutorial {
   }
   observe(events:CombatEvent[]){
     if(!this.active)return;
-    const s=this.sim;
+    const s=this.sim;if(!s.enemies.length){this.prepare();return;}
     // Repeat only the pattern taught by the current defense lesson.
     if(this.step===1||this.step===2)s.enemies[0].nextPattern=this.step===1?3:0;
     const done=this.step===0?s.player.sp>=30:this.step===1?events.some(e=>e.text==='Evaded'):this.step===2?events.some(e=>e.type==='parry'):this.step===3?events.some(e=>e.type==='hit'&&e.target!=='player'&&(e.grade==='Good'||e.grade==='Perfect')):events.some(e=>e.type==='break');

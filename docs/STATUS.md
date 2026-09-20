@@ -1,3 +1,15 @@
+# September 20: physical armory, two-handed grip and personal menu
+
+The hall now starts empty. Lessons and Guild trials explicitly spawn opponents; reset, tutorial exit and completed-trial cleanup return to an empty room. Weapon selection moved out of the HUD Art editor and into a proximity-gated physical rack (G / Interact). Walking away closes the rack.
+
+The Wayfarer now has Blender-authored elbow joints. Greatsword attacks drive a shared weapon pose with both hands constrained to separate grip points. First-person arms reuse that hierarchy with shoulder armor hidden to preserve visibility. The model remains a stylized rigid-part rig rather than a skinned production character.
+
+M toggles the side menu. First-person settings are translucent viewport-mounted panels; movement/look and simulation continue outside key-binding capture. Explicit pause and focus loss still pause safely. Right-drag camera movement is inverted on both axes. Automatic locked-target facing applies in both perspectives and can be disabled in Controls; the setting persists. Committed Art trajectories preserve their released direction.
+
+Validation: 91 unit tests pass. All 20 browser scenarios passed across regression and focused runs, including the entire Guild journey, physical rack interaction, empty startup/reset, live first-person movement, camera preferences and grip checks through complete basic/Art cycles in both views (under 1 cm hand/socket separation). Older reset/menu assertions and a conflicting test-only G binding were updated to the new behavior. Rendered idle, swing and first-person menu views were inspected. TypeScript/Vite build and production startup verified. The existing large-bundle warning remains.
+
+---
+
 # September 20: training skills, three weapons and first-person control
 
 Fresh saves start with Focused Strike; finishing induction awards only Linear. Perfect Linear travels six meters through one target; Good travels one meter with reduced damage; Miss does not move or strike. Other Arts have distinct roles: lateral movement, wide coverage, heavy Break, stamina restoration, or a two-event chain. Eligible regular combat also unlocks skills independently of tutorials. Old v3 starter ownership is preserved.

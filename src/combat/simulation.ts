@@ -11,7 +11,7 @@ export interface Point { x: number; z: number; }
 export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; }
 export interface Enemy extends Point { id: string; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
-  now = 0;
+  now = 0;autoFaceTarget=true;
   private fieldEligible=true;practiceMode=false;progression=freshProgression();weapon:string="sword";encounter=new EncounterLedger();lastParryAt=-Infinity;nextEnemyAttackAt=0;
   get weaponDefinition(){return weapons[this.weapon]??weapons.sword;}
   setWeapon(id:string){if(!weapons[id]||!this.free||this.encounter.active||this.practiceMode)return false;this.weapon=id;this.loadout=this.loadout.map(key=>key&&(arts[key]?.weapon==='any'||arts[key]?.weapon===id)?key:null);if(!this.loadout.some(Boolean))this.loadout=['focused-strike',null,null,null];return true;}
@@ -24,7 +24,7 @@ export class CombatSimulation {
   }
   invalidateRewards(reason="Lab modifications"){this.fieldEligible=false;this.encounter.invalidate(reason);}
   equipLoadout(ids:(string|null)[]){if(this.practiceMode||this.encounter.active||!this.free||!validLoadout(ids,this.progression,this.weapon))return false;this.loadout=equipArts(ids);return true;}
-  beginChallenge(id:ChallengeId){if(!canStart(this.progression,id))return false;this.reset();this.flags={invulnerable:false,infiniteSp:false,freezeAI:false};this.attributes={...defaultAttributes};this.player.hp=this.hpMax;this.player.stamina=this.staminaMax;this.encounter.start(id);if(id==="trial"){this.spawnEnemy();for(const e of this.enemies)e.hp=e.maxHp=300;}return true;}
+  beginChallenge(id:ChallengeId){if(!canStart(this.progression,id))return false;this.reset();this.spawnEnemy();this.flags={invulnerable:false,infiniteSp:false,freezeAI:false};this.attributes={...defaultAttributes};this.player.hp=this.hpMax;this.player.stamina=this.staminaMax;this.encounter.start(id);if(id==="trial"){this.spawnEnemy();for(const e of this.enemies)e.hp=e.maxHp=300;}return true;}
   attributes: Attributes = { ...defaultAttributes };
   player = { x: 0, z: -4, yaw: 0, hp: maxHp(10), stamina: maxStamina(10), sp: 0, vx: 0, vz: 0 };
   state = new StateMachine();
@@ -67,7 +67,7 @@ export class CombatSimulation {
     this.fieldEligible=true;this.encounter.end("abandoned");this.lastParryAt=-Infinity;this.nextEnemyAttackAt=0;
     this.player = { x: 0, z: -4, yaw: 0, hp: this.hpMax, stamina: this.staminaMax, sp: 0, vx: 0, vz: 0 };
     this.lastContact=null; this.cancelBufferedInput(); this.state.reset(); this.art = null; this.actionEnd = 0; this.hits.clear(); this.lockedId = null; this.events = []; this.hitStopUntil = 0;
-    this.input = { x: 0, z: 0, sprint: false, guard: false }; this.enemies = []; this.spawnEnemy();
+    this.input = { x: 0, z: 0, sprint: false, guard: false }; this.enemies = [];
   }
   spawnEnemy() {
     if (this.enemies.filter(e => e.hp > 0).length >= 5) return;
@@ -81,7 +81,7 @@ export class CombatSimulation {
     const index = targets.findIndex(e => e.id === this.lockedId);
     this.lockedId = targets[(index + 1) % targets.length]?.id ?? null;
   }
-  faceTarget() { const target = this.target; if (target) this.player.yaw = Math.atan2(target.x - this.player.x, target.z - this.player.z); }
+  faceTarget() { const target = this.target; if (target&&this.autoFaceTarget) this.player.yaw = Math.atan2(target.x - this.player.x, target.z - this.player.z); }
   pressAttack() {
     if (this.art && this.state.state !== 'ArtRecovery') return;
     if(this.buffer('attack'))return;
@@ -217,6 +217,7 @@ export class CombatSimulation {
     if (!this.flags.freezeAI) for (const enemy of this.enemies) this.updateEnemy(enemy, dt);
     else for (const enemy of this.enemies) { enemy.attackStart += ms; enemy.until += ms; }
     this.resolveBodies();
+    if(this.target&&this.autoFaceTarget&&!(this.art&&this.art.releasedAt!==null))this.faceTarget();
   }
   private updateArt(dt:number) {
     const art=this.art;if(!art||this.state.state==='ArtRecovery')return;
@@ -250,7 +251,7 @@ export class CombatSimulation {
       if (this.state.state === 'Guard') speed *= 0.35;
       if (moving) { vx = this.input.x / length * speed; vz = this.input.z / length * speed; }
       if (this.free) this.state.set(moving ? 'Movement' : 'Idle');
-      if (this.target) this.faceTarget();
+      if (this.target&&this.autoFaceTarget) this.faceTarget();
       else if (moving) { const desired = Math.atan2(vx, vz), diff = Math.atan2(Math.sin(desired - this.player.yaw), Math.cos(desired - this.player.yaw)); this.player.yaw += diff * Math.min(1, dt * 16); }
     }
     const smoothing = this.state.state === 'Dodge' ? 1 : Math.min(1, dt * (vx || vz ? balance.movement.acceleration : balance.movement.deceleration));
