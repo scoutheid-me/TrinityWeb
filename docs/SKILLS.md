@@ -2,7 +2,7 @@
 
 Fresh characters start with **Focused Strike**. Finishing Ilyra's induction grants **only Linear** as the new reward. Tutorial/debug practice does not advance regular-play unlock counters. Existing v3 characters retain their old Crescent starter.
 
-**Guild Hall Training Room** is planned inside the Town of Beginnings Guild Hall; the town itself is not built. Three weapons are available under **the physical weapon rack (walk close and press G)**: one-handed sword, rapier, two-handed sword. Weapon selection is available only at the rack; Edit Arts on the HUD edits skill slots. Their basics differ in shape, reach, speed, damage and guard efficiency. Focused Strike and Linear work with all three; other Guild forms currently require the one-handed sword.
+**Guild Hall Training Room** is planned inside the Town of Beginnings Guild Hall; the town itself is not built. Three weapons are available under **the physical weapon rack (walk close and press G)**: one-handed sword, rapier, two-handed sword. Weapon selection is available only at the rack; M → Character → Skills edits skill slots. Their basics differ in shape, reach, speed, damage and guard efficiency. Focused Strike and Linear work with all three; other Guild forms currently require the one-handed sword.
 
 | Art | Early acquisition | Regular combat alternative | Unique role |
 | --- | --- | --- | --- |
@@ -28,6 +28,16 @@ Weapons are original Blender exports. Motion reuses the prototype rigid-part rig
 
 The hall starts empty. Starting an induction lesson or Guild trial creates the required enemies; reset/exit/completion returns to an empty room. Debug spawning remains an explicit lab tool.
 
-Walk to the brass weapon rack and press **G** (remappable Interact), or click its proximity prompt, to choose a weapon. Walking away closes it; trials and tutorial lessons prevent equipment changes. HUD Edit Arts only edits Art slots.
+Walk to the brass weapon rack and press **G** (remappable Interact), or click its proximity prompt, to choose a weapon. Walking away closes it; trials and tutorial lessons prevent equipment changes. Art slots are edited only in M → Character → Skills.
 
 **M** toggles the personal menu; side controls stay hidden until opened. First-person menus are translucent viewport-mounted panels and keep the world running. Movement and camera look continue unless capturing a new key binding. Escape/focus loss still provide explicit pause safety. Right-drag look is inverted on both axes. **Controls → Automatically face locked target** toggles camera tracking and player auto-facing in both perspectives and persists across reloads. Committed Art trajectories keep their released direction.
+
+## Weapon-relative damage (skill bank schema 2)
+
+Art nodes now store multipliers rather than fixed damage. Perfect damage per node is weapon base damage × node multiplier × (1 + Strength × 0.025); Good applies 0.6 and Miss applies zero. Break/stamina effects remain separately authored. Foundation forms are general: Focused Strike 6× and Linear 10×. Weapon-restricted forms receive larger coefficients: Aether Step 10.5×, Stillwater Cut 11.25×, Resonant Cleave 13.5×, Crescent Break 17.5×, and Oath 11.25× + 16.25×. Costs, timing, coverage, recovery and utility still matter; restrictions support stronger coefficients rather than replacing balance. Skill cards and the generated JSON bank share these values.
+
+## Skill Books introduction
+
+Skill Books are cohesive collections that expose branching skill trees with authored prerequisites. The Skills menu contains an interactive four-node Lantern Road Forms preview, and the final induction lesson explains the concept. Nodes show prior-skill dependencies and eligible practice milestones, with known skills distinguished from book ownership. The schema supports different node counts and graph layouts. The book catalogue is included in the downloadable skill bank.
+
+This small primer is planned as the final reward of the future tutorial dungeon. Acquisition, study/spending and that dungeon are not implemented; the tree is explicitly marked NOT OWNED / preview only and cannot grant rewards. Current induction still awards only Linear, and the current Guild Trial still awards Wayfarer's Oath. Future integration must add book ownership, validated study transactions and dungeon completion rewards without duplicating independently learned skills.

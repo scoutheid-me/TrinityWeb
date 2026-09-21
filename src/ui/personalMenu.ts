@@ -1,52 +1,63 @@
+import {bookLibrary,bindBookLibrary} from './skillBooks';
 import type {CombatSimulation} from '../combat/simulation';
 import {arts} from '../data/arts';
 import {physicalDamage} from '../data/balance';
+import {skillCard} from './skillCard';
+import {cleanName} from '../progression/profile';
+import {challenges} from '../progression/guild';
 
-/** Screen-space personal artifact: the world and camera remain live in first person. */
 export class PersonalMenu {
- panel=document.createElement('section');
- private weapon='';private loadout='';
- constructor(private sim:CombatSimulation,editArts:()=>void){
-   this.panel.id='personal-artifact';this.panel.setAttribute('aria-label','Character equipment');
-   this.panel.innerHTML=`<div class="artifact-title">Wayfarer <small>CHARACTER / EQUIPMENT</small></div>
-   <div class="equipment-body"><svg viewBox="0 0 260 280" role="img" aria-label="Character silhouette with equipment sockets">
-   <ellipse cx="130" cy="252" rx="43" ry="5" fill="#526169" opacity=".18"/>
-   <g class="body-silhouette"><circle cx="130" cy="65" r="13"/><path d="M116 82 Q130 77 144 82 L155 132 151 159 142 131 142 165 155 245 137 245 130 188 123 245 105 245 118 165 118 131 109 159 105 132Z"/></g>
-   <g class="equipment-lines" fill="none"><path d="M130 46V28 M116 101 73 69H48 M144 101 187 69H212 M114 134 64 120H33 M146 134 196 120H227 M118 159 69 182H43 M142 159 191 182H217 M118 222 70 237H51 M142 222 190 237H209"/>
-   ${[[130,28],[48,69],[212,69],[33,120],[227,120],[43,182],[217,182],[51,237],[209,237]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="8"/><circle cx="${x}" cy="${y}" r="4" class="socket"/>`).join('')}</g></svg>
-   <button class="equipment-hotspot weapon-hotspot" aria-label="Inspect equipped weapon" title="Inspect equipped weapon">◇</button>
-   <button class="equipment-hotspot armor-hotspot" aria-label="Inspect training attire" title="Inspect training attire">◇</button></div>
-   <div class="equipment-description" aria-live="polite"><small>EQUIPPED WEAPON</small><h2 id="personal-weapon"></h2><p id="personal-weapon-stats"></p><details><summary>Weapon details</summary><p id="personal-weapon-description"></p><p>Change weapons at the training room rack.</p></details></div>
-   <div class="personal-attire" hidden><small>TRAINING ATTIRE</small><h2>Wayfarer’s uniform</h2><p>Starter training clothes. Cosmetic equipment; no armor bonus.</p></div>
-   <button class="personal-art-edit">Combat Arts <span>›</span></button><div id="personal-art-list"></div>`;
-   document.querySelector('#ui')!.append(this.panel);
-   const character=document.createElement('button');character.id='character-menu';character.className='quiet';character.dataset.icon='♟';character.textContent='Character';character.setAttribute('aria-label','Character menu');
-   const branch=document.createElement('nav');branch.id='character-branch';branch.setAttribute('aria-label','Character categories');branch.innerHTML='<button class="selected" data-category="equipment">◇ &nbsp; Equipment</button><button data-category="arts">⚔ &nbsp; Combat Arts</button>';
-   document.querySelector('header')!.append(character);document.querySelector('#ui')!.append(branch);
-   const expand=()=>{branch.classList.add('expanded');character.setAttribute('aria-expanded','true');};
-   character.onpointerenter=expand;character.onfocus=expand;character.onclick=()=>{branch.classList.toggle('expanded');character.setAttribute('aria-expanded',String(branch.classList.contains('expanded')));};
-   branch.querySelector<HTMLButtonElement>('[data-category="equipment"]')!.onclick=()=>{this.panel.querySelector<HTMLDetailsElement>('details')!.open=true;};
-   branch.querySelector<HTMLButtonElement>('[data-category="arts"]')!.onclick=editArts;
-   this.panel.querySelector<HTMLButtonElement>('.personal-art-edit')!.onclick=editArts;
-   for(const [selector,armor] of [['.weapon-hotspot',false],['.armor-hotspot',true]] as const){
-     const b=this.panel.querySelector<HTMLButtonElement>(selector)!;
-     b.onclick=()=>{(this.panel.querySelector('.personal-attire') as HTMLElement).hidden=!armor;(this.panel.querySelector('.equipment-description') as HTMLElement).hidden=armor;};
-   }
-   const labels:[string,string,string][]=[['#menu','Ⅱ','Pause'],['#open-controls','⚙','Options'],['.tutorial-open','?','Induction'],['.guild-open','⌖','Guild journal'],['#perspective','◉','Camera']];
-   for(const [selector,icon,label] of labels){
-     const b=document.querySelector<HTMLButtonElement>('header '+selector)!;b.dataset.icon=icon;b.title=label;
-     b.addEventListener('pointerenter',()=>b.classList.add('expanded'));
-     b.addEventListener('pointerenter',()=>{branch.classList.remove('expanded');character.setAttribute('aria-expanded','false');});
-     b.addEventListener('focus',()=>{branch.classList.remove('expanded');character.setAttribute('aria-expanded','false');});
-     b.addEventListener('pointerleave',()=>b.classList.remove('expanded'));
-   }
+ panel=document.createElement('section');detail=document.createElement('section');branch=document.createElement('nav');
+ private category='items';private signature='';private slot=0;private item='health';
+ constructor(private sim:CombatSimulation,private editArts:()=>void,private persist:()=>void){
+  this.panel.id='personal-artifact';this.panel.setAttribute('aria-label','Character equipment');
+  this.panel.innerHTML=`<form id="character-name-form" class="artifact-title"><label for="character-name">Character name</label><div><input id="character-name" maxlength="24" aria-label="Character name"><button aria-label="Save character name">✓</button></div><small id="name-status" role="status">24 characters maximum</small></form>
+  <div class="equipment-body"><svg viewBox="0 0 260 280" role="img" aria-label="Character silhouette"><ellipse cx="130" cy="252" rx="43" ry="5" fill="#526169" opacity=".18"/><g class="body-silhouette"><circle cx="130" cy="65" r="13"/><path d="M116 82 Q130 77 144 82 L155 132 151 159 142 131 142 165 155 245 137 245 130 188 123 245 105 245 118 165 118 131 109 159 105 132Z"/></g></svg>
+  ${['Head','Right hand','Left hand','Body','Feet'].map((name,i)=>`<button class="body-slot body-slot-${i}" data-equipment="${i}" title="${name}" aria-label="Inspect ${name}"><i>◇</i><span>${name}</span></button>`).join('')}</div>
+  <div class="pocket-label">QUICK INVENTORY</div><div class="pocket-row">${[0,1,2,3,4].map(i=>`<button data-pocket="${i}" aria-label="Inventory slot ${i+1}"></button>`).join('')}</div><div class="equipment-description"><small>EQUIPPED WEAPON</small><h2 id="personal-weapon"></h2><p id="personal-weapon-stats"></p><small>Visit the weapon rack to change your blade.</small></div>`;
+  this.detail.id='personal-detail';this.detail.setAttribute('aria-label','Personal information');this.branch.id='character-branch';
+  this.branch.innerHTML=`<button data-category="items">▣ &nbsp; Items</button><button data-category="arts">⚔ &nbsp; Skills</button><button data-category="equipment">◇ &nbsp; Equipment</button>`;
+  document.querySelector('#ui')!.append(this.panel,this.branch,this.detail);
+  const name=this.panel.querySelector<HTMLInputElement>('#character-name')!;name.value=sim.profile.name;
+  this.panel.querySelector<HTMLFormElement>('form')!.onsubmit=e=>{e.preventDefault();sim.profile.name=cleanName(name.value);name.value=sim.profile.name;this.panel.querySelector('#name-status')!.textContent='Name saved';this.persist();};
+  this.panel.querySelectorAll<HTMLButtonElement>('[data-equipment]').forEach(b=>b.onclick=()=>{this.open('equipment');this.detail.querySelectorAll<HTMLDetailsElement>('details')[Number(b.dataset.equipment)]!.open=true;});
+  this.panel.querySelectorAll<HTMLButtonElement>('[data-pocket]').forEach(b=>b.onclick=()=>{this.slot=Number(b.dataset.pocket);this.item=sim.profile.pockets[this.slot]??'health';this.open('items');});
+  this.branch.querySelectorAll<HTMLButtonElement>('[data-category]').forEach(b=>b.onclick=()=>this.open(b.dataset.category!));
+  for(const [id,icon,label,category] of [['character-menu','♟','Character','items'],['friends-menu','♟♟','Friends','friends'],['map-menu','⌖','Map','map'],['manual-menu','▤','Monster manual','manual']]){
+   const b=document.createElement('button');b.id=id;b.className='quiet fantasy-icon';b.dataset.icon=icon;b.textContent=label;b.setAttribute('aria-label',label);b.onclick=()=>this.open(category);document.querySelector('header')!.append(b);
+  }
+  this.open('items');
  }
- update(){
-   const w=this.sim.weaponDefinition,key=w.id+this.sim.attributes.strength;
-   if(this.weapon!==key){this.weapon=key;this.panel.querySelector('#personal-weapon')!.textContent=w.name;
-     this.panel.querySelector('#personal-weapon-stats')!.textContent=`${Math.round(physicalDamage(w.damage,this.sim.attributes.strength))} damage · ${w.shape.range} m reach`;
-     this.panel.querySelector('#personal-weapon-description')!.textContent=w.description;
-   }
-   const keyArts=this.sim.loadout.join('|');if(this.loadout!==keyArts){this.loadout=keyArts;this.panel.querySelector('#personal-art-list')!.replaceChildren(...this.sim.loadout.map((id,i)=>{const row=document.createElement('span');row.textContent=`${i+1} · ${id?arts[id].name:'Empty'}`;return row;}));}
+ private heading(title:string){return `<div class="personal-detail-heading"><h2>${title}</h2><button id="personal-detail-close" aria-label="Close information">×</button></div>`;}
+ open(category:string){this.category=category;this.detail.hidden=false;this.branch.classList.toggle('expanded',['items','arts','equipment'].includes(category));this.render();}
+ private render(){
+  const s=this.sim,p=s.profile;let html='';
+  if(this.category==='items'){
+   html=this.heading('Items')+`<p class="subtle">Training supplies · use between encounters.</p><div class="inventory-list">${['health','stamina'].map(id=>`<button data-item="${id}" aria-pressed="${this.item===id}">${id==='health'?'Health potion':'Stamina draught'} <b>×${p.potions[id as 'health']}</b></button>`).join('')}</div><article><h3>${this.item==='health'?'Health potion':'Stamina draught'}</h3><p>Restores ${this.item==='health'?'60 HP':'50 stamina'}. Consumed on use. Cannot be used during lessons or encounters.</p><button id="use-supply">Use supply</button><p id="supply-status" role="status"></p><label>Accessible inventory slot<select id="pocket-select">${p.pockets.map((_,i)=>`<option value="${i}" ${this.slot===i?'selected':''}>Slot ${i+1}</option>`).join('')}</select></label><button id="assign-supply">Assign here</button><button id="clear-pocket">Clear slot</button></article>`;
+  }else if(this.category==='arts')html=this.heading('Skills')+`<button id="personal-edit-arts">Edit four equipped Arts</button><p>General forms trade power for versatility. Specialized forms require their named weapon.</p>`+bookLibrary(s)+Object.values(arts).filter(a=>s.progression.learned[a.id]).map(a=>skillCard(a,s)).join('');
+  else if(this.category==='equipment')html=this.heading('Equipment')+this.equipment().map(([slot,name,desc])=>`<details class="nested-info"><summary>${slot}<small>${name}</small></summary><p>${desc}</p></details>`).join('');
+  else if(this.category==='friends'){
+   const friend=s.progression.tutorialCompleted;
+   html=this.heading('Friends')+`<p>${friend?'1 friend · Lantern Guild':'No friends yet. Finish Ilyra’s induction to earn her trust.'}</p><button id="personal-tutorial">Begin induction</button><button id="personal-guild">Guild challenges & rewards</button>`;
+   if(friend)html+=`<details class="nested-info" open><summary>Warden Ilyra<small>Guild mentor · friend</small></summary><p>Keeps the Lantern Guild’s recruits ready for the roads beyond town.</p><p>Last known location: Guild Hall, Town of Beginnings · Floor 1.</p><details><summary>Quests · ${s.progression.completed.length}/4 complete</summary>${Object.entries(challenges).map(([id,q])=>`<p>${s.progression.completed.includes(id as any)?'✓':'◇'} ${q.name}<br><small>${q.description}</small></p>`).join('')}</details><details><summary>Chats with Ilyra</summary><p>Local story dialogue</p><button data-chat="guild">What is the Lantern Guild?</button><button data-chat="oath">What does the oath mean?</button><div id="chat-history">${p.chats.map(id=>this.chat(id)).join('')}</div></details></details>`;
+  }else if(this.category==='map')html=this.heading('Floor 1 · Known map')+`<p>Current location: Guild Hall Training Room</p><p>Known from the Guild: Town of Beginnings. The surrounding town is not yet playable.</p><svg class="floor-map" viewBox="0 0 280 280" role="img" aria-label="Explored training room map"><rect width="280" height="280" fill="#5b6b6c"/>${p.explored.map(v=>{const [x,z]=v.split(',').map(Number);return `<rect x="${140+x*32-16}" y="${140-z*32-16}" width="32" height="32" fill="#dbe5dd" stroke="#bac8c2"/>`;}).join('')}<circle cx="140" cy="140" r="110" fill="none" stroke="#f1e4ae"/><rect x="71" y="63" width="10" height="10" fill="#d7b94d"/><circle id="map-player" cx="${140+s.player.x*8}" cy="${140-s.player.z*8}" r="5" fill="#208db3"/></svg><p>Blue: you · Gold: known weapon rack · Dark: unexplored</p>`;
+  else html=this.heading('Monster manual')+(p.sentinelSeen?`<details class="nested-info" open><summary>Aether Sentinel<small>Training construct · encountered</small></summary><p>Found in the Guild Hall Training Room during lessons and trials.</p><p>Read the weapon animation for basic attacks. Gold warnings can be parried; red sweeps require a dodge. Fill Break to create an opening.</p><p>Recorded victories: ${s.counters.kills} · Perfect counters: ${s.counters.parries}</p></details>`:'<p>No creatures recorded. Begin a lesson or Guild challenge to encounter a training construct.</p>');
+  this.detail.innerHTML=html;bindBookLibrary(this.detail,s);this.detail.querySelector<HTMLButtonElement>('#personal-detail-close')!.onclick=()=>this.detail.hidden=true;
+  this.detail.querySelectorAll<HTMLButtonElement>('[data-item]').forEach(b=>b.onclick=()=>{this.item=b.dataset.item!;this.render();});
+  const use=this.detail.querySelector<HTMLButtonElement>('#use-supply');if(use)use.onclick=()=>{const id=this.item as 'health'|'stamina';let result='';if(s.encounter.active||s.practiceMode||s.enemies.some(e=>e.hp>0)||!s.free)result='Finish the encounter first.';else if(p.potions[id]<=0)result='No supplies remaining.';else if(id==='health'?s.player.hp>=s.hpMax:s.player.stamina>=s.staminaMax)result='Already full.';else{p.potions[id]--;if(id==='health')s.player.hp=Math.min(s.hpMax,s.player.hp+60);else s.player.stamina=Math.min(s.staminaMax,s.player.stamina+50);result='Supply used.';this.persist();}this.render();this.detail.querySelector('#supply-status')!.textContent=result;};
+  const assign=this.detail.querySelector<HTMLButtonElement>('#assign-supply');if(assign)assign.onclick=()=>{const i=Number(this.detail.querySelector<HTMLSelectElement>('#pocket-select')!.value);p.pockets=p.pockets.map(v=>v===this.item?null:v);p.pockets[i]=this.item;this.slot=i;this.persist();this.render();};
+  const clear=this.detail.querySelector<HTMLButtonElement>('#clear-pocket');if(clear)clear.onclick=()=>{p.pockets[Number(this.detail.querySelector<HTMLSelectElement>('#pocket-select')!.value)]=null;this.persist();this.render();};
+  const edit=this.detail.querySelector<HTMLButtonElement>('#personal-edit-arts');if(edit)edit.onclick=this.editArts;
+  for(const [id,selector] of [['personal-tutorial','header .tutorial-open'],['personal-guild','header .guild-open']]){const b=this.detail.querySelector<HTMLButtonElement>('#'+id);if(b)b.onclick=()=>document.querySelector<HTMLButtonElement>(selector)!.click();}
+  this.detail.querySelectorAll<HTMLButtonElement>('[data-chat]').forEach(b=>b.onclick=()=>{const id=b.dataset.chat!;if(!p.chats.includes(id))p.chats.push(id);this.persist();this.detail.querySelector('#chat-history')!.innerHTML=p.chats.map(id=>this.chat(id)).join('');});
+  this.branch.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.dataset.category===this.category));
+ }
+ private chat(id:string){return '<p><b>Ilyra:</b> '+(id==='guild'?'We keep the roads open when the watchfires go dark. First learn to protect yourself; then you can bring someone else home.':this.sim.progression.completed.includes('trial')?'You carried footing, patience and nerve into the trial. The Wayfarer title is a promise to return.':'The oath is earned through footing, patience and nerve. Complete all four trials and I will teach you our paired Art.')+'</p>';}
+ private equipment(){const w=this.sim.weaponDefinition;return [['Head','Empty','No head equipment owned.'],['Right hand',w.name,w.description+' Change weapons at the physical rack.'],['Left hand',w.id==='greatsword'?'Two-handed grip':'Empty',w.id==='greatsword'?'Reserved by your two-handed sword.':'No off-hand equipment owned.'],['Body','Wayfarer uniform','Equipped starter clothing. Cosmetic; no armor bonus.'],['Feet','Training boots','Equipped starter boots. Cosmetic; no movement bonus.']];}
+ update(){const s=this.sim,p=s.profile;const cell=Math.max(-3,Math.min(3,Math.round(s.player.x/4)))+','+Math.max(-3,Math.min(3,Math.round(s.player.z/4)));if(!p.explored.includes(cell))p.explored.push(cell);if(s.enemies.length)p.sentinelSeen=true;
+  this.panel.querySelector('#personal-weapon')!.textContent=s.weaponDefinition.name;this.panel.querySelector('#personal-weapon-stats')!.textContent=Math.round(physicalDamage(s.weaponDefinition.damage,s.attributes.strength))+' damage · '+s.weaponDefinition.shape.range+' m reach';
+  this.panel.querySelectorAll<HTMLButtonElement>('[data-pocket]').forEach((b,i)=>{const id=p.pockets[i];b.textContent=id?(id==='health'?'HP':'STA')+' ×'+p.potions[id as 'health']:'+';b.title=id?(id==='health'?'Health potion':'Stamina draught'):'Empty inventory slot';});
+  const sig=[s.weapon,s.attributes.strength,s.progression.tutorialCompleted,s.progression.completed.join(','),Object.keys(s.progression.learned).join(','),p.sentinelSeen,this.category==='map'?p.explored.join(';'):'',this.category==='manual'?s.counters.kills:0,this.category==='manual'?s.counters.parries:0].join('|');if(this.signature!==sig){this.signature=sig;if(!this.detail.hidden)this.render();}
+  const dot=this.detail.querySelector('#map-player');if(dot){dot.setAttribute('cx',String(140+s.player.x*8));dot.setAttribute('cy',String(140-s.player.z*8));}
  }
 }

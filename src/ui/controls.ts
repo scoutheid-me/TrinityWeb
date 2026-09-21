@@ -26,7 +26,7 @@ export class ControlsMenu {
   }
   status(text:string){this.panel.querySelector('#binding-status')!.textContent=text;}
   open(){if(!this.live())this.pause();this.panel.classList.toggle('personal-live',this.live());this.panel.setAttribute('aria-modal',String(!this.live()));this.input.suspended=!this.live();this.input.clear();this.panel.hidden=false;this.render();(this.panel.querySelector('#controls-close') as HTMLButtonElement).focus();}
-  close(){this.capture=null;this.panel.hidden=true;this.input.suspended=false;this.input.clear();document.querySelector<HTMLButtonElement>('#intro-controls')?.focus();}
+  close(){this.capture=null;this.panel.hidden=true;this.input.suspended=false;this.input.clear();document.querySelector<HTMLButtonElement>('#open-controls')?.focus();}
   private bind(code:string){
     if(!this.capture)return;const {action,slot}=this.capture,result=assignBinding(this.input.bindings,action,slot,code);
     if(result.error){this.status(result.error);return;}

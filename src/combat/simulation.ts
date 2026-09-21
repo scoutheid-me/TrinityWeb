@@ -1,3 +1,4 @@
+import {freshProfile} from '../progression/profile';
 import {weapons} from '../data/weapons';
 import {EncounterLedger,type OutcomeKind,type CombatOutcome} from './encounter';
 import {freshProgression,awardFieldSkills,canStart,awardChallenge,validLoadout,type ChallengeId} from '../progression/guild';
@@ -11,6 +12,7 @@ export interface Point { x: number; z: number; }
 export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; }
 export interface Enemy extends Point { id: string; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
+  profile=freshProfile();
   now = 0;autoFaceTarget=true;
   private fieldEligible=true;practiceMode=false;progression=freshProgression();weapon:string="sword";encounter=new EncounterLedger();lastParryAt=-Infinity;nextEnemyAttackAt=0;
   get weaponDefinition(){return weapons[this.weapon]??weapons.sword;}
@@ -230,12 +232,12 @@ export class CombatSimulation {
       const travel=art.grades[art.stage]==='Good'?(def.goodMovement??def.movement):def.movement;
       this.player.x+=(Math.sin(art.releaseYaw)*travel+Math.cos(art.releaseYaw)*(def.sideMovement??0))/(def.startup/1000)*travelDt;
       this.player.z+=(Math.cos(art.releaseYaw)*travel-Math.sin(art.releaseYaw)*(def.sideMovement??0))/(def.startup/1000)*travelDt;
-      if(def.travelStrike)this.strike(node.damage*artMultiplier(art.grades[art.stage]!),node.break*artMultiplier(art.grades[art.stage]!),node.range,art.grades[art.stage]!,'art-'+art.stage);
+      if(def.travelStrike)this.strike(node.multiplier*this.weaponDefinition.damage*artMultiplier(art.grades[art.stage]!),node.break*artMultiplier(art.grades[art.stage]!),node.range,art.grades[art.stage]!,'art-'+art.stage);
       this.bound(this.player);this.resolveBodies();
     }
     if(elapsed>=def.startup&&!art.resolved.has(art.stage)){
       art.resolved.add(art.stage);const grade=art.grades[art.stage]!,power=artMultiplier(grade);
-      this.strike(node.damage*power,node.break*power,node.range,grade,'art-'+art.stage);
+      this.strike(node.multiplier*this.weaponDefinition.damage*power,node.break*power,node.range,grade,'art-'+art.stage);
       this.emit('slash',def.name,this.player,{grade,shape:this.lastContact!.shape,motion:def.motion});
       if(art.stage+1<def.nodes.length){art.victims.clear();art.stage++;art.awaitingHold=true;art.releasedAt=null;this.actionEnd=this.now+1600;this.emit('notice','SECOND CUT · hold the same Art button again');}
       else{this.state.set('ArtRecovery');this.actionEnd=this.now+def.recovery;}

@@ -1,3 +1,15 @@
+# September 20: character profile, fantasy menu and Skill Books introduction
+
+Added a saved editable character name, exactly five figure equipment slots (head, right hand, left hand, body, feet), and five assignable quick-inventory slots. Two starter supply types have persistent stock and can be consumed between encounters. The actual weapon and its two-handed reservation are reflected in Equipment; starter clothes/boots are cosmetic and the head slot is empty. No new armor acquisition system is implied.
+
+The live personal menu now branches through Character (Items/Skills/Equipment), Friends, Map and Monster Manual. Ilyra becomes a friend after induction; her profile includes location, real Guild quest progress and authored local chats. The floor map records room exploration; the manual remembers encountering a sentinel. Control bindings, camera mode, sound and graphics moved into the higher paused game overlay. Manual pause is blocked during active Guild trials while alive; focus-loss safety can still pause.
+
+Combat Art damage now uses equipped weapon base × node multiplier × Strength scaling × timing grade. General forms have lower coefficients than restricted forms. Skill cards and downloadable bank schema 2 expose the formula and updated data. Skill Books introduce themed variable-size trees: Lantern Road Forms is an interactive four-node preview of the planned future tutorial-dungeon reward. The final induction lesson explains books, prerequisites and practice milestones. Book acquisition/study is intentionally not available before that dungeon exists. Current rewards remain intact. Removed the HUD Edit Arts button and slot-context editor; loadouts are edited through the personal Skills menu.
+
+Validation: 96 unit tests pass. All 21 browser scenarios pass across regression and focused reruns, including the complete tutorial/Guild journey, names and inventory persistence, five-plus-five slots, supplies, friends/chats, explored map, manual discovery, layered pause restrictions, and book-node inspection. An old remapped-mouse test clicked the new map icon; it now clicks the arena and passes. TypeScript/Vite build and production startup pass. Desktop/compact and skill-book screenshots were inspected. The existing bundle-size warning remains.
+
+---
+
 # September 20: overhead greatsword and floating equipment interface
 
 The greatsword now deals 12 base damage (15 at Strength 10), compared with the one-handed sword's 4 base. Its slower 420 ms nominal wind-up and 520 ms recovery accompany a dedicated overhead cut. A 2.2 m by 0.96 m forward footprint replaces the wide fan, with blade-edge orientation corrected in both perspectives. Both hand constraints remain intact.

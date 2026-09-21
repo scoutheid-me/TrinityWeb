@@ -92,3 +92,7 @@ Each stage requires unit tests for rules/migrations, real browser interactions, 
 Training progression now starts with a small single-target Focused Strike and awards Linear on induction completion. Three test weapons only: one-handed sword, rapier and two-handed sword. Direct HUD slot editing, skill radar/stat cards, regular-combat skill acquisition and a downloadable bank support this slice. First-person rotation and automatic locked-target orientation are implemented.
 
 Next priority: weapon-specific contact/grip animations and first-person hands, then a small walkable Guild foyer with Ilyra and a physical rack. Link that space to a minimal Town of Beginnings street and a first outdoor encounter using the same saved skills. Preserve the current training room as a replayable teaching space. Do not expand weapon count before these three feel distinct and readable in human playtests.
+
+## Skill Book follow-through
+
+The menu now previews Lantern Road Forms as a future tutorial-dungeon finale reward. When the dungeon is built, add persisted book ownership and validated node-study actions driven by the existing prerequisite data. Support small primers and larger branching volumes, quest/practice requirements, and skills learned through other sources without duplicate awards. Keep the current induction (Linear) and Guild Trial (Oath) rewards unchanged. Art editing now belongs to the personal Skills menu rather than a HUD Edit Arts button.

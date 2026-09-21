@@ -13,7 +13,7 @@ test('three weapons, direct Art editor, responsive skill profiles and first-pers
  await page.screenshot({path:'test-results/skill-bank.png'});
  await page.setViewportSize({width:640,height:720});await page.screenshot({path:'test-results/skill-bank-compact.png'});
  expect(await page.locator('#loadout-tray').evaluate(e=>e.scrollWidth<=e.clientWidth+1)).toBe(true);
- await page.locator('#tray-close').click();await page.setViewportSize({width:1440,height:900});await page.locator('#perspective').click();
+ await page.locator('#tray-close').click();await page.setViewportSize({width:1440,height:900});await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();
  const alpha=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.keyboard.down('ArrowRight');await page.waitForTimeout(250);await page.keyboard.up('ArrowRight');
  expect(Math.abs(await page.evaluate(()=>window.trinity.view.camera.alpha)-alpha)).toBeGreaterThan(.1);
  await page.evaluate(()=>{const s=window.trinity.sim;s.spawnEnemy();s.player.x=0;s.player.z=0;s.enemies[0].x=2;s.enemies[0].z=2;s.lockedId=s.enemies[0].id;});

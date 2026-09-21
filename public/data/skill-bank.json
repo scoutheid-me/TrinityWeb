@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "location": "Guild Hall Training Room",
   "town": "Town of Beginnings",
   "timing": {
@@ -9,7 +9,7 @@
     "goodMultiplier": 0.6,
     "missMultiplier": 0
   },
-  "notes": "Original Trinity balance. Damage is base damage before Strength; distances in meters. Arena boundaries can shorten travel.",
+  "notes": "Original Trinity balance. Node multiplier × equipped weapon base damage × Strength scaling gives Perfect damage; general forms trade lower coefficients for versatility; distances in meters. Arena boundaries can shorten travel.",
   "weapons": [
     {
       "id": "sword",
@@ -60,6 +60,58 @@
       "model": "/assets/weapons/training_greatsword.glb"
     }
   ],
+  "skillBooks": [
+    {
+      "id": "lantern-road-forms",
+      "name": "Lantern Road Forms",
+      "theme": "Four connected forms for making an opening, advancing, recovering and repositioning.",
+      "reward": "Planned final reward of the future tutorial dungeon. Not awarded by the current induction or Guild Trial.",
+      "nodes": [
+        {
+          "art": "focused-strike",
+          "parents": [],
+          "field": {},
+          "x": 50,
+          "y": 12
+        },
+        {
+          "art": "linear",
+          "parents": [
+            "focused-strike"
+          ],
+          "field": {
+            "hits": 12,
+            "evades": 2
+          },
+          "x": 24,
+          "y": 48
+        },
+        {
+          "art": "stillwater-return",
+          "parents": [
+            "focused-strike"
+          ],
+          "field": {
+            "parries": 6
+          },
+          "x": 76,
+          "y": 48
+        },
+        {
+          "art": "aether-step",
+          "parents": [
+            "linear",
+            "stillwater-return"
+          ],
+          "field": {
+            "evades": 6
+          },
+          "x": 50,
+          "y": 84
+        }
+      ]
+    }
+  ],
   "skills": [
     {
       "id": "focused-strike",
@@ -82,7 +134,7 @@
       "nodes": [
         {
           "at": 520,
-          "damage": 32,
+          "multiplier": 6,
           "break": 20,
           "range": 2.4,
           "input": "press"
@@ -112,7 +164,7 @@
       "nodes": [
         {
           "at": 680,
-          "damage": 60,
+          "multiplier": 10,
           "break": 25,
           "range": 1.4,
           "input": "press"
@@ -134,7 +186,7 @@
       "nodes": [
         {
           "at": 620,
-          "damage": 70,
+          "multiplier": 17.5,
           "break": 40,
           "range": 3.5,
           "input": "press"
@@ -157,7 +209,7 @@
       "nodes": [
         {
           "at": 440,
-          "damage": 42,
+          "multiplier": 10.5,
           "break": 12,
           "range": 3.2,
           "input": "press"
@@ -185,7 +237,7 @@
       "nodes": [
         {
           "at": 820,
-          "damage": 54,
+          "multiplier": 13.5,
           "break": 72,
           "range": 3,
           "input": "press"
@@ -214,7 +266,7 @@
       "nodes": [
         {
           "at": 400,
-          "damage": 45,
+          "multiplier": 11.25,
           "break": 18,
           "range": 3,
           "input": "press"
@@ -236,14 +288,14 @@
       "nodes": [
         {
           "at": 620,
-          "damage": 45,
+          "multiplier": 11.25,
           "break": 20,
           "range": 3.2,
           "input": "press"
         },
         {
           "at": 1420,
-          "damage": 65,
+          "multiplier": 16.25,
           "break": 30,
           "range": 3.4,
           "input": "press"

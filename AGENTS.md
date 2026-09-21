@@ -35,4 +35,4 @@ Keep this section persistent so future sessions do not need the user to repeat t
 
 - Keep the hall empty outside explicitly started lessons/trials. Weapon selection belongs to the physical rack with proximity validation, never the HUD Art editor.
 - Preserve both greatsword grip constraints and articulated elbows through animation/equipment changes. Test hand-to-grip contact in both views.
-- M opens the personal menu; first-person settings stay live and viewport-mounted. Persist the optional target-facing preference in both perspectives. Right-drag camera movement is inverted on both axes.
+- M opens the live fantasy personal menu in both perspectives. Technical settings belong to the paused game overlay; manual pause is restricted during active trials, while focus-loss safety can always pause. Persist the optional target-facing preference in both perspectives. Right-drag camera movement is inverted on both axes.

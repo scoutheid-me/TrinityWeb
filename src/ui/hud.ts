@@ -54,7 +54,7 @@ export class HUD {
     const sim=this.sim,p=sim.player,e=sim.target??sim.enemies.find(e=>e.hp>0)??sim.enemies[0];
     const bar=(id:string,value:number,max:number)=>this.el(id).style.width=`${Math.max(0,Math.min(100,value/max*100))}%`;
     bar('hp',p.hp,sim.hpMax);bar('stamina',p.stamina,sim.staminaMax);bar('sp',p.sp,100);
-    this.root.querySelector('.player-name b')!.textContent=sim.progression.completed.includes('trial')?'Wayfarer':'Guild aspirant';
+    this.root.querySelector('.player-name b')!.textContent=sim.profile.name;
     this.el('hp-value').textContent=`${Math.ceil(p.hp)} / ${sim.hpMax}`;this.el('stamina-value').textContent=`${Math.floor(p.stamina)}`;this.el('sp-value').textContent=String(Math.floor(p.sp));
     this.el('enemy-hud').hidden=!e;
     if(e){bar('enemy-hp',e.hp,e.maxHp);bar('enemy-break',e.break,100);this.el('enemy-values').textContent=`${Math.ceil(e.hp)} / ${e.maxHp}`;this.el('enemy-state').textContent=e.hp<=0?`DEFEATED · ${bindingText(this.bindings,'reset')} TO RESET`:e.state==='Broken'?'BROKEN · DAMAGE ×1.6':e.pattern?`${e.pattern.name.toUpperCase()} · ${e.pattern.parryable?'PARRY OR DODGE':'DODGE'}`:e.state.toUpperCase();}

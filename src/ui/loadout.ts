@@ -1,7 +1,7 @@
 import {arts} from '../data/arts';
 import {skillCard} from './skillCard';
 import type {CombatSimulation} from '../combat/simulation';
-/** Direct HUD equipment editing. It never suspends the simulation. */
+/** Personal-menu Art equipment editing. It never suspends the simulation. */
 export class LoadoutTray {
  panel=document.createElement('section');slot=0;
  constructor(private sim:CombatSimulation,private persist:()=>void){this.panel.id='loadout-tray';this.panel.hidden=true;document.getElementById('ui')!.append(this.panel);}
