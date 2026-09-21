@@ -30,9 +30,11 @@ Keep this section persistent so future sessions do not need the user to repeat t
 
 - Fresh characters begin with Focused Strike; induction awards only Linear. Keep normal-combat unlocks separate from tutorial/debug practice.
 - Limit the test rack to one-handed sword, rapier and two-handed sword. Focused Strike and Linear are shared training forms; other Guild forms currently require the one-handed sword.
-- Call the location Guild Hall Training Room, planned in the Town of Beginnings Guild Hall. Do not imply the surrounding town is implemented.
+- Call the location Training Room, within the Guild Hall in the Town of Beginnings. Do not imply the surrounding town is implemented.
 - Regenerate the downloadable skill bank from balance data with `npm run export:skills`; builds do this automatically. See `docs/SKILLS.md` and `docs/BLENDER_MCP_SETUP.md`.
 
 - Keep the hall empty outside explicitly started lessons/trials. Weapon selection belongs to the physical rack with proximity validation, never the HUD Art editor.
 - Preserve both greatsword grip constraints and articulated elbows through animation/equipment changes. Test hand-to-grip contact in both views.
 - M opens the live fantasy personal menu in both perspectives. Technical settings belong to the paused game overlay; manual pause is restricted during active trials, while focus-loss safety can always pause. Persist the optional target-facing preference in both perspectives. Right-drag camera movement is inverted on both axes.
+
+- Character creation collects a name and man/woman character before entry; preserve existing progression during migration. Rename only in paused game settings. Start in first person. First entry offers the Guild Challenge combat induction, which awards only Linear and explains its Perfect/Good movement. Interact defaults to G and is remappable; rack prompts must reflect the saved binding.

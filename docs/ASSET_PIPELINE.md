@@ -116,3 +116,7 @@ For interactive Blender access, see [BLENDER_MCP_SETUP.md](BLENDER_MCP_SETUP.md)
 ## Greatsword edge orientation
 
 The training blade's broad axis is local X, thickness is Y and length is Z. A 90-degree local-Z roll aligns its cutting edge to the runtime vertical swing plane. greatswordMotion.ts samples the simulation deadline, including impact hold, while scene.ts composes the orientation in each perspective. Runtime transforms are intentional: no mesh export change is needed. Blender MCP tool discovery returned no exposed tools for this pass; the existing Blender-authored meshes and articulated elbows are retained.
+
+## Woman character prototype
+
+Tools/Blender/build_woman.py derives wayfarer_woman.blend / wayfarer_woman.glb from the articulated Wayfarer source, preserving shoulder/elbow/hand hierarchy, scale, clothing and grip sockets. It adds a tied-back hairstyle and a slightly adjusted head silhouette; both character choices share combat stats and the prototype rigid-part animation system. The variant contains 3,268 polygons. No Blender MCP tools were exposed for this pass, so the installed Blender 5.2 headless exporter was used. Export succeeded; a nonfatal Blender thumbnail-cache write warning did not affect the saved blend or GLB. The in-game model and two-handed hold were visually inspected.

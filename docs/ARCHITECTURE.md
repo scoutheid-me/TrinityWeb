@@ -55,3 +55,9 @@ The additive v3 profile stores a sanitized 24-character name, health/stamina sup
 M toggles the live fantasy interface in either camera mode. Its four categories are Character (Items/Skills/Equipment), Friends, Map and Monster Manual. Ilyra friendship derives from completed induction, quest status from Guild progression, map cells from movement, and sentinel discovery from an encounter. Chats are local authored dialogue, not external messaging. Supplies restore 60 HP or 50 stamina and consume saved stock only outside encounters/lessons.
 
 Escape/Pause opens a separate system overlay containing control bindings, camera perspective, audio and graphics. Manual pause is refused during an active Guild trial while alive; focus-loss/visibility safety always pauses. System overlays sit above the personal interface. Personal Guild pages now remain live in both perspectives.
+
+## Character entry and Guild Challenge
+
+Fresh and pre-creation saves must complete character creation before loading the scene: name plus man/woman appearance. Existing progression, inventory and names are retained; migration only defaults the new created/character fields. Created profiles skip creation on reload. The paused settings overlay is the only rename UI; the personal figure displays the name read-only. Every launch starts in first person, with a third-person switch in game settings.
+
+The location display is Training Room, nested under Guild Hall / Town of Beginnings. The first entry each session offers a live foreground Guild Challenge invitation. Accept starts the existing five-lesson combat induction; decline leaves an empty room. Completion grants Linear and presents its SP cost, hold timing and 6 m Perfect / 1 m Good travel before offering the Art editor. Further Guild trials remain separate. Interact remains a saved/remappable action (G by default) and contextual prompts use the current binding.

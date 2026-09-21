@@ -1,8 +1,9 @@
+import {createTestCharacter,dismissInvitation} from '../uiHelpers';
 import {sentinelPatterns} from '../../src/data/enemies';
 import {test,expect,type Page} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
 declare global {interface Window {trinity:any;}}
-async function ready(page:Page,webgl=false){await page.goto(webgl?'/?webgl':'/');await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await expect(page.locator('#overlay')).toBeHidden();await page.evaluate(()=>window.trinity.sim.spawnEnemy());await page.keyboard.press('m');}
+async function ready(page:Page,webgl=false){await page.goto(webgl?'/?webgl':'/');await createTestCharacter(page);await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await dismissInvitation(page);await expect(page.locator('#overlay')).toBeHidden();await page.evaluate(()=>window.trinity.sim.spawnEnemy());await page.keyboard.press('m');}
 async function setupClose(page:Page){await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.spawnEnemy();s.progression.learned['crescent-break']='legacy';s.loadout[0]='crescent-break';s.flags.freezeAI=true;s.player.x=0;s.player.z=0;s.player.yaw=0;s.enemies[0].x=0;s.enemies[0].z=2;});}
 test('real controls, assets, timing, Arts, camera, debug and save',async({page},info)=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
@@ -36,7 +37,7 @@ test('real controls, assets, timing, Arts, camera, debug and save',async({page},
 
  await page.locator('#debug-hitboxes').check();expect(await page.evaluate(()=>window.trinity.view.showHitboxes)).toBe(true);
  await page.locator('#debug-hitboxes').uncheck();
- await page.locator('#close-debug').click();await page.locator('#menu').click();await page.locator('.system-preferences summary').click();await page.locator('#quality').selectOption('low');expect(await page.evaluate(()=>window.trinity.view.quality)).toBe('low');await page.locator('#quality').selectOption('medium');await page.locator('#begin').click();await page.locator('#game').focus();
+ await page.locator('#close-debug').click();await page.locator('#menu').click();await page.locator('.system-preferences summary').click();await page.locator('#quality').selectOption('low');expect(await page.evaluate(()=>window.trinity.view.quality)).toBe('low');await page.locator('#quality').selectOption('medium');await page.locator('#begin').click();await dismissInvitation(page);await page.locator('#game').focus();
  await page.evaluate(()=>{window.trinity.sim.reset();window.trinity.sim.flags.freezeAI=true;window.trinity.view.camera.alpha=-Math.PI/2;});
  await page.waitForTimeout(600);
  await page.screenshot({path:'test-results/combat-lab.png'});
@@ -97,7 +98,7 @@ test('player remaps controls, resolves conflicts, persists them and restores def
  await page.getByRole('button',{name:'Dodge primary binding',exact:true}).click();await page.mouse.down({button:'middle'});await page.mouse.up({button:'middle'});
  await expect(page.getByRole('button',{name:'Dodge primary binding',exact:true})).toHaveText('MMB');
  expect(await page.evaluate(()=>window.trinity.sim.now)).toBe(frozen);
- await page.locator('#controls-done').click();await page.locator('#begin').click();
+ await page.locator('#controls-done').click();await page.locator('#begin').click();await dismissInvitation(page);
  await page.keyboard.press('q');expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
  await page.keyboard.press('k');expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Parry');await page.waitForTimeout(450);
  await page.mouse.click(900,600,{button:'middle'});expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Dodge');
@@ -107,7 +108,7 @@ test('player remaps controls, resolves conflicts, persists them and restores def
  await page.getByRole('button',{name:'Move forward primary binding',exact:true}).click();await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'Move forward primary binding',exact:true})).toHaveText('W');
  await page.screenshot({path:'test-results/controls-menu.png'});
  await page.locator('#bindings-defaults').click();await expect(page.getByRole('button',{name:'Parry primary binding',exact:true})).toHaveText('Q');
- await page.locator('#controls-done').click();await page.locator('#begin').click();await page.keyboard.press('q');expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Parry');
+ await page.locator('#controls-done').click();await page.locator('#begin').click();await dismissInvitation(page);await page.keyboard.press('q');expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Parry');
 });
 test('basics are untimed and Art cues align with musical deadlines and stop on pause',async({page})=>{
  await ready(page);await setupClose(page);await page.keyboard.down('j');
@@ -136,7 +137,7 @@ test('tutorial teaches basics and enemy warnings stop on pause',async({page})=>{
  expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBeGreaterThan(0);
  await page.screenshot({path:'test-results/tutorial.png'});
  await page.keyboard.press('Escape');expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toEqual([]);
- await page.locator('#begin').click();await page.locator('#tutorial-exit').click();await expect(page.locator('#tutorial')).toBeHidden();
+ await page.locator('#begin').click();await dismissInvitation(page);await page.locator('#tutorial-exit').click();await expect(page.locator('#tutorial')).toBeHidden();
 });
 
 
@@ -228,7 +229,7 @@ test('Guild Footwork unlock, loadout, live board and reload',async({page})=>{
  await page.locator('#guild-board').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'test-results/guild-board.png'});
  await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();
  expect(await page.evaluate(()=>window.trinity.sim.loadout)).toEqual(['focused-strike','aether-step',null,null]);
- await page.locator('#begin').click();await page.keyboard.press('m');await page.locator('#friends-menu').click();await page.locator('#personal-guild').click();
+ await page.locator('#begin').click();await dismissInvitation(page);await page.keyboard.press('m');await page.locator('#friends-menu').click();await page.locator('#personal-guild').click();
  await expect(page.locator('[data-challenge="breaking"]')).toBeEnabled();
  await page.keyboard.press('Escape');await expect(page.locator('#guild-board')).toBeHidden();
 });
@@ -262,7 +263,7 @@ test('remapped and on-screen Art holds both release through the combat executor'
 });
 
 test('first-person personal journal stays live, follows the viewport and reveals nested help',async({page})=>{
- await ready(page,true);await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();
+ await ready(page,true);await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();await dismissInvitation(page);
  expect(await page.evaluate(()=>window.trinity.view.scene.activeCamera.name)).toBe('first person');
  await page.locator('#friends-menu').click();await page.locator('#personal-guild').click();await expect(page.locator('#guild-board')).toHaveClass(/personal-live/);
  const before=await page.evaluate(()=>({now:window.trinity.sim.now,z:window.trinity.sim.player.z}));
@@ -272,7 +273,7 @@ test('first-person personal journal stays live, follows the viewport and reveals
  await page.screenshot({path:'test-results/first-person-journal.png'});
  await page.locator('#guild-close').click();await page.locator('[data-help]').first().hover();await expect(page.locator('#context-help')).toBeVisible();
  await page.keyboard.press('Escape');await expect(page.locator('#context-help')).toBeHidden();
- await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();expect(await page.evaluate(()=>window.trinity.view.scene.activeCamera.name)).toBe('camera');
+ await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();await dismissInvitation(page);expect(await page.evaluate(()=>window.trinity.view.scene.activeCamera.name)).toBe('camera');
 });
 
 test('entire Guild journey earns the oath, equips it and lands two timed cuts',async({page})=>{
@@ -299,7 +300,7 @@ test('entire Guild journey earns the oath, equips it and lands two timed cuts',a
  await page.screenshot({path:'test-results/guild-oath-earned.png'});
  await page.locator('[data-tab="arts"]').click();await page.locator('[data-equip="1"]').selectOption('wayfarer-oath');await page.locator('#guild-equip').click();await page.evaluate(()=>window.trinity.persist());
  await page.reload();await expect(page.locator('#begin')).toBeEnabled();expect(await page.evaluate(()=>window.trinity.sim.loadout[1])).toBe('wayfarer-oath');
- await page.locator('#begin').click();await setupClose(page);await page.evaluate(()=>window.trinity.sim.player.sp=100);
+ await page.locator('#begin').click();await dismissInvitation(page);await setupClose(page);await page.evaluate(()=>window.trinity.sim.player.sp=100);
  await page.keyboard.down('2');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('2');
  await page.waitForFunction(()=>window.trinity.sim.art?.awaitingHold);await expect(page.locator('#timing-action')).toContainText('HOLD');
  await page.keyboard.down('2');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=780;},null,{polling:'raf'});await page.keyboard.up('2');

@@ -1,3 +1,15 @@
+# September 21: character creation and Training Room entry
+
+Added name and man/woman character creation, preserving old save progression while asking existing profiles to finish the new creation step once. Subsequent name changes live in paused game settings; the personal menu name is read-only. Both prototype character appearances load from Blender assets with identical combat capability. The woman variant retains the established rig and weapon sockets.
+
+The location is now Training Room, within the Guild Hall. First person is the launch default. The main screen explains the Guild Challenge; first entry offers a floating invitation. Accept starts all five combat basics lessons; decline leaves the room empty. Completing the lessons awards Linear and opens a reward card explaining Perfect/full damage + 6 m travel, Good/60% + 1 m travel, Miss failure, SP and hold windows. Later Guild trials and their rewards remain available separately.
+
+Interact is a remappable action (default G). Browser coverage changes it to H, verifies the contextual prompt, checks that G no longer opens the rack, uses H to equip a weapon, then reloads to verify persistence.
+
+Validation: 96 unit tests pass. All 23 browser scenarios pass across the full regression and a focused rerun: the five-enemy benchmark timed out during an 8.6-hour execution interruption, then passed on rerun in 5.7 seconds. Character creation, first-person challenge completion, Linear reward, settings rename and interaction remapping pass. TypeScript/Vite build and production startup pass; the existing bundle-size warning remains. Screenshots cover creation, the invitation and the Blender-authored woman character in game.
+
+---
+
 # September 20: character profile, fantasy menu and Skill Books introduction
 
 Added a saved editable character name, exactly five figure equipment slots (head, right hand, left hand, body, feet), and five assignable quick-inventory slots. Two starter supply types have persistent stock and can be consumed between encounters. The actual weapon and its two-handed reservation are reflected in Equipment; starter clothes/boots are cosmetic and the head slot is empty. No new armor acquisition system is implied.

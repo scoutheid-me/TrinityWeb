@@ -54,7 +54,7 @@ export class LabScene {
   assetErrors: string[] = [];
   loadedAssets: string[] = [];
   constructor(public canvas: HTMLCanvasElement) {}
-  async init() {
+  async init(character:'man'|'woman'='man') {
     const forceWebgl = new URLSearchParams(location.search).has('webgl');
     if (!forceWebgl && await WebGPUEngine.IsSupportedAsync) {
       let gpu: WebGPUEngine | null = null;
@@ -80,7 +80,7 @@ export class LabScene {
     this.pipeline = new DefaultRenderingPipeline('presentation', false, this.scene, [this.camera,this.firstCamera]); this.pipeline.fxaaEnabled = true;
     this.instrumentation = new SceneInstrumentation(this.scene); this.instrumentation.captureFrameTime = true;
     this.environment();
-    const hero = await this.asset('/assets/characters/wayfarer.glb');
+    const hero = await this.asset(character==='woman'?'/assets/characters/wayfarer_woman.glb':'/assets/characters/wayfarer.glb');
     this.swordTemplate = await this.asset('/assets/weapons/aether_sword.glb'); this.swordTemplate.setEnabled(false);
     this.enemyTemplate = await this.asset('/assets/enemies/aether_sentinel.glb'); this.enemyTemplate.setEnabled(false);
     this.player = this.actor(hero, 'wayfarer', false);
