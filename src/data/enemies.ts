@@ -7,3 +7,8 @@ export const sentinelPatterns: AttackPattern[] = [
 ];
 
 export const sentinelSequence = [0, 1, 0, 2] as const;
+
+export const boarPatterns:AttackPattern[]=[
+ {shape:{kind:'box',range:2.1,halfWidth:.48},motion:'cleave',kind:'basic',name:'Tusk jab',telegraph:1000,hits:[1000],recovery:1050,damage:18,parryable:true},
+ {shape:{kind:'sector',range:2.3,halfArc:.85},motion:'sweep',kind:'skill',name:'Savage head sweep',telegraph:1350,hits:[1350],recovery:1500,damage:30,parryable:false}
+];

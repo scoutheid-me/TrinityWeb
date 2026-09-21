@@ -1,3 +1,4 @@
+import {TrainingOrb} from './ui/trainingOrb';
 import {createCharacter,renameSettings,GuildInvitation} from './ui/onboarding';
 import {PersonalMenu} from './ui/personalMenu';
 import {WeaponRack} from './ui/weaponRack';
@@ -36,8 +37,8 @@ async function main(){
   const overlay=hud.el('overlay'),begin=hud.el('begin') as HTMLButtonElement;
   function setPaused(value:boolean){if(controls&&!controls.panel.hidden){if(!value)return;controls.close();}advance();if(value&&guild?.visible){guild.panel.hidden=true;hud.root.classList.remove('journal-open');}paused=value;hud.root.classList.toggle('game-paused',value);input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume training':'Enter the Training Room';}else{view.canvas.focus();audio.unlock();started=true;}last=performance.now();}
   function requestPause(){if(!paused&&sim.encounter.active&&sim.player.hp>0){hud.notice('Finish the trial before opening game settings.');return;}setPaused(!paused);}
-  let rack:WeaponRack|undefined;let controls:ControlsMenu|undefined;let guild:GuildBoard|undefined;
-  const input=new GameInput(sim,view,advance,()=>{if(rack&&!rack.panel.hidden){rack.close();return;}const tray=document.getElementById('loadout-tray');if(tray&&!tray.hidden){tray.hidden=true;return;}guild?.visible?guild.close():requestPause();},()=>hud.toggleDebug(),()=>audio.unlock(),()=>rack?.open(),()=>togglePersonalMenu());
+  let orb:TrainingOrb|undefined;let rack:WeaponRack|undefined;let controls:ControlsMenu|undefined;let guild:GuildBoard|undefined;
+  const input=new GameInput(sim,view,advance,()=>{if(orb&&!orb.panel.hidden){orb.close();return;}if(rack&&!rack.panel.hidden){rack.close();return;}const tray=document.getElementById('loadout-tray');if(tray&&!tray.hidden){tray.hidden=true;return;}guild?.visible?guild.close():requestPause();},()=>hud.toggleDebug(),()=>audio.unlock(),()=>{if(orb?.available)orb.open();else rack?.open();},()=>togglePersonalMenu());
   input.sensitivity=save.settings.sensitivity;input.bindings=save.settings.bindings;hud.setBindings(input.bindings);
   controls=new ControlsMenu(input,()=>setPaused(true),()=>{hud.setBindings(input.bindings);if(tutorial.active)tutorial.render();void persist();},()=>false);
   const autoFace=controls.panel.querySelector<HTMLInputElement>('#auto-face-target')!;autoFace.checked=sim.autoFaceTarget;autoFace.onchange=()=>{sim.autoFaceTarget=autoFace.checked;void persist();};
@@ -51,10 +52,11 @@ async function main(){
   const menuButton=document.createElement('button');menuButton.id='personal-menu-toggle';menuButton.textContent='M · Menu';menuButton.onclick=togglePersonalMenu;hud.root.querySelector('header')!.append(menuButton);
   const loadoutTray=new LoadoutTray(sim,()=>void persist());
   const invitation=new GuildInvitation(()=>{hud.root.classList.remove('personal-menu-open');tutorial.start();},()=>{hud.root.classList.add('personal-menu-open');personalMenu.open('arts');loadoutTray.open();});
-  const personalMenu=new PersonalMenu(sim,()=>loadoutTray.open(),()=>void persist());
+  const personalMenu=new PersonalMenu(sim,id=>loadoutTray.open(id),()=>void persist());
   // Technical preferences belong to the paused system overlay, above the live artifact.
   hud.root.querySelector('.intro')!.append(hud.el('open-controls'),perspective);
   hud.el('intro-controls').hidden=true;
+  orb=new TrainingOrb(sim,()=>input.bindings);
   rack=new WeaponRack(sim,()=>input.bindings,()=>void persist());
   const musicLabel=document.createElement('label');musicLabel.innerHTML='<input id="timing-music" type="checkbox"> Musical timing cues';hud.el('debug').append(musicLabel);
   hud.input('timing-music').checked=audio.timingMusic;hud.input('timing-music').onchange=()=>{audio.timingMusic=hud.input('timing-music').checked;audio.stopTiming();void persist();};
@@ -93,10 +95,10 @@ async function main(){
       }sim.events=[];
       if(sim.player.hp<=0){hud.notice(`You fell · Press ${bindingText(input.bindings,'reset')} to rise again`);}
     }
-    menuButton.textContent=bindingText(input.bindings,'menu')+' · Menu';personalMenu.update();guild.observe();rack.update(!paused&&!guild.visible);hud.update(view);view.scene.render();
+    menuButton.textContent=bindingText(input.bindings,'menu')+' · Menu';personalMenu.update();guild.observe();rack.update(!paused&&!guild.visible);orb.update(!paused&&!guild.visible);hud.update(view);view.scene.render();
     if(performance.now()-lastSave>5000){lastSave=performance.now();void persist();}
   });
   // Stable development-only automation surface: tests use the real simulation and renderer.
-  if(import.meta.env.DEV){Object.assign(window,{trinity:{sim,view,input,hud,audio,controls,tutorial,guild,loadoutTray,rack,personalMenu,invitation,pause:setPaused,persist,snapshot:()=>({state:sim.state.state,player:{...sim.player},enemies:sim.enemies.map(e=>({...e,hits:[...e.hits]})),counters:{...sim.counters},loadout:sim.loadout,stats:view.stats(),assets:view.loadedAssets,assetErrors:view.assetErrors,paused})}});}
+  if(import.meta.env.DEV){Object.assign(window,{trinity:{sim,view,input,hud,audio,controls,tutorial,guild,loadoutTray,rack,orb,personalMenu,invitation,pause:setPaused,persist,snapshot:()=>({state:sim.state.state,player:{...sim.player},enemies:sim.enemies.map(e=>({...e,hits:[...e.hits]})),counters:{...sim.counters},loadout:sim.loadout,stats:view.stats(),assets:view.loadedAssets,assetErrors:view.assetErrors,paused})}});}
 }
 main().catch(error=>{console.error('Trinity could not start.',error);const status=document.getElementById('load-status');if(status)status.textContent=`Startup failed: ${error instanceof Error?error.message:String(error)}. Try reloading with ?webgl.`;});

@@ -1,15 +1,14 @@
 import {arts} from '../data/arts';
 import {skillCard} from './skillCard';
 import type {CombatSimulation} from '../combat/simulation';
-/** Personal-menu Art equipment editing. It never suspends the simulation. */
+/** Selected skill details and direct slot assignment, inside the live personal menu. */
 export class LoadoutTray {
- panel=document.createElement('section');slot=0;
+ panel=document.createElement('section');selected='';
  constructor(private sim:CombatSimulation,private persist:()=>void){this.panel.id='loadout-tray';this.panel.hidden=true;document.getElementById('ui')!.append(this.panel);}
- open(slot=0){this.slot=slot;this.render();this.panel.hidden=false;}
- render(){const sim=this.sim;this.panel.innerHTML=`<div class="tray-heading"><h2>Combat Arts</h2><button id="tray-close" aria-label="Close Art editor">×</button></div><p class="subtle">World live · change equipment between trials, while idle.</p><div class="tray-tabs">${sim.loadout.map((id,i)=>`<button data-edit-slot="${i}" aria-pressed="${this.slot===i}">${i+1} · ${id?arts[id].name:'Empty'}</button>`).join('')}</div><label>Slot ${this.slot+1}<select id="quick-art"><option value="">Empty</option>${Object.values(arts).filter(a=>sim.progression.learned[a.id]&&(a.weapon==='any'||a.weapon===sim.weapon)).map(a=>`<option value="${a.id}" ${sim.loadout[this.slot]===a.id?'selected':''}>${a.name}</option>`).join('')}</select></label><button id="quick-equip">Equip in slot ${this.slot+1}</button><p id="quick-status" role="status"></p><div id="quick-card">${sim.loadout[this.slot]?skillCard(arts[sim.loadout[this.slot]!],sim):''}</div><a href="/data/skill-bank.json" download="trinity-skill-bank.json">Download skill bank</a>`;
+ open(id?:string){this.selected=id&&this.sim.progression.learned[id]?id:Object.keys(this.sim.progression.learned)[0];this.render();this.panel.hidden=false;}
+ render(){const s=this.sim,a=arts[this.selected];if(!a)return;const compatible=a.weapon==='any'||a.weapon===s.weapon;
+ this.panel.innerHTML=`<div class="tray-heading"><h2>${a.name}</h2><button id="tray-close" aria-label="Close skill details">×</button></div><div class="skill-detail-body">${skillCard(a,s).replace('<details ', '<details open ')}</div><p class="subtle">${compatible?'Equip in a slot · moves an already equipped skill.':'Requires '+a.weapon+' · visit the weapon rack.'}</p><div class="skill-equip-slots">${s.loadout.map((id,i)=>`<button data-equip-slot="${i}" ${compatible?'':'disabled'} aria-pressed="${id===a.id}"><small>SLOT ${i+1}</small><span>${id?arts[id].name:'Empty'}</span></button>`).join('')}</div><p id="quick-status" role="status"></p>`;
  this.panel.querySelector<HTMLButtonElement>('#tray-close')!.onclick=()=>this.panel.hidden=true;
- this.panel.querySelectorAll<HTMLButtonElement>('[data-edit-slot]').forEach(b=>b.onclick=()=>{this.slot=Number(b.dataset.editSlot);this.render();});
- this.panel.querySelector<HTMLSelectElement>('#quick-art')!.onchange=e=>{const id=(e.target as HTMLSelectElement).value;this.panel.querySelector('#quick-card')!.innerHTML=id?skillCard(arts[id],sim):'';};
- this.panel.querySelector<HTMLButtonElement>('#quick-equip')!.onclick=()=>{const ids=[...sim.loadout];ids[this.slot]=(this.panel.querySelector('#quick-art') as HTMLSelectElement).value||null;const ok=sim.equipLoadout(ids);this.panel.querySelector('#quick-status')!.textContent=ok?'Equipped.':'Finish your current action/trial, and choose a unique learned Art.';if(ok){const tab=this.panel.querySelectorAll('[data-edit-slot]')[this.slot];if(tab)tab.textContent=(this.slot+1)+' · '+(ids[this.slot]?arts[ids[this.slot]!].name:'Empty');this.persist();}};
+ this.panel.querySelectorAll<HTMLButtonElement>('[data-equip-slot]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.equipSlot),ids=s.loadout.map(id=>id===a.id?null:id);ids[i]=a.id;const ok=s.equipLoadout(ids);if(ok){this.persist();this.render();}this.panel.querySelector('#quick-status')!.textContent=ok?'Equipped in slot '+(i+1)+'.':'Finish your current action or trial before equipping.';});
  }
 }

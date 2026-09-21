@@ -1,3 +1,15 @@
+# September 21: training orb, boar and skill selection
+
+An entrance orb at (2, -9) uses the saved Interact binding and proximity checks. It offers repeat Aether Sentinel or Woodland Boar fights only when no lesson/trial/live opponent is active. Starting a bout restores player resources and returns the player to the arena start. The room remains empty until an encounter is chosen.
+
+Woodland Boar has 220 HP, a parryable 18-damage tusk jab and an unparryable 30-damage head sweep, with distinct footprints and long recovery. It uses an original Blender-authored quadruped with procedural leg/body poses, not production skeletal animation. Encountering it adds a persistent Monster Manual entry.
+
+Skills now lists learned names, equipped-slot labels and a collapsible Skill Books section. Selecting a name opens its description, radar and stats with four direct equip buttons. Reassigning moves the skill without duplicates; weapon and trial restrictions remain enforced. The stats scroll independently of the title and slot controls.
+
+Validation: 98 unit tests pass; new orb and skill browser checks pass, including remapped interaction, repeat opponent choice, model loading and moving a skill between slots. All 24 browser scenarios pass across the full regression and focused reruns. The initial asset-count assertion was updated from six to seven for the new boar model. TypeScript/Vite build and production startup pass; the existing bundle-size warning remains. First-/third-person screenshots and compact-width overflow checks were inspected.
+
+---
+
 # September 21: character creation and Training Room entry
 
 Added name and man/woman character creation, preserving old save progression while asking existing profiles to finish the new creation step once. Subsequent name changes live in paused game settings; the personal menu name is read-only. Both prototype character appearances load from Blender assets with identical combat capability. The woman variant retains the established rig and weapon sockets.

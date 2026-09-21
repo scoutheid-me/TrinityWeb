@@ -6,11 +6,11 @@ test('three weapons, direct Art editor, responsive skill profiles and first-pers
  await page.evaluate(()=>{window.trinity.sim.flags.freezeAI=true;});
  await page.evaluate(()=>{window.trinity.sim.player.x=-8;window.trinity.sim.player.z=7;});await page.keyboard.press('g');await expect(page.locator('.rack-choice')).toHaveCount(3);
  for(const id of ['rapier','greatsword','sword']){await page.locator(`[data-weapon="${id}"]`).click();await expect.poll(()=>page.evaluate(()=>window.trinity.view.equippedWeapon)).toBe(id);}
- await page.locator('#rack-close').click();await page.keyboard.press('m');await page.evaluate(()=>{window.trinity.sim.progression.tutorialCompleted=true;window.trinity.sim.progression.learned.linear='induction';window.trinity.loadoutTray.open(1);});
- await page.locator('#quick-art').selectOption('linear');await page.locator('#quick-equip').click();
+ await page.locator('#rack-close').click();await page.keyboard.press('m');await page.evaluate(()=>{window.trinity.sim.progression.tutorialCompleted=true;window.trinity.sim.progression.learned.linear='induction';window.trinity.loadoutTray.open("linear");});
+ await page.locator('[data-equip-slot="1"]').click();
  expect(await page.evaluate(()=>window.trinity.sim.loadout[1])).toBe('linear');
- await page.locator('#quick-card summary').click();await expect(page.locator('#quick-card svg')).toBeVisible();
- await expect(page.locator('#quick-card')).toContainText('6.00 / 1.00 m');
+ await expect(page.locator('.skill-detail-body svg')).toBeVisible();
+ await expect(page.locator('.skill-detail-body')).toContainText('6.00 / 1.00 m');
  await page.screenshot({path:'test-results/skill-bank.png'});
  await page.setViewportSize({width:640,height:720});await page.screenshot({path:'test-results/skill-bank-compact.png'});
  expect(await page.locator('#loadout-tray').evaluate(e=>e.scrollWidth<=e.clientWidth+1)).toBe(true);

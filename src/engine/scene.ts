@@ -28,7 +28,7 @@ export class LabScene {
   instrumentation!: SceneInstrumentation;
   player!: Actor;
   actors = new Map<string, Actor>();
-  enemyTemplate!: TransformNode;
+  enemyTemplate!: TransformNode;boarTemplate!:TransformNode;
   swordTemplate!: TransformNode;
   weaponTemplates=new Map<string,Promise<TransformNode>>();weaponRequested='';equippedWeapon='';firstWeapon:TransformNode|null=null;firstArms:TransformNode[]=[];
   private async syncWeapon(id:string){
@@ -82,7 +82,8 @@ export class LabScene {
     this.environment();
     const hero = await this.asset(character==='woman'?'/assets/characters/wayfarer_woman.glb':'/assets/characters/wayfarer.glb');
     this.swordTemplate = await this.asset('/assets/weapons/aether_sword.glb'); this.swordTemplate.setEnabled(false);
-    this.enemyTemplate = await this.asset('/assets/enemies/aether_sentinel.glb'); this.enemyTemplate.setEnabled(false);
+    this.enemyTemplate = await this.asset('/assets/enemies/aether_sentinel.glb'); this.enemyTemplate.setEnabled(false);this.boarTemplate=await this.asset('/assets/enemies/woodland_boar.glb');this.boarTemplate.setEnabled(false);
+ const orb=MeshBuilder.CreateSphere('Training encounter orb',{diameter:.7,segments:24},this.scene);orb.position.set(2,1.25,-9);orb.material=this.material('orb glow','#60dfec',1);const pedestal=MeshBuilder.CreateCylinder('Orb pedestal',{diameter:1,height:.65,tessellation:12},this.scene);pedestal.position.set(2,.325,-9);pedestal.material=this.material('orb pedestal','#74858a');
     this.player = this.actor(hero, 'wayfarer', false);
     for(const [i,arm] of [this.player.leftArm,this.player.rightArm].entries()){if(arm){const copy=arm.clone('view '+arm.name,this.firstCamera)!;copy.position.set(i===0?-.22:.22,-.12,-.25);for(const mesh of copy.getChildMeshes())if(/pauldron|upper_arm/.test(mesh.name))mesh.setEnabled(false);copy.setEnabled(false);this.firstArms.push(copy);}}
     this.timingFlash = MeshBuilder.CreateSphere('blade timing cue',{diameter:.16,segments:8},this.scene);this.timingFlash.parent=this.player.sword;this.timingFlash.position.set(0,0,1.25);this.timingFlash.material=this.material('timing light','#ceffff',2);
@@ -172,10 +173,11 @@ export class LabScene {
     for (const [id, actor] of this.actors) if (!sim.enemies.some(e => e.id === id)) { actor.root.dispose(); this.actors.delete(id); }
     for (const enemy of sim.enemies) {
       let actor = this.actors.get(enemy.id);
-      if (!actor) { actor = this.actor(this.enemyTemplate.clone(enemy.id,null)!,enemy.id,true); this.actors.set(enemy.id,actor); }
+      if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,enemy.state==='Chase'?2.5:0,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       const phase=enemyPhase(enemy,sim.now,300);
-      if(phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
+      if(enemy.species==='boar'){const t=enemy.pattern?Math.min(1,(sim.now-enemy.attackStart)/enemy.pattern.telegraph):0;actor.root.rotation.x=enemy.hp<=0?0:Math.sin(t*Math.PI)*.18; if(enemy.pattern&&t===1)actor.root.rotation.x=-.18;}
+      if(enemy.species!=='boar'&&phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
       else if(actor.rightArm)actor.rightArm.rotation.y=0;
       if (enemy.flashUntil>sim.now) actor.root.position.y += .04*Math.sin(sim.now*.1);
     }

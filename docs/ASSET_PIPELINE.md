@@ -120,3 +120,7 @@ The training blade's broad axis is local X, thickness is Y and length is Z. A 90
 ## Woman character prototype
 
 Tools/Blender/build_woman.py derives wayfarer_woman.blend / wayfarer_woman.glb from the articulated Wayfarer source, preserving shoulder/elbow/hand hierarchy, scale, clothing and grip sockets. It adds a tied-back hairstyle and a slightly adjusted head silhouette; both character choices share combat stats and the prototype rigid-part animation system. The variant contains 3,268 polygons. No Blender MCP tools were exposed for this pass, so the installed Blender 5.2 headless exporter was used. Export succeeded; a nonfatal Blender thumbnail-cache write warning did not affect the saved blend or GLB. The in-game model and two-handed hold were visually inspected.
+
+## Woodland Boar
+
+Tools/Blender/build_boar.py generates art/blender/woodland_boar.blend and public/assets/enemies/woodland_boar.glb. The original 2,248-polygon prototype uses shared axis/scale/material helpers, four rigid leg pivots, tusks and bristles. Runtime hides the humanoid weapon attachment and uses quadruped stride/body anticipation. No MCP tool was exposed; Blender 5.2 headless export succeeded. The model was inspected under in-game lighting with resolved materials and no asset errors. The entrance orb/pedestal remains temporary runtime geometry.

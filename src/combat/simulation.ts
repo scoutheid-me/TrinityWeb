@@ -5,12 +5,12 @@ import {freshProgression,awardFieldSkills,canStart,awardChallenge,validLoadout,t
 import {containsHit,type HitShape} from './geometry';
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
 import { arts, artShape, chargeDuration, type ArtDefinition } from '../data/arts';
-import { sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
+import { boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
 export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; }
-export interface Enemy extends Point { id: string; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
+export interface Enemy extends Point { id: string; species?:'sentinel'|'boar'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
   profile=freshProfile();
   now = 0;autoFaceTarget=true;
@@ -71,10 +71,10 @@ export class CombatSimulation {
     this.lastContact=null; this.cancelBufferedInput(); this.state.reset(); this.art = null; this.actionEnd = 0; this.hits.clear(); this.lockedId = null; this.events = []; this.hitStopUntil = 0;
     this.input = { x: 0, z: 0, sprint: false, guard: false }; this.enemies = [];
   }
-  spawnEnemy() {
+  spawnEnemy(species:'sentinel'|'boar'='sentinel') {
     if (this.enemies.filter(e => e.hp > 0).length >= 5) return;
     const index = this.enemies.length;
-    this.enemies.push({ id: `sentinel-${index}`, x: index ? Math.sin(index * 2.4) * 5 : 0, z: index ? Math.cos(index * 2.4) * 5 : 2.5, yaw: Math.PI, hp: balance.enemy.hp, maxHp: balance.enemy.hp, break: 0, state: 'Idle', until: this.now + 1200, attackStart: 0, pattern: null, nextPattern: 0, hits: new Set(), flashUntil: 0 });
+    this.enemies.push({ id: `${species}-${index}`, species, x: index ? Math.sin(index * 2.4) * 5 : 0, z: index ? Math.cos(index * 2.4) * 5 : 2.5, yaw: Math.PI, hp: species==='boar'?220:balance.enemy.hp, maxHp: species==='boar'?220:balance.enemy.hp, break: 0, state: 'Idle', until: this.now + 1200, attackStart: 0, pattern: null, nextPattern: 0, hits: new Set(), flashUntil: 0 });
   }
   resetEnemies() { this.enemies = []; this.spawnEnemy(); this.lockedId = null; }
   toggleLock(switchTarget = false) {
@@ -158,7 +158,7 @@ export class CombatSimulation {
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
     this.emit('hit', String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect' });
     this.hitStopUntil = this.now + balance.hitStop;
-    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', 'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
+    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='boar'?'Boar defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
     else this.applyBreak(enemy, breakDamage);
     return true;
   }
@@ -301,10 +301,10 @@ export class CombatSimulation {
     }
     if (distance > balance.enemy.aggro || this.now < enemy.until) { enemy.state = 'Idle'; return; }
     enemy.yaw = Math.atan2(dx, dz);
-    if (distance > 2.25) { enemy.state = 'Chase'; enemy.x += dx / distance * balance.enemy.speed * dt; enemy.z += dz / distance * balance.enemy.speed * dt; this.bound(enemy); }
+    if (distance > (enemy.species==='boar'?1.8:2.25)) { enemy.state = 'Chase'; enemy.x += dx / distance * balance.enemy.speed * dt; enemy.z += dz / distance * balance.enemy.speed * dt; this.bound(enemy); }
     else {
       if(this.now<this.nextEnemyAttackAt||this.enemies.some(other=>other!==enemy&&other.pattern))return;
       const patternIndex=this.encounter.active&&this.encounter.challenge==='positioning'?0:sentinelSequence[enemy.nextPattern++ % sentinelSequence.length];
-      enemy.pattern = sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
+      enemy.pattern = enemy.species==='boar'?boarPatterns[patternIndex===0?0:1]:sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
   }
 }
