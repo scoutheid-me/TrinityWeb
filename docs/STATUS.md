@@ -212,3 +212,6 @@ Measured local Edge/WebGPU benchmark at **1920×1080, High**: approximately **12
 Replace rigid procedural sword motion with authored anticipation, strike, recovery, and defensive animation clips, then tune enemy telegraphs and hit feedback through playtesting before expanding the world.
 
 See `docs/PROTOTYPE_PLAN.md` for the reviewed progression and musical-combat roadmap. The first ring/square and musical lead-in pass is implemented; calibration, full score, skill acquisition/mastery, and the larger progression loop are planned work.
+
+### Legacy controls repair
+Older saves with E targeting and missing/unbound interaction now migrate to E Interact / T Switch target, alongside the former G/E pair. Custom interaction keys and occupied T bindings remain unchanged. Regression coverage exercises saved-data migration and the orb interaction prompt.

@@ -29,8 +29,10 @@ export function assignBinding(bindings:Bindings,action:Action,slot:0|1,code:stri
 export function validateBindings(raw:unknown):Bindings {
   if(!raw||typeof raw!=='object')return defaultBindings();
   const values={...raw} as Record<string,unknown>;
-  // Migrate only the original untouched pair; preserve custom controls.
-  if(JSON.stringify(values.interact)==='["KeyG",null]'&&JSON.stringify(values.switchTarget)==='["KeyE",null]'&&!Object.values(values).flat().includes('KeyT')){values.interact=['KeyE',null];values.switchTarget=['KeyT',null];}
+  // Pre-interaction saves had E for targeting. An earlier migration persisted
+  // their missing interaction binding as unbound because E was already occupied.
+  const legacyInteract=values.interact===undefined||JSON.stringify(values.interact)==='[null,null]'||JSON.stringify(values.interact)==='["KeyG",null]';
+  if(legacyInteract&&JSON.stringify(values.switchTarget)==='["KeyE",null]'&&!Object.values(values).flat().includes('KeyT')){values.interact=['KeyE',null];values.switchTarget=['KeyT',null];}
   const result=defaultBindings(),used=new Set<string>();
   for(const action of actions){const pair=values[action]??(['interact','menu'].includes(action)?[Object.values(values).flat().includes(defaultBindings()[action][0])?null:defaultBindings()[action][0],null]:undefined);if(!Array.isArray(pair)||pair.length!==2)return defaultBindings();
     for(const code of pair){if(code===null)continue;if(!supportedBinding(code)||used.has(code)||(code==='Escape'&&action!=='pause'))return defaultBindings();used.add(code);}
