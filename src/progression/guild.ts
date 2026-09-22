@@ -22,6 +22,7 @@ export function validateProgression(raw:unknown):Progression{
   p.tutorialCompleted=data.tutorialCompleted===true;if(p.tutorialCompleted)p.learned.linear='induction';
   for(const k of Object.keys(p.field) as (keyof Progression['field'])[]){const v=data.field?.[k];if(typeof v==='number'&&Number.isFinite(v))p.field[k]=Math.max(0,Math.min(100000,Math.floor(v)));}
   if(data.learned?.['crescent-break']==='legacy'||(!('tutorialCompleted' in data)&&data.learned?.['crescent-break']==='starter'))p.learned['crescent-break']='legacy';
+  for(const id of ['needle-step','iron-horizon'])if(data.learned?.[id]==='rack practice')p.learned[id]='rack practice';
   awardFieldSkills(p);
   // Acquisition follows completed authored challenges, not arbitrary learned-ID claims.
   for(const id of Object.keys(challenges) as ChallengeId[])if(Array.isArray(data.completed)&&data.completed.includes(id)&&canStart(p,id))awardChallenge(p,id,false);

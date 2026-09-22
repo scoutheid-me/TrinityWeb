@@ -1,3 +1,15 @@
+# September 21: three weapon roles and visible armory
+
+The rack displays the actual sword, rapier and greatsword GLBs instead of its generic practice blades. Comparison entries show current/base damage, attack cycle, nominal wind-up, recovery, reach, arc/lane, target count, Break and guard reduction. Current Strength/Dexterity affect the live numbers. The cooldown tradeoff is recovery commitment, not a separate skill cooldown timer.
+
+Greatsword basics deal 12 base damage, 8 Break and cleave a 3.2 m / 155-degree front fan with 420 ms nominal wind-up and 680 ms recovery. Rapier basics deal 3 base / 1 Break in a narrow 3.1 m lane, hit only the nearest target and use 55 ms wind-up / 140 ms recovery. Sword remains 4 base / 2 Break with 87 ms wind-up / 240 ms recovery, a 2.9 m / 109-degree fan and 80% guard reduction; its free off hand supports the intended future shield role, but equippable shields are not implemented.
+
+Taking a rapier teaches Needle Step (single-target thrust, forward/right movement, 180 ms recovery). Taking a greatsword teaches Iron Horizon (wide group cleave, high damage/Break, 850 ms recovery). Both are simple one-event weapon-restricted practice Arts, saved across reloads and equipped through Skills. Tutorial rewards remain unchanged. Greatsword motion now includes a diagonal sweep while retaining both grip constraints.
+
+Validation: 104 unit tests pass, including rapier target cap, group cleave, specialty Art execution and persisted weapon restrictions. Focused rack/armory/grip browser checks pass. All 26 browser scenarios pass, including the full Guild journey and two-handed contact through both camera views. TypeScript/Vite build and production startup pass; the existing bundle-size warning remains. The rack models and comparison interface were visually inspected.
+
+---
+
 # September 21: interaction defaults, counter damage and readable defense
 
 Interact now defaults to E and target switching to T. Saves with the untouched old G/E pair migrate when T is free; custom mappings are preserved. The name frame has a straight left edge, and HP uses a fixed stepped silhouette with a moving cutoff, so the thin right portion empties before the thicker portion.

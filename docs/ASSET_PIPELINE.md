@@ -124,3 +124,5 @@ Tools/Blender/build_woman.py derives wayfarer_woman.blend / wayfarer_woman.glb f
 ## Woodland Boar
 
 Tools/Blender/build_boar.py generates art/blender/woodland_boar.blend and public/assets/enemies/woodland_boar.glb. The original 2,248-polygon prototype uses shared axis/scale/material helpers, four rigid leg pivots, tusks and bristles. Runtime hides the humanoid weapon attachment and uses quadruped stride/body anticipation. No MCP tool was exposed; Blender 5.2 headless export succeeded. The model was inspected under in-game lighting with resolved materials and no asset errors. The entrance orb/pedestal remains temporary runtime geometry.
+
+The rack now hides its generic practice_blade/practice_guard meshes and displays the three existing Blender-authored training weapon GLBs at their grip origins. This reuses the shared armory source assets without a new mesh export. No Blender MCP tools were exposed for this pass. Runtime diagonal greatsword sweep retains edge roll and both hand constraints; collision remains an authored attack footprint rather than an exact swept-blade volume.

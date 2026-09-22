@@ -9,12 +9,12 @@
     "goodMultiplier": 0.6,
     "missMultiplier": 0
   },
-  "notes": "Original Trinity balance. Node multiplier × equipped weapon base damage × Strength scaling gives Perfect damage; general forms trade lower coefficients for versatility; distances in meters. Arena boundaries can shorten travel.",
+  "notes": "Original Trinity balance. Node multiplier × equipped weapon base damage × Strength scaling gives Perfect damage; general forms trade lower coefficients for versatility; distances in meters. Arena boundaries can shorten travel. Weapon recovery is action commitment rather than a separate cooldown. Missing maxTargets means all targets in the footprint. Rack practiceArt names the weapon-specific training unlock.",
   "weapons": [
     {
       "id": "sword",
       "name": "One-handed sword",
-      "description": "Balanced reach, speed and recovery.",
+      "description": "Versatile blade with the strongest guard; leaves the off hand free for a future shield.",
       "damage": 4,
       "startup": 87,
       "recovery": 240,
@@ -22,7 +22,7 @@
       "shape": {
         "kind": "sector",
         "range": 2.9,
-        "halfArc": 1.4
+        "halfArc": 0.95
       },
       "guard": 0.2,
       "model": "/assets/weapons/training_sword.glb"
@@ -30,10 +30,10 @@
     {
       "id": "rapier",
       "name": "Rapier",
-      "description": "A fast, narrow thrust; aim carefully.",
+      "description": "Fast single-target thrusts and mobile precision Arts. Low damage and Break per hit.",
       "damage": 3,
-      "startup": 65,
-      "recovery": 200,
+      "startup": 55,
+      "recovery": 140,
       "break": 1,
       "shape": {
         "kind": "box",
@@ -41,23 +41,26 @@
         "halfWidth": 0.22
       },
       "guard": 0.25,
-      "model": "/assets/weapons/training_rapier.glb"
+      "model": "/assets/weapons/training_rapier.glb",
+      "maxTargets": 1,
+      "practiceArt": "needle-step"
     },
     {
       "id": "greatsword",
       "name": "Two-handed sword",
-      "description": "A powerful overhead cut down a narrow lane; slow wind-up and exposed recovery.",
+      "description": "Heavy diagonal cleaves catch groups. High damage and Break, with a long vulnerable recovery.",
       "damage": 12,
       "startup": 420,
-      "recovery": 520,
-      "break": 5,
+      "recovery": 680,
+      "break": 8,
       "shape": {
-        "kind": "box",
-        "range": 2.2,
-        "halfWidth": 0.48
+        "kind": "sector",
+        "range": 3.2,
+        "halfArc": 1.35
       },
-      "guard": 0.25,
-      "model": "/assets/weapons/training_greatsword.glb"
+      "guard": 0.4,
+      "model": "/assets/weapons/training_greatsword.glb",
+      "practiceArt": "iron-horizon"
     }
   ],
   "skillBooks": [
@@ -298,6 +301,64 @@
           "multiplier": 16.25,
           "break": 30,
           "range": 3.4,
+          "input": "press"
+        }
+      ]
+    },
+    {
+      "id": "needle-step",
+      "name": "Needle Step",
+      "description": "A fast rapier thrust with a sidestep. Perfect moves 2 m forward and 1.4 m right; Good shortens forward travel. One target only.",
+      "weapon": "rapier",
+      "cost": 20,
+      "startup": 160,
+      "recovery": 180,
+      "movement": 2,
+      "goodMovement": 0.5,
+      "sideMovement": 1.4,
+      "arc": 0.2,
+      "armor": false,
+      "motion": "basic",
+      "travelStrike": true,
+      "maxTargets": 1,
+      "shape": {
+        "kind": "box",
+        "range": 2,
+        "halfWidth": 0.28
+      },
+      "nodes": [
+        {
+          "at": 430,
+          "multiplier": 12,
+          "break": 14,
+          "range": 2,
+          "input": "press"
+        }
+      ]
+    },
+    {
+      "id": "iron-horizon",
+      "name": "Iron Horizon",
+      "description": "A broad two-handed cleave that strikes every foe in front. High damage and Break; commit to the long recovery.",
+      "weapon": "greatsword",
+      "cost": 35,
+      "startup": 350,
+      "recovery": 850,
+      "movement": 0.5,
+      "arc": 1.2,
+      "armor": true,
+      "motion": "art",
+      "shape": {
+        "kind": "sector",
+        "range": 3.6,
+        "halfArc": 1.2
+      },
+      "nodes": [
+        {
+          "at": 850,
+          "multiplier": 12,
+          "break": 60,
+          "range": 3.6,
           "input": "press"
         }
       ]

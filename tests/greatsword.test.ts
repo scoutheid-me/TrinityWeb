@@ -9,10 +9,10 @@ it('lands one stronger untimed greatsword hit and earns normal basic SP',()=>{
  s.pressAttack();for(let i=0;i<35;i++)s.update(10);expect(e.hp).toBe(hp);
  for(let i=0;i<90;i++)s.update(10);expect(hp-e.hp).toBe(15);expect(s.player.sp).toBe(10);
 });
-it('overhead cut covers the forward lane but excludes lateral and rear targets',()=>{
+it('heavy cleave covers the front fan but excludes rear targets',()=>{
  const shape=weapons.greatsword.shape,origin={x:0,z:0};
  expect(containsHit(shape,origin,0,{x:.3,z:2.0})).toBe(true);
- expect(containsHit(shape,origin,0,{x:1,z:2})).toBe(false);
+ expect(containsHit(shape,origin,0,{x:1,z:2})).toBe(true);
  expect(containsHit(shape,origin,0,{x:0,z:-1})).toBe(false);
 });
 it('winds overhead, swings downward through contact, then recovers without a pose jump',()=>{

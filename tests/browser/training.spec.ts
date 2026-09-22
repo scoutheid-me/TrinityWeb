@@ -20,6 +20,6 @@ test('three weapons, direct Art editor, responsive skill profiles and first-pers
  await page.evaluate(()=>{const s=window.trinity.sim;s.spawnEnemy();s.player.x=0;s.player.z=0;s.enemies[0].x=2;s.enemies[0].z=2;s.lockedId=s.enemies[0].id;});
  await expect.poll(()=>page.evaluate(()=>{const t=window.trinity,v=t.view,s=t.sim;const desired=Math.atan2(s.target.z-s.player.z,s.target.x-s.player.x)+Math.PI;return Math.abs(Math.atan2(Math.sin(v.camera.alpha-desired),Math.cos(v.camera.alpha-desired)));})).toBeLessThan(.03);
  await page.screenshot({path:'test-results/first-person-weapon.png'});
- const bank=await page.request.get('/data/skill-bank.json');expect(bank.ok()).toBe(true);const data=await bank.json();expect(data.weapons).toHaveLength(3);expect(data.skills).toHaveLength(7);
+ const bank=await page.request.get('/data/skill-bank.json');expect(bank.ok()).toBe(true);const data=await bank.json();expect(data.weapons).toHaveLength(3);expect(data.skills).toHaveLength(9);
  expect(await page.evaluate(()=>window.trinity.view.assetErrors)).toEqual([]);expect(errors).toEqual([]);
 });

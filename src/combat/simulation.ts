@@ -165,10 +165,11 @@ export class CombatSimulation {
   strike(damage: number, breakDamage: number, range: number, grade: Grade, phase: string, basic = false) {
     const shape:HitShape=basic?this.weaponDefinition.shape:this.art?artShape(this.art.definition,this.art.stage):{kind:'sector',range,halfArc:balance.basic.arc};
     this.lastContact={at:this.now,shape};
-    let landed = false;
+    let landed = false,targetsHit=0;
     for (const enemy of [...this.enemies].sort((a,b)=>Math.hypot(a.x-this.player.x,a.z-this.player.z)-Math.hypot(b.x-this.player.x,b.z-this.player.z))) if (containsHit(shape,this.player,this.player.yaw,enemy)) {
+      if(basic&&targetsHit>=(this.weaponDefinition.maxTargets??Infinity))break;
       if(!basic&&this.art?.definition.maxTargets&&this.art.victims.size>=this.art.definition.maxTargets)break;
-      const hit=this.hitEnemy(enemy,physicalDamage(damage,this.attributes.strength),breakDamage,grade,phase);if(hit&&!basic&&this.art){this.art.victims.add(enemy.id);if(this.art.definition.restoreStamina)this.player.stamina=Math.min(this.staminaMax,this.player.stamina+this.art.definition.restoreStamina*artMultiplier(grade));}landed=hit||landed;
+      const hit=this.hitEnemy(enemy,physicalDamage(damage,this.attributes.strength),breakDamage,grade,phase);if(hit&&!basic&&this.art){this.art.victims.add(enemy.id);if(this.art.definition.restoreStamina)this.player.stamina=Math.min(this.staminaMax,this.player.stamina+this.art.definition.restoreStamina*artMultiplier(grade));}if(hit)targetsHit++;landed=hit||landed;
     }
     if (basic && landed) this.player.sp = gainSp(this.player.sp, balance.sp.normal);
   }

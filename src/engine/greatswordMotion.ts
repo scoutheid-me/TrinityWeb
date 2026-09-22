@@ -14,5 +14,6 @@ export function greatswordPose(now:number,start:number,contact:number,recovery=5
    if(t<140){pitch=lerp(0,.85,smooth(t/140));}
    else{pitch=lerp(.85,-.95,smooth((t-140)/recovery));}
  }
- return {pitch,lift};
+ const yaw=now<contact?-1.35*Math.min(1,(contact-now)/180):now-contact<160?1.35*(now-contact)/160:1.35*(1-smooth((now-contact-160)/recovery));
+ return {pitch,lift,yaw};
 }

@@ -90,6 +90,8 @@ export class LabScene {
     const column = await this.asset('/assets/environments/guild_column.glb'); column.setEnabled(false);
     for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; const copy = column.clone(`column-${i}`, null)!; copy.setEnabled(true); copy.position.set(Math.sin(a)*13.4,0,Math.cos(a)*13.4); this.cast(copy); }
     const rack = await this.asset('/assets/props/weapon_rack.glb'); rack.position.set(weaponRack.x,0,weaponRack.z); rack.rotation.y = weaponRack.yaw; this.cast(rack);
+    for(const mesh of rack.getChildMeshes())if(/practice_blade|practice_guard/.test(mesh.name))mesh.setEnabled(false);
+    for(const [i,w] of Object.values(weapons).entries()){const display=await this.asset(w.model);display.name='rack display '+w.id;display.parent=rack;display.position.set((i-1)*.6,.65,.25);display.rotation.x=-Math.PI/2;display.scaling.setAll(.8);this.cast(display);}
     this.ring = MeshBuilder.CreateTorus('lock indicator', { diameter: 1.8, thickness: .035, tessellation: 48 }, this.scene); this.ring.material = this.material('lock', '#72e6ef', 1); this.ring.position.y = .07;
     this.setQuality('medium');
     window.addEventListener('resize', () => this.engine.resize());
@@ -196,13 +198,13 @@ export class LabScene {
     if(this.firstWeapon){this.firstWeapon.setEnabled(this.firstPerson);this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.45;this.firstWeapon.rotation.z=(pose?.yaw??0)*.25;}
     for(const arm of [this.player.leftArm,this.player.rightArm]){if(!arm)continue;const elbow=arm.getDescendants().find(n=>n.name.endsWith('_elbow')) as TransformNode|undefined;if(elbow)elbow.rotationQuaternion=null;}
       if(this.equippedWeapon==='greatsword'){
-        let heavy={pitch:-.95,lift:0};
+        let heavy={pitch:-.95,lift:0,yaw:0};
         if(state==='BasicAttackStartup')heavy=greatswordPose(sim.now,sim.actionStart,sim.actionEnd);
         else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact){const at=sim.lastContact.at;heavy=greatswordPose(sim.now<sim.hitStopUntil?at:sim.now,at-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87,at);}
-        else if(pose)heavy={pitch:-.95+pose.pitch*.55,lift:0};
+        else if(pose)heavy={pitch:-.95+pose.pitch*.55,lift:0,yaw:pose.yaw};
         // The authored edge is local X; roll 90 degrees so the edge, not the flat,
         // leads the vertical Y/Z cutting plane. Keep the grip sockets on local Z.
-        const orientation=Quaternion.RotationAxis(Vector3.Right(),heavy.pitch).multiply(Quaternion.RotationAxis(Vector3.Forward(),Math.PI/2));
+        const orientation=Quaternion.RotationAxis(Vector3.Up(),heavy.yaw).multiply(Quaternion.RotationAxis(Vector3.Right(),heavy.pitch)).multiply(Quaternion.RotationAxis(Vector3.Forward(),Math.PI/2));
         const sword=this.player.sword;sword.position.set(0,1.28+heavy.lift,.20);sword.rotationQuaternion=orientation;
         for(const side of ['left','right'] as const){const arm=side==='left'?this.player.leftArm:this.player.rightArm;if(arm)holdGrip(arm,sword,side);}
         if(this.firstWeapon){this.firstWeapon.position.set(.14,-.30+heavy.lift*.65,-.48);this.firstWeapon.rotationQuaternion=Quaternion.RotationAxis(Vector3.Up(),Math.PI).multiply(orientation);}

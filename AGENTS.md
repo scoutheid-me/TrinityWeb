@@ -29,7 +29,7 @@ Keep this section persistent so future sessions do not need the user to repeat t
 ## Current training scope
 
 - Fresh characters begin with Focused Strike; induction awards only Linear. Keep normal-combat unlocks separate from tutorial/debug practice.
-- Limit the test rack to one-handed sword, rapier and two-handed sword. Focused Strike and Linear are shared training forms; other Guild forms currently require the one-handed sword.
+- Limit the test rack to one-handed sword, rapier and two-handed sword. Focused Strike and Linear are shared training forms; other Guild forms currently require the one-handed sword. The rack teaches Needle Step for rapier and Iron Horizon for greatsword; both remain weapon-restricted.
 - Call the location Training Room, within the Guild Hall in the Town of Beginnings. Do not imply the surrounding town is implemented.
 - Regenerate the downloadable skill bank from balance data with `npm run export:skills`; builds do this automatically. See `docs/SKILLS.md` and `docs/BLENDER_MCP_SETUP.md`.
 

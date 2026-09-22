@@ -7,7 +7,7 @@ async function ready(page:Page,webgl=false){await page.goto(webgl?'/?webgl':'/')
 async function setupClose(page:Page){await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.spawnEnemy();s.progression.learned['crescent-break']='legacy';s.loadout[0]='crescent-break';s.flags.freezeAI=true;s.player.x=0;s.player.z=0;s.player.yaw=0;s.enemies[0].x=0;s.enemies[0].z=2;});}
 test('real controls, assets, timing, Arts, camera, debug and save',async({page},info)=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
- await ready(page);await expect.poll(()=>page.evaluate(()=>window.trinity.view.loadedAssets.length)).toBe(7);
+ await ready(page);await expect.poll(()=>page.evaluate(()=>window.trinity.view.loadedAssets.length)).toBe(10);
  await page.evaluate(()=>window.trinity.sim.flags.invulnerable=true);
  const start=await page.evaluate(()=>window.trinity.sim.player.z);
  await page.keyboard.down('w');await page.waitForTimeout(500);await page.keyboard.up('w');
