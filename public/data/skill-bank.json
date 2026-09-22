@@ -9,32 +9,33 @@
     "goodMultiplier": 0.6,
     "missMultiplier": 0
   },
-  "notes": "Original Trinity balance. Node multiplier × equipped weapon base damage × Strength scaling gives Perfect damage; general forms trade lower coefficients for versatility; distances in meters. Arena boundaries can shorten travel. Weapon recovery is action commitment rather than a separate cooldown. Missing maxTargets means all targets in the footprint. Rack practiceArt names the weapon-specific training unlock.",
+  "notes": "Original Trinity balance. Node multiplier × equipped weapon base damage × Strength scaling gives Perfect damage; Basic Arts use any weapon; Combat Arts may restrict weapon/class; Skill Books group themed trees. General forms trade lower coefficients for versatility; distances in meters. Arena boundaries can shorten travel. Weapon recovery is action commitment rather than a separate cooldown. Missing maxTargets means all targets in the footprint. multiTargetDamage is per-victim basic damage when more than one living target is caught; Art multipliers always use damage, not multiTargetDamage. Rack practiceArt names the weapon-specific training unlock.",
   "weapons": [
     {
       "id": "sword",
       "name": "One-handed sword",
-      "description": "Versatile blade with the strongest guard; leaves the off hand free for a future shield.",
-      "damage": 4,
+      "description": "Versatile blade with the strongest guard; leaves the off hand free for a future shield. Group hits gain damage per target.",
+      "damage": 8,
       "startup": 87,
       "recovery": 240,
       "break": 2,
       "shape": {
         "kind": "sector",
         "range": 2.9,
-        "halfArc": 0.95
+        "halfArc": 0.5235987755982988
       },
       "guard": 0.2,
-      "model": "/assets/weapons/training_sword.glb"
+      "model": "/assets/weapons/training_sword.glb",
+      "multiTargetDamage": 10
     },
     {
       "id": "rapier",
       "name": "Rapier",
-      "description": "Fast single-target thrusts and mobile precision Arts. Low damage and Break per hit.",
-      "damage": 3,
+      "description": "Fast single-target thrusts and mobile precision Arts. Higher single-target damage than the sword.",
+      "damage": 10,
       "startup": 55,
       "recovery": 140,
-      "break": 1,
+      "break": 2,
       "shape": {
         "kind": "box",
         "range": 3.1,
@@ -52,7 +53,7 @@
       "damage": 12,
       "startup": 420,
       "recovery": 680,
-      "break": 8,
+      "break": 4,
       "shape": {
         "kind": "sector",
         "range": 3.2,
@@ -68,7 +69,7 @@
       "id": "lantern-road-forms",
       "name": "Lantern Road Forms",
       "theme": "Four connected forms for making an opening, advancing, recovering and repositioning.",
-      "reward": "Planned final reward of the future tutorial dungeon. Not awarded by the current induction or Guild Trial.",
+      "reward": "Planned final reward of the future tutorial dungeon. Not awarded by the current Guild Combat Trial.",
       "nodes": [
         {
           "art": "focused-strike",

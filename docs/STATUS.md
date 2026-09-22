@@ -215,3 +215,13 @@ See `docs/PROTOTYPE_PLAN.md` for the reviewed progression and musical-combat roa
 
 ### Legacy controls repair
 Older saves with E targeting and missing/unbound interaction now migrate to E Interact / T Switch target, alongside the former G/E pair. Custom interaction keys and occupied T bindings remain unchanged. Regression coverage exercises saved-data migration and the orb interaction prompt.
+
+## Current training consolidation
+
+The entrance orb now owns the single Guild Combat Trial and repeat sparring. The duplicate four-part Guild Trials and journal launch buttons have been removed from the player-facing flow; old earned progression is retained for compatibility. Ilyra's current induction quest and completed archive replace the guild-as-friend entry. The HUD no longer assigns a Wayfarer title.
+
+The rack uses comparison radar charts with hover values and an expandable guide. Sword basics are 8 single / 10 per group victim in a 60-degree fan; rapier 10 single / 2 Break; greatsword 12 per victim / 4 Break. Shared Arts continue scaling from original weapon base damage. The paused settings overlay includes a validated, persistent local GM item editor with reset and export; GM play cannot earn combat progression.
+
+Runtime footprint-driven poses reuse existing original Blender models; MCP was not exposed this session, while Blender 5.2 is installed. No replacement meshes or new Blender exports were required. Full physical swept-blade collision and skinned animation remain future work. See SKILLS.md for current mechanics and GM instructions.
+
+Validation: 112 unit tests passed. All 29 current browser scenarios passed across the full run and targeted reruns after updating two obsolete assertions (old damage and tier label). Production startup passed with remote requests blocked. Greatsword hand contacts stayed within 1 cm in both views; the added footprint-pose check also verified one-handed grip contact and current weapon angles. Original assets rendered in the actual in-app preview. Production build passes with the existing large-bundle warning.

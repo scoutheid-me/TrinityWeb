@@ -10,7 +10,7 @@ it('migrates old profiles and validates names, inventory and exploration',()=>{
 });
 it('scales the same general Art with equipped weapon damage and applies timing once',()=>{
  function hit(weapon:string,offset:number){const s=new CombatSimulation();s.weapon=weapon;s.spawnEnemy();s.flags.freezeAI=true;s.player.x=0;s.player.z=0;s.player.yaw=0;s.enemies[0].x=0;s.enemies[0].z=2;s.player.sp=100;const hp=s.enemies[0].hp;s.activateArt(0);for(let n=0;n<520+offset;n+=10)s.update(10);s.releaseArt(0);for(let n=0;n<400;n+=10)s.update(10);return hp-s.enemies[0].hp;}
- expect(hit('sword',0)).toBe(30);expect(hit('greatsword',0)).toBe(90);expect(hit('greatsword',80)).toBe(54);
+ expect(hit('sword',0)).toBe(60);expect(hit('greatsword',0)).toBe(90);expect(hit('greatsword',80)).toBe(54);
  expect(arts.linear.nodes[0].multiplier).toBeLessThan(arts['aether-step'].nodes[0].multiplier);
  expect(arts['focused-strike'].nodes[0].multiplier).toBeLessThan(arts['stillwater-return'].nodes[0].multiplier);
 });

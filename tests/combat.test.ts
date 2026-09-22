@@ -78,12 +78,12 @@ describe('counter risk and combat audit',()=>{
  });
  it.each([30,60,120])('preserves a Perfect Art outcome under %i Hz updates',hz=>{
  const s=encounter();s.player.sp=30;s.activateArt(0);while(s.now<620)s.update(Math.min(1000/hz,620-s.now));s.releaseArt(0);while(s.now<1300)s.update(1000/hz);
- expect(s.counters.perfects).toBe(1);expect(s.enemies[0].hp).toBe(372);expect(s.player.sp).toBe(0);
+ expect(s.counters.perfects).toBe(1);expect(s.enemies[0].hp).toBe(285);expect(s.player.sp).toBe(0);
  });
 });
 
 describe('hold and release Arts',()=>{
- it.each([[620,'Perfect',88,40],[530,'Good',53,24],[0,'Miss',0,0],[800,'Miss',0,0]] as const)('grades release at %i ms with matching damage and Break',(at,grade,damage,breakAmount)=>{
+ it.each([[620,'Perfect',175,40],[530,'Good',105,24],[0,'Miss',0,0],[800,'Miss',0,0]] as const)('grades release at %i ms with matching damage and Break',(at,grade,damage,breakAmount)=>{
   const s=encounter();s.player.sp=30;s.activateArt(0);advance(s,at);s.releaseArt(0);advance(s,1500);
   expect(s.enemies[0].hp).toBe(460-damage);expect(s.enemies[0].break).toBe(breakAmount);expect(s.player.sp).toBe(0);expect(s.lastGrade).toBe(grade);
   expect(s.events.filter(e=>e.type==='slash')).toHaveLength(grade==='Miss'?0:1);

@@ -1,0 +1,12 @@
+import {it,expect} from 'vitest';
+import {CombatSimulation} from '../src/combat/simulation';
+import {weapons} from '../src/data/weapons';
+import {footprintPose} from '../src/engine/footprintMotion';
+import {originalCatalog,validateCatalog} from '../src/data/gm';
+it('balances single and group damage independently and ignores dead targets',()=>{
+ for(const [weapon,count,damage,br] of [['sword',1,10,2],['sword',2,13,2],['rapier',2,13,2],['greatsword',2,15,4]] as const){const s=new CombatSimulation();s.weapon=weapon;s.player.z=0;for(let i=0;i<count;i++){s.spawnEnemy();s.enemies[i].x=0;s.enemies[i].z=1.5+i*.3;}s.strike(0,br,4,'Normal','basic',true);expect(s.enemies[0].maxHp-s.enemies[0].hp).toBe(damage);expect(s.enemies[0].break).toBe(br);if(count>1)expect(s.enemies[1].maxHp-s.enemies[1].hp).toBe(weapon==='rapier'?0:damage);}
+ const s=new CombatSimulation();s.player.z=0;s.spawnEnemy();s.spawnEnemy();s.enemies.forEach(e=>{e.x=0;e.z=2;});s.enemies[1].hp=0;s.strike(8,2,3,'Normal','basic',true);expect(s.enemies[0].maxHp-s.enemies[0].hp).toBe(10);
+});
+it('keeps sword coverage at 60 degrees and drives sweeps and thrusts from the hit shape',()=>{expect(weapons.sword.shape.kind).toBe('sector');if(weapons.sword.shape.kind!=='sector')return;expect(weapons.sword.shape.halfArc*360/Math.PI).toBeCloseTo(60);const shape=weapons.sword.shape;expect(footprintPose(shape,100,0,100,240).yaw).toBeCloseTo(-Math.PI/6);expect(footprintPose(shape,240,0,100,240).yaw).toBeCloseTo(Math.PI/6);expect(footprintPose(weapons.rapier.shape,170,0,100,140).yaw).toBe(0);expect(footprintPose(weapons.rapier.shape,170,0,100,140).thrust).toBeGreaterThan(0);});
+it('validates GM data atomically and rejects bad times and nonfinite damage',()=>{const valid=structuredClone(originalCatalog);valid.weapons.rapier.damage=18;expect(validateCatalog(valid).weapons.rapier.damage).toBe(18);valid.weapons.rapier.damage=NaN;expect(()=>validateCatalog(valid)).toThrow();const invalid=structuredClone(originalCatalog);invalid.arts.linear.nodes[0].at=1;expect(()=>validateCatalog(invalid)).toThrow();expect(originalCatalog.weapons.rapier.damage).toBe(10);});
+it('keeps the shared starter Art on every weapon and blocks GM reward farming',()=>{const s=new CombatSimulation();for(const w of Object.keys(weapons)){s.setWeapon(w);expect(s.progression.learned['focused-strike']).toBe('starter');expect(s.loadout).toContain('focused-strike');}s.gmMode=true;s.reset();s.spawnEnemy();s.player.z=0;s.enemies[0].z=2;s.strike(8,2,3,'Normal','basic',true);expect(s.progression.field.hits).toBe(0);});

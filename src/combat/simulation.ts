@@ -1,5 +1,5 @@
 import {freshProfile} from '../progression/profile';
-import {weapons} from '../data/weapons';
+import {weapons,basicWeaponDamage} from '../data/weapons';
 import {EncounterLedger,type OutcomeKind,type CombatOutcome} from './encounter';
 import {freshProgression,awardFieldSkills,canStart,awardChallenge,validLoadout,type ChallengeId} from '../progression/guild';
 import {containsHit,type HitShape} from './geometry';
@@ -13,13 +13,13 @@ export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodg
 export interface Enemy extends Point { id: string; species?:'sentinel'|'boar'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
   profile=freshProfile();
-  now = 0;autoFaceTarget=true;
+  now = 0;autoFaceTarget=true;gmMode=false;
   private fieldEligible=true;practiceMode=false;progression=freshProgression();weapon:string="sword";encounter=new EncounterLedger();lastParryAt=-Infinity;nextEnemyAttackAt=0;
   get weaponDefinition(){return weapons[this.weapon]??weapons.sword;}
   setWeapon(id:string){if(!weapons[id]||!this.free||this.encounter.active||this.practiceMode)return false;this.weapon=id;this.loadout=this.loadout.map(key=>key&&(arts[key]?.weapon==='any'||arts[key]?.weapon===id)?key:null);if(!this.loadout.some(Boolean))this.loadout=['focused-strike',null,null,null];return true;}
   private recordOutcome(o:Omit<CombatOutcome,'encounterId'|'eligible'>){
     this.encounter.record(o);
-    if(!this.fieldEligible||this.practiceMode||Object.values(this.flags).some(Boolean)||Object.entries(defaultAttributes).some(([k,v])=>this.attributes[k as keyof Attributes]!==v)||this.encounter.active&&!this.encounter.eligible)return;
+    if(this.gmMode||!this.fieldEligible||this.practiceMode||Object.values(this.flags).some(Boolean)||Object.entries(defaultAttributes).some(([k,v])=>this.attributes[k as keyof Attributes]!==v)||this.encounter.active&&!this.encounter.eligible)return;
     const f=this.progression.field;
     if(o.kind==='basic-hit')f.hits++;if(o.kind==='evade')f.evades++;if(o.kind==='parry')f.parries++;if(o.kind==='break')f.breaks++;if(o.kind==='defeat')f.kills++;
     const before=Object.keys(this.progression.learned).length;awardFieldSkills(this.progression);if(Object.keys(this.progression.learned).length>before)this.emit('notice','NEW ART LEARNED · check your skill bank');
@@ -100,7 +100,7 @@ export class CombatSimulation {
   }
   activateArt(slot: number) {
     if(this.art?.slot===slot&&this.art.awaitingHold){this.art.awaitingHold=false;this.art.start=this.now;this.art.releasedAt=null;return true;}
-    if(!validLoadout(this.loadout,this.progression,this.weapon)){this.emit('notice','Invalid loadout — visit the Guild board');return false;}
+    if(!validLoadout(this.loadout,this.progression,this.weapon)){this.emit('notice','Invalid loadout — open Skills in your personal menu');return false;}
     const id = this.loadout[slot], base = id ? arts[id] : null;
     let def=base?structuredClone(base):null;
     if(def&&(!this.progression.learned[def.id]||def.weapon!=='any'&&this.weapon!==def.weapon)){this.emit("notice","Art not learned or wrong weapon");return false;}
@@ -166,7 +166,9 @@ export class CombatSimulation {
     const shape:HitShape=basic?this.weaponDefinition.shape:this.art?artShape(this.art.definition,this.art.stage):{kind:'sector',range,halfArc:balance.basic.arc};
     this.lastContact={at:this.now,shape};
     let landed = false,targetsHit=0;
-    for (const enemy of [...this.enemies].sort((a,b)=>Math.hypot(a.x-this.player.x,a.z-this.player.z)-Math.hypot(b.x-this.player.x,b.z-this.player.z))) if (containsHit(shape,this.player,this.player.yaw,enemy)) {
+    const eligible=this.enemies.filter(e=>e.hp>0&&containsHit(shape,this.player,this.player.yaw,e));
+    if(basic)damage=basicWeaponDamage(this.weaponDefinition,Math.min(eligible.length,this.weaponDefinition.maxTargets??Infinity));
+    for (const enemy of [...eligible].sort((a,b)=>Math.hypot(a.x-this.player.x,a.z-this.player.z)-Math.hypot(b.x-this.player.x,b.z-this.player.z))) if (containsHit(shape,this.player,this.player.yaw,enemy)) {
       if(basic&&targetsHit>=(this.weaponDefinition.maxTargets??Infinity))break;
       if(!basic&&this.art?.definition.maxTargets&&this.art.victims.size>=this.art.definition.maxTargets)break;
       const hit=this.hitEnemy(enemy,physicalDamage(damage,this.attributes.strength),breakDamage,grade,phase);if(hit&&!basic&&this.art){this.art.victims.add(enemy.id);if(this.art.definition.restoreStamina)this.player.stamina=Math.min(this.staminaMax,this.player.stamina+this.art.definition.restoreStamina*artMultiplier(grade));}if(hit)targetsHit++;landed=hit||landed;
@@ -199,7 +201,7 @@ export class CombatSimulation {
     if(Object.values(this.flags).some(Boolean))this.invalidateRewards('Practice modifiers enabled');
     let remaining = clamp(deltaMs, 0, 100);
     while (remaining > 0) { const step = Math.min(remaining, 1000 / 120); this.step(step); remaining -= step; }
-    if(this.encounter.active){if(this.player.hp<=0)this.encounter.end("failed");else if(this.encounter.objectiveMet){if(this.encounter.eligible)this.encounter.rewardNew=awardChallenge(this.progression,this.encounter.challenge!,this.encounter.stats.crescentHit);this.encounter.end("completed");}}
+    if(this.encounter.active){if(this.player.hp<=0)this.encounter.end("failed");else if(this.encounter.objectiveMet){if(this.encounter.eligible&&!this.gmMode)this.encounter.rewardNew=awardChallenge(this.progression,this.encounter.challenge!,this.encounter.stats.crescentHit);this.encounter.end("completed");}}
   }
   private step(ms: number) {
     this.now += ms; const dt = ms / 1000;

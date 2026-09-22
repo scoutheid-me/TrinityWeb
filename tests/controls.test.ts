@@ -32,7 +32,7 @@ describe('new combat loop',()=>{
  it('commits one low-damage basic without release, grade, or hold reward',()=>{
  const s=combatFixture();s.flags.freezeAI=true;s.player.z=0;s.enemies[0].z=2;s.pressAttack();
  for(let i=0;i<20;i++)s.update(100);
- expect(s.enemies[0].hp).toBe(455);expect(s.player.sp).toBe(10);expect(s.events.some(e=>e.type==='grade')).toBe(false);
+ expect(s.enemies[0].hp).toBe(450);expect(s.player.sp).toBe(10);expect(s.events.some(e=>e.type==='grade')).toBe(false);
  s.releaseAttack();s.update(100);expect(s.player.sp).toBe(10);
  });
  it('cues both enemy cuts before impact and cancels on freeze or break',()=>{

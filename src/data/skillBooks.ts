@@ -4,7 +4,7 @@ export interface SkillBook {id:string;name:string;theme:string;reward:string;nod
 /** Book ownership/reward granting awaits the tutorial dungeon. Trees are inspectable previews. */
 export const skillBooks:SkillBook[]=[{
  id:'lantern-road-forms',name:'Lantern Road Forms',theme:'Four connected forms for making an opening, advancing, recovering and repositioning.',
- reward:'Planned final reward of the future tutorial dungeon. Not awarded by the current induction or Guild Trial.',
+ reward:'Planned final reward of the future tutorial dungeon. Not awarded by the current Guild Combat Trial.',
  nodes:[
   {art:'focused-strike',parents:[],field:{},x:50,y:12},
   {art:'linear',parents:['focused-strike'],field:{hits:12,evades:2},x:24,y:48},

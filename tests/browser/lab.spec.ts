@@ -1,4 +1,4 @@
-import {createTestCharacter,dismissInvitation} from '../uiHelpers';
+import {createTestCharacter,dismissInvitation,startCombatTrial} from '../uiHelpers';
 import {sentinelPatterns} from '../../src/data/enemies';
 import {test,expect,type Page} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
@@ -125,24 +125,24 @@ test('basics are untimed and Art cues align with musical deadlines and stop on p
 
 
 test('tutorial teaches basics and enemy warnings stop on pause',async({page})=>{
- await ready(page);await page.locator('#friends-menu').click();await page.locator('#personal-tutorial').click();
+ await ready(page);await startCombatTrial(page);
  await expect(page.locator('#tutorial')).toBeVisible();
  for(let i=0;i<3;i++){await page.keyboard.press('j');await page.waitForTimeout(500);}
  await expect(page.locator('#tutorial-next')).toBeEnabled();
- expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(445);
+ expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(430);
  await page.locator('#tutorial-next').click();
  await expect(page.locator('#tutorial h2')).toHaveText('Dodge the sweep');
  await expect(page.locator('#defense-cue')).toBeVisible({timeout:5000});
  await expect(page.locator('#defense-cue')).toContainText('DODGE');
  expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBeGreaterThan(0);
  await page.screenshot({path:'test-results/tutorial.png'});
- await page.keyboard.press('Escape');expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toEqual([]);
+ await page.evaluate(()=>window.dispatchEvent(new Event('blur')));expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toEqual([]);
  await page.locator('#begin').click();await dismissInvitation(page);await page.locator('#tutorial-exit').click();await expect(page.locator('#tutorial')).toBeHidden();
 });
 
 
 test('all tutorial lessons can be completed through combat',async({page})=>{
- await ready(page);await page.locator('#friends-menu').click();await page.locator('#personal-tutorial').click();
+ await ready(page);await startCombatTrial(page);
  for(let i=0;i<3;i++){await page.keyboard.press('j');await page.waitForTimeout(500);}
  await page.locator('#tutorial-next').click();
  await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&e.attackStart+e.pattern.hits[0]-s.now<180;},null,{polling:'raf'});
@@ -208,30 +208,9 @@ test('visible cleave lane predicts live hit and miss after facing locks',async({
  }
 });
 
-test('Guild Footwork unlock, loadout, live board and reload',async({page})=>{
- await ready(page,true);
- await page.locator('#friends-menu').click();await page.locator('#personal-guild').click();
- await expect(page.locator('#guild-board')).toBeVisible();
- await expect(page.locator('[data-challenge="breaking"]')).toBeDisabled();
- await page.locator('[data-challenge="positioning"]').click();
- // Stage only starting positions; all outcomes use real input and live enemy AI.
- await page.evaluate(()=>{const s=window.trinity.sim;s.player.z=0;s.player.yaw=0;s.enemies[0].z=2;});
- await expect(page.locator('#trial-tracker')).toContainText('Footwork');
- for(let i=0;i<3;i++){await page.keyboard.press('j');await page.waitForTimeout(510);}
- await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&s.now-e.attackStart>e.pattern.telegraph-170;},null,{polling:'raf'});
- await page.keyboard.press('Space');
- await expect(page.locator('#guild-board')).toBeVisible();
- await expect(page.locator('.guild-result')).toContainText('CHALLENGE COMPLETE');
- await expect(page.locator('.guild-reward')).toContainText('Aether Step');await page.locator('.guild-reward summary').click();await expect(page.locator('.guild-reward')).toContainText('Sidestep right');
- expect(await page.evaluate(()=>window.trinity.sim.progression.learned['aether-step'])).toBe('positioning');
- await page.locator('[data-tab="arts"]').click();await page.locator('[data-equip="1"]').selectOption('aether-step');await page.locator('#guild-equip').click();
- await expect(page.locator('#guild-message')).toHaveText('Loadout saved.');
- await page.locator('#guild-board').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'test-results/guild-board.png'});
- await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();
- expect(await page.evaluate(()=>window.trinity.sim.loadout)).toEqual(['focused-strike','aether-step',null,null]);
- await page.locator('#begin').click();await dismissInvitation(page);await page.keyboard.press('m');await page.locator('#friends-menu').click();await page.locator('#personal-guild').click();
- await expect(page.locator('[data-challenge="breaking"]')).toBeEnabled();
- await page.keyboard.press('Escape');await expect(page.locator('#guild-board')).toBeHidden();
+test('mentor archives completed induction and removes duplicate Guild trials',async({page})=>{
+ await ready(page,true);await page.locator('#friends-menu').click();await expect(page.locator('#personal-detail')).toContainText('Guild Combat Trial');await expect(page.locator('#personal-guild')).toHaveCount(0);await expect(page.locator('#personal-tutorial')).toHaveCount(0);
+ await page.evaluate(()=>{window.trinity.sim.progression.tutorialCompleted=true;});await expect(page.locator('#personal-detail')).toContainText('No open quests.');await page.getByText('Completed quests · 1',{exact:true}).click();await expect(page.locator('#personal-detail')).toContainText('Learned Linear');
 });
 
 test('held Art buttons show the actual sector, release once, and fail a mistimed charge',async({page})=>{
@@ -241,10 +220,10 @@ test('held Art buttons show the actual sector, release once, and fail a mistimed
  expect(await page.evaluate(()=>{const t=window.trinity;return {enabled:t.view.debugVolume.mesh.isEnabled(),shape:t.view.debugVolume.shape,charging:t.sim.art.releasedAt===null};})).toEqual({enabled:true,shape:{kind:'sector',range:3.5,halfArc:1.4},charging:true});
  await page.screenshot({path:'test-results/art-charge-hitbox.png'});
  await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('1');
- await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(372);
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(285);
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
  await page.keyboard.press('1');await expect.poll(()=>page.evaluate(()=>window.trinity.sim.lastGrade)).toBe('Miss');
- await page.waitForTimeout(900);expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(372);
+ await page.waitForTimeout(900);expect(await page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(285);
  expect(await page.evaluate(()=>window.trinity.view.debugVolume.mesh.isEnabled())).toBe(false);
  await page.keyboard.down('1');await page.keyboard.press('Escape');await page.keyboard.up('1');
  expect(await page.evaluate(()=>window.trinity.sim.art)).toBeNull();expect(await page.evaluate(()=>window.trinity.sim.player.sp)).toBe(40);
@@ -255,54 +234,17 @@ test('remapped and on-screen Art holds both release through the combat executor'
  await page.evaluate(()=>{const t=window.trinity;t.sim.player.sp=100;t.input.bindings.art1=['KeyH',null];t.hud.setBindings(t.input.bindings);});
  await page.keyboard.down('h');await expect(page.locator('#timing-action')).toContainText('RELEASE H');
  await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('h');
- await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(372);
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(285);
  await expect.poll(()=>page.evaluate(()=>window.trinity.sim.state.state)).toBe('Idle');
  await page.locator('#slot-0').hover();await page.mouse.down();
  await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.mouse.up();
- await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(284);
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(110);
 });
 
-test('first-person personal journal stays live, follows the viewport and reveals nested help',async({page})=>{
- await ready(page,true);await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();await dismissInvitation(page);
- expect(await page.evaluate(()=>window.trinity.view.scene.activeCamera.name)).toBe('first person');
- await page.locator('#friends-menu').click();await page.locator('#personal-guild').click();await expect(page.locator('#guild-board')).toHaveClass(/personal-live/);
- const before=await page.evaluate(()=>({now:window.trinity.sim.now,z:window.trinity.sim.player.z}));
- await page.keyboard.down('w');await page.waitForTimeout(350);await page.keyboard.up('w');
- const after=await page.evaluate(()=>({now:window.trinity.sim.now,z:window.trinity.sim.player.z}));expect(after.now).toBeGreaterThan(before.now+200);expect(after.z).toBeGreaterThan(before.z+.5);
- await page.getByText('Why take the oath?',{exact:true}).click();await expect(page.locator('.guild-invitation')).toContainText('watchfires');
- await page.screenshot({path:'test-results/first-person-journal.png'});
- await page.locator('#guild-close').click();await page.locator('[data-help]').first().hover();await expect(page.locator('#context-help')).toBeVisible();
- await page.keyboard.press('Escape');await expect(page.locator('#context-help')).toBeHidden();
- await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();await dismissInvitation(page);expect(await page.evaluate(()=>window.trinity.view.scene.activeCamera.name)).toBe('camera');
+test('first-person NPC journal stays live and follows the viewport',async({page})=>{
+ await ready(page,true);await page.locator('#menu').click();await page.locator('#perspective').click();await page.locator('#begin').click();await page.locator('#friends-menu').click();await expect(page.locator('#personal-detail')).toBeVisible();const before=await page.evaluate(()=>window.trinity.sim.now);await page.keyboard.down('ArrowRight');await page.waitForTimeout(250);await page.keyboard.up('ArrowRight');expect(await page.evaluate(()=>window.trinity.sim.now)).toBeGreaterThan(before);await page.getByText('Chats with Ilyra',{exact:true}).click();await page.locator('[data-chat="oath"]').click();await expect(page.locator('#chat-history')).toContainText('Skill Books');
 });
 
-test('entire Guild journey earns the oath, equips it and lands two timed cuts',async({page})=>{
- test.setTimeout(180000);await ready(page,true);
- for(const id of ['positioning','breaking','countering','trial']){
-  if(!await page.locator('#guild-board').isVisible()){await page.locator('#friends-menu').click();await page.locator('#personal-guild').click();}
-  await page.locator('[data-tab="journey"]').click();await page.locator(`[data-challenge="${id}"]`).click();
-  // Drive public combat actions at real render time. No flags, resources, outcomes or rewards are modified.
-  await page.evaluate(id=>{const t=window.trinity,s=t.sim;const timer=setInterval(()=>{
-   if(!s.encounter.active){clearInterval(timer);return;}
-   const target=s.enemies.filter((e:any)=>e.hp>0).sort((a:any,b:any)=>Math.hypot(a.x-s.player.x,a.z-s.player.z)-Math.hypot(b.x-s.player.x,b.z-s.player.z))[0];
-   if(target){s.lockedId=target.id;s.faceTarget();}
-   const threat=s.enemies.find((e:any)=>e.pattern),remaining=threat?.pattern?.hits.filter((_:any,i:number)=>!threat.hits.has(i)).map((at:number)=>at+threat.attackStart-s.now)[0]??Infinity;
-   if(s.art&&s.art.grades[0]===null&&Math.abs(s.now-s.art.start-s.art.definition.nodes[0].at)<30)s.releaseArt(0);
-   if(s.free&&target){const d=Math.hypot(target.x-s.player.x,target.z-s.player.z);
-    if(remaining<150){if(id==='positioning'||!threat.pattern.parryable)s.dodge();else{s.lockedId=threat.id;s.parry();}}
-    else if(remaining>1100&&d<2.3){if(s.player.sp>=30&&(id!=='countering'||s.encounter.stats.parries<2))s.activateArt(0);else if(id!=='countering'||s.encounter.stats.parries<2)s.pressAttack();}
-   }
-  },10);},id);
-  await expect(page.locator('#guild-board')).toBeVisible({timeout:60000});
-  expect(await page.evaluate(()=>window.trinity.sim.encounter.result)).toBe('completed');
- }
- await expect(page.locator('.guild-title-earned')).toContainText('Wayfarer');await expect(page.locator('.guild-reward')).toContainText('Wayfarer');
- await page.screenshot({path:'test-results/guild-oath-earned.png'});
- await page.locator('[data-tab="arts"]').click();await page.locator('[data-equip="1"]').selectOption('wayfarer-oath');await page.locator('#guild-equip').click();await page.evaluate(()=>window.trinity.persist());
- await page.reload();await expect(page.locator('#begin')).toBeEnabled();expect(await page.evaluate(()=>window.trinity.sim.loadout[1])).toBe('wayfarer-oath');
- await page.locator('#begin').click();await dismissInvitation(page);await setupClose(page);await page.evaluate(()=>window.trinity.sim.player.sp=100);
- await page.keyboard.down('2');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=600;},null,{polling:'raf'});await page.keyboard.up('2');
- await page.waitForFunction(()=>window.trinity.sim.art?.awaitingHold);await expect(page.locator('#timing-action')).toContainText('HOLD');
- await page.keyboard.down('2');await page.waitForFunction(()=>{const s=window.trinity.sim;return s.art&&s.now-s.art.start>=780;},null,{polling:'raf'});await page.keyboard.up('2');
- await expect.poll(()=>page.evaluate(()=>window.trinity.sim.enemies[0].hp)).toBe(323);
+test('legacy earned skills remain available without exposing the retired trial board',async({page})=>{
+ await ready(page,true);await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.progression.completed=['positioning','breaking','countering','trial'];s.progression.learned['wayfarer-oath']='trial';});await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();expect(await page.evaluate(()=>window.trinity.sim.progression.learned['wayfarer-oath'])).toBe('trial');await expect(page.locator('.guild-open')).toHaveCount(0);
 });

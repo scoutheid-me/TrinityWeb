@@ -1,3 +1,4 @@
+import {footprintPose} from './footprintMotion';
 import {greatswordPose} from './greatswordMotion';
 import {holdGrip} from './twoHandGrip';
 import {weaponRack} from '../data/room';
@@ -194,18 +195,36 @@ export class LabScene {
       if(art.grades[art.stage]===null)pose=duelPose(art.definition.motion,art.start+art.definition.startup*.35,art.start,art.start+art.definition.startup);
       else if(art.releasedAt!==null){const contact=art.releasedAt+art.definition.startup;pose=duelPose(art.definition.motion,sim.now<sim.hitStopUntil&&art.resolved.has(0)?contact:sim.now,art.releasedAt,contact);}
     }
+    const footprint=sim.art?artShape(sim.art.definition,sim.art.stage):sim.weaponDefinition.shape;
+    let footprintMotion:ReturnType<typeof footprintPose>|null=null;
+    if(pose){
+      const contact=sim.art?(sim.art.releasedAt===null?sim.now+sim.art.definition.startup:sim.art.releasedAt+sim.art.definition.startup):state==='BasicAttackStartup'?sim.actionEnd:sim.lastContact?.at??sim.now;
+      const start=sim.art?(sim.art.releasedAt??sim.now):contact-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87;
+      footprintMotion=footprintPose(footprint,sim.now,start,contact,sim.art?.definition.recovery??sim.weaponDefinition.recovery);
+      pose.yaw=footprintMotion.yaw;
+      if(footprint.kind==='box')pose.pitch=-.35;
+    }
     if(this.player.rightArm){this.player.rightArm.rotation.y=pose?.yaw??0;if(pose)this.player.rightArm.rotation.x=pose.pitch;}
-    if(this.firstWeapon){this.firstWeapon.setEnabled(this.firstPerson);this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.45;this.firstWeapon.rotation.z=(pose?.yaw??0)*.25;}
+    if(this.firstWeapon){this.firstWeapon.setEnabled(this.firstPerson);this.firstWeapon.rotation.x=-.2+(pose?.pitch??0)*.45;this.firstWeapon.rotation.y=Math.PI-(pose?.yaw??0);this.firstWeapon.rotation.z=0;if(this.equippedWeapon!=='greatsword'){this.firstWeapon.position.x=.32;this.firstWeapon.position.z=-.6-(footprintMotion?.thrust??0);}}
     for(const arm of [this.player.leftArm,this.player.rightArm]){if(!arm)continue;const elbow=arm.getDescendants().find(n=>n.name.endsWith('_elbow')) as TransformNode|undefined;if(elbow)elbow.rotationQuaternion=null;}
+    if(this.equippedWeapon!=='greatsword'){
+      const sword=this.player.sword;
+      if(footprintMotion){
+        sword.parent=this.player.root;sword.position.set(.24,1.25,.2+Math.min(.1,footprintMotion.thrust));
+        sword.rotationQuaternion=Quaternion.RotationAxis(Vector3.Up(),footprintMotion.yaw).multiply(Quaternion.RotationAxis(Vector3.Right(),footprint.kind==='box'?0:(pose?.pitch??0)*.2));
+        if(this.player.rightArm)holdGrip(this.player.rightArm,sword,'right');
+      }else{ sword.parent=this.player.rightArm??this.player.root;sword.position.set(0,-.64,.06);sword.rotationQuaternion=null;sword.rotation.set(-.55,0,0); }
+    }
       if(this.equippedWeapon==='greatsword'){
         let heavy={pitch:-.95,lift:0,yaw:0};
         if(state==='BasicAttackStartup')heavy=greatswordPose(sim.now,sim.actionStart,sim.actionEnd);
         else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact){const at=sim.lastContact.at;heavy=greatswordPose(sim.now<sim.hitStopUntil?at:sim.now,at-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87,at);}
         else if(pose)heavy={pitch:-.95+pose.pitch*.55,lift:0,yaw:pose.yaw};
+        if(footprintMotion){heavy.yaw=footprintMotion.yaw;if(footprint.kind==='box')heavy.pitch=0;}
         // The authored edge is local X; roll 90 degrees so the edge, not the flat,
         // leads the vertical Y/Z cutting plane. Keep the grip sockets on local Z.
         const orientation=Quaternion.RotationAxis(Vector3.Up(),heavy.yaw).multiply(Quaternion.RotationAxis(Vector3.Right(),heavy.pitch)).multiply(Quaternion.RotationAxis(Vector3.Forward(),Math.PI/2));
-        const sword=this.player.sword;sword.position.set(0,1.28+heavy.lift,.20);sword.rotationQuaternion=orientation;
+        const sword=this.player.sword;sword.position.set(0,1.28+heavy.lift,.20+Math.min(.1,footprintMotion?.thrust??0));sword.rotationQuaternion=orientation;
         for(const side of ['left','right'] as const){const arm=side==='left'?this.player.leftArm:this.player.rightArm;if(arm)holdGrip(arm,sword,side);}
         if(this.firstWeapon){this.firstWeapon.position.set(.14,-.30+heavy.lift*.65,-.48);this.firstWeapon.rotationQuaternion=Quaternion.RotationAxis(Vector3.Up(),Math.PI).multiply(orientation);}
       }
@@ -278,7 +297,7 @@ export class LabScene {
       const yaw=event.target?sim.enemies.find(e=>e.id===event.target)?.yaw??0:sim.player.yaw;
       const points: Vector3[]=[],shape=event.shape??{kind:'sector' as const,range:balance.basic.range,halfArc:balance.basic.arc};
       if(shape.kind==='box'){
-        for(let i=0;i<=18;i++){const t=i/18;points.push(new Vector3(event.x+Math.sin(yaw)*shape.range*t,2.4*(1-t)+.08,event.z+Math.cos(yaw)*shape.range*t));}
+        for(let i=0;i<=18;i++){const t=i/18;points.push(new Vector3(event.x+Math.sin(yaw)*shape.range*t,.95,event.z+Math.cos(yaw)*shape.range*t));}
       }else{
         const arc=shape.kind==='circle'?Math.PI:shape.halfArc;
         for(let i=0;i<=48;i++){const a=yaw-arc+i/48*arc*2;points.push(new Vector3(event.x+Math.sin(a)*shape.range,shape.kind==='circle'?.14:.95,event.z+Math.cos(a)*shape.range));}

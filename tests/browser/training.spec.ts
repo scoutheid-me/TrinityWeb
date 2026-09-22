@@ -5,7 +5,7 @@ test('three weapons, direct Art editor, responsive skill profiles and first-pers
  await page.goto('/?webgl');await createTestCharacter(page);await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await dismissInvitation(page);
  await page.evaluate(()=>{window.trinity.sim.flags.freezeAI=true;});
  await page.evaluate(()=>{window.trinity.sim.player.x=-8;window.trinity.sim.player.z=7;});await page.keyboard.press('e');await expect(page.locator('.rack-choice')).toHaveCount(3);
- for(const id of ['rapier','greatsword','sword']){await page.locator(`[data-weapon="${id}"]`).click();await expect.poll(()=>page.evaluate(()=>window.trinity.view.equippedWeapon)).toBe(id);}
+ for(const id of ['rapier','greatsword','sword']){await page.locator(`[data-take-weapon="${id}"]`).click();await expect.poll(()=>page.evaluate(()=>window.trinity.view.equippedWeapon)).toBe(id);}
  await page.locator('#rack-close').click();await page.keyboard.press('m');await page.evaluate(()=>{window.trinity.sim.progression.tutorialCompleted=true;window.trinity.sim.progression.learned.linear='induction';window.trinity.loadoutTray.open("linear");});
  await page.locator('[data-equip-slot="1"]').click();
  expect(await page.evaluate(()=>window.trinity.sim.loadout[1])).toBe('linear');

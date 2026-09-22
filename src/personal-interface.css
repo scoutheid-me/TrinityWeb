@@ -90,3 +90,13 @@
 #training-orb{max-height:70vh;overflow:auto}#training-orb #orb-guided,#training-orb #orb-trials{display:flex;flex-direction:column;gap:7px;width:100%;padding:13px;margin-top:10px;text-align:left;background:#eef4ed;color:#405058;border:1px solid #afbec2}#training-orb #orb-guided{border-left:3px solid #d9ac32}
 .player-panel .hp{background:#516b59;box-shadow:inset 0 0 0 1px #e8f1c9}
 #weapon-rack{max-height:75vh;overflow:auto;width:min(640px,92vw)}.rack-choice .weapon-stats{font-size:12px;line-height:1.7;color:#3c5254}.rack-choice{white-space:normal}#weapon-rack #rack-status{font-size:12px;line-height:1.6}
+/* Comparison charts and the explicit, paused GM workspace. */
+.stat-radar svg{width:100%;max-width:280px;display:block;margin:auto;overflow:visible}
+.stat-radar text{font:11px system-ui;fill:#34464e}.stat-radar g:focus text{fill:#98700c;font-weight:bold}.stat-radar .radar-grid{fill:none;stroke:#8c9b9d;stroke-width:1}.stat-radar .radar-fill{fill:#d9b44566;stroke:#a98724;stroke-width:2}
+.stat-radar dl{display:grid;grid-template-columns:80px 1fr;gap:8px;font-size:12px}.stat-radar dd{margin:0;overflow-wrap:anywhere}
+#weapon-rack{max-height:85vh;overflow:auto;width:min(1050px,94vw)}#weapon-rack .rack-choice{display:inline-flex;vertical-align:top;flex-direction:column;gap:8px;width:calc(33.333% - 12px);box-sizing:border-box;margin:6px;padding:12px;background:#edf1eddf;color:#34464e;border:1px solid #bac6c5;text-align:left}#weapon-rack .weapon-stats{font-size:12px;line-height:1.5}#weapon-rack .rack-choice>button{margin-top:auto}
+#gm-menu{position:fixed;z-index:1000;inset:6vh 8vw;background:#eef2f2fa;color:#293b43;padding:24px;border:1px solid #9eacae;box-shadow:0 10px 70px #0008;overflow:auto}#gm-menu[hidden]{display:none}#gm-menu label{display:flex;flex-direction:column;gap:5px;margin:8px 0}#gm-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}#gm-fields input,#gm-item{min-width:0;padding:8px;background:#fff;color:#263840;border:1px solid #aebcbd}#gm-menu button{margin:5px;padding:10px}#gm-fields input:disabled{opacity:.55}
+@media(max-width:750px){#weapon-rack .rack-choice{width:100%}#gm-fields{grid-template-columns:1fr 1fr}}
+#ui.gm-mode::after{content:'GM · LOCAL BALANCE';position:fixed;top:68px;left:50%;transform:translateX(-50%);padding:5px 12px;background:#594719e6;color:#ffe9a0;border:1px solid #cda33c;font-size:11px;letter-spacing:1px;pointer-events:none;z-index:70}
+#gm-menu label:has(input[type=checkbox]){flex-direction:row;align-items:center}#gm-menu input[type=checkbox]{width:auto;margin:0 8px 0 0}
+#weapon-rack{left:50%;top:50%;transform:translate(-50%,-50%);max-height:84vh}

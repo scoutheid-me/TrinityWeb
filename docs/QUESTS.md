@@ -1,9 +1,7 @@
-# Future quests and world facts
+# Quests and NPC contacts
 
-Quest gameplay is outside the Combat Lab milestone. There are no active quests, NPCs, trainers, relationships, or hidden quest UI in the prototype.
+The current NPC contact is Warden Ilyra, the Guild mentor. Friends lists NPCs, never places. Her one current quest is **Guild Combat Trial**: touch the entrance orb in the Training Room and complete targeting, facing, basic attacks, dodge, counter, charged Arts and Break. Completion grants Linear and moves the quest into a collapsible **Completed quests** archive. The Guild Hall is a location, not a quest or friend. The surrounding town is not implemented.
 
-Future quest definitions should consume structured events and deterministic authored conditions through a persistent Event Ledger. Store bounded counters, flags, relationships, timestamps, and current quest state instead of every frame-level event. Existing combat counters provide an initial persistence boundary, not a full Event Ledger implementation.
+There is no duplicate Guild Trial quest chain in the current player-facing flow. Old completed-chain data is retained only to preserve previously earned skills in saves. Trial launching belongs to the physical orb, never the friends list. Ilyra has short local story chats about the hall and Skill Books; a physical NPC model and general relationship system remain future work.
 
-Hidden quests remain mechanically invisible before activation: no journal entry, question-mark placeholder, achievement hint, objective, or progress display. Their authored requirements should become understandable through environmental storytelling and dialogue. Never let runtime generative AI decide eligibility. Build a developer-only condition inspector when implementing quests.
-
-Normal quests may expose titles, objectives, and journal progress. Both normal and hidden quests should use the same event/condition infrastructure. Add quests after combat, enemy variety, equipment, and trainers are stable.
+Future quests should consume deterministic authored conditions through persistent counters and flags. Hidden quests stay invisible before activation, with requirements explained through environment and dialogue rather than hidden progress bars. Skill Books can become future tutorial-dungeon rewards; that dungeon and book ownership are not implemented yet.
