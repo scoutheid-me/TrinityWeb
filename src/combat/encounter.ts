@@ -1,6 +1,6 @@
 import type {Grade} from './rules';
 import type {ChallengeId} from '../progression/guild';
-export type OutcomeKind='basic-hit'|'art-hit'|'art-phase'|'evade'|'parry'|'break'|'damage'|'defeat';
+export type OutcomeKind='basic-hit'|'counter-hit'|'art-hit'|'art-phase'|'evade'|'parry'|'break'|'damage'|'defeat';
 export interface CombatOutcome {encounterId:number;actor:string;target:string;attackId:number;phase:string;kind:OutcomeKind;at:number;amount:number;artId?:string;grade?:Grade;offsetMs?:number;failedCounter?:boolean;eligible:boolean;}
 export interface TrialStats {basicHits:number;artHits:number;artPhases:number;good:number;perfect:number;miss:number;evades:number;parries:number;breaks:number;damageTaken:number;failedCounters:number;defeats:number;crescentHit:boolean;}
 const empty=():TrialStats=>({basicHits:0,artHits:0,artPhases:0,good:0,perfect:0,miss:0,evades:0,parries:0,breaks:0,damageTaken:0,failedCounters:0,defeats:0,crescentHit:false});

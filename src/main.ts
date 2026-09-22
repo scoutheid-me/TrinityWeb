@@ -56,7 +56,7 @@ async function main(){
   // Technical preferences belong to the paused system overlay, above the live artifact.
   hud.root.querySelector('.intro')!.append(hud.el('open-controls'),perspective);
   hud.el('intro-controls').hidden=true;
-  orb=new TrainingOrb(sim,()=>input.bindings);
+  orb=new TrainingOrb(sim,()=>input.bindings,()=>tutorial.start(true),()=>guild!.open());
   rack=new WeaponRack(sim,()=>input.bindings,()=>void persist());
   const musicLabel=document.createElement('label');musicLabel.innerHTML='<input id="timing-music" type="checkbox"> Musical timing cues';hud.el('debug').append(musicLabel);
   hud.input('timing-music').checked=audio.timingMusic;hud.input('timing-music').onchange=()=>{audio.timingMusic=hud.input('timing-music').checked;audio.stopTiming();void persist();};
@@ -79,7 +79,7 @@ async function main(){
   const preferences=document.createElement('details');preferences.className='system-preferences';preferences.innerHTML='<summary>Audio & graphics</summary>';hud.root.querySelector('.intro')!.append(preferences);
   for(const id of ['quality','sensitivity','sound','timing-music'])preferences.append(hud.el(id).closest('label')!);
   renameSettings(sim.profile,()=>void persist());
-  async function persist(){const data:SaveData={version:3,profile:structuredClone(sim.profile),weapon:tutorial.persistentWeapon,progression:structuredClone(sim.progression),attributes:{...sim.attributes},loadout:[...tutorial.persistentLoadout],settings:{autoFaceTarget:sim.autoFaceTarget,quality:view.quality,sensitivity:input.sensitivity,sound:audio.enabled,timingMusic:audio.timingMusic,bindings:structuredClone(input.bindings)},counters:{...sim.counters}};try{await saveGame(data);}catch(error){console.warn('Could not save Trinity settings.',error);hud.notice('Could not save settings');}}
+  async function persist(){const data:SaveData={version:3,profile:structuredClone(sim.profile),weapon:tutorial.persistentWeapon,progression:structuredClone(sim.progression),attributes:{...sim.attributes},loadout:[...tutorial.persistentLoadout],settings:{autoFaceTarget:tutorial.persistentAutoFace,quality:view.quality,sensitivity:input.sensitivity,sound:audio.enabled,timingMusic:audio.timingMusic,bindings:structuredClone(input.bindings)},counters:{...sim.counters}};try{await saveGame(data);}catch(error){console.warn('Could not save Trinity settings.',error);hud.notice('Could not save settings');}}
   window.addEventListener('pagehide',()=>void persist());
   view.engine.runRenderLoop(()=>{
     const before=sim.now;advance();const dt=Math.max(.001,(sim.now-before)/1000);

@@ -4,10 +4,10 @@ test('empty hall, physical rack, two-handed grip, live menu and camera preferenc
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/?webgl');await createTestCharacter(page);await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await dismissInvitation(page);
  expect(await page.evaluate(()=>window.trinity.sim.enemies.length)).toBe(0);await expect(page.locator('#enemy-hud')).toBeHidden();await expect(page.locator('#open-controls')).toBeHidden();
- await page.keyboard.press('g');await expect(page.locator('#weapon-rack')).toBeHidden();await expect(page.locator('#edit-arts')).toHaveCount(0);await page.keyboard.press('m');await page.locator('#character-menu').click();await page.locator('[data-category=arts]').click();await page.locator('[data-skill=focused-strike]').click();await expect(page.locator('#rack-weapon')).toHaveCount(0);await page.locator('#tray-close').click();await page.keyboard.press('m');
+ await page.keyboard.press('e');await expect(page.locator('#weapon-rack')).toBeHidden();await expect(page.locator('#edit-arts')).toHaveCount(0);await page.keyboard.press('m');await page.locator('#character-menu').click();await page.locator('[data-category=arts]').click();await page.locator('[data-skill=focused-strike]').click();await expect(page.locator('#rack-weapon')).toHaveCount(0);await page.locator('#tray-close').click();await page.keyboard.press('m');
  // Walk to the rack using actual movement, from a nearby starting position.
  await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=-8;t.sim.player.z=5;t.view.camera.alpha=-Math.PI/2;});
- await page.keyboard.down('w');await expect(page.locator('#rack-prompt')).toBeVisible();await page.keyboard.up('w');await page.keyboard.press('g');
+ await page.keyboard.down('w');await expect(page.locator('#rack-prompt')).toBeVisible();await page.keyboard.up('w');await page.keyboard.press('e');
  await expect(page.locator('#weapon-rack')).toBeVisible();await page.locator('[data-weapon="greatsword"]').click();await page.locator('#rack-close').click();
  await expect.poll(()=>page.evaluate(()=>window.trinity.view.equippedWeapon)).toBe('greatsword');
  await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=0;t.sim.player.z=0;t.view.camera.alpha=.8;t.view.camera.beta=1.1;t.view.cameraDistance=3.5;});await page.waitForTimeout(300);

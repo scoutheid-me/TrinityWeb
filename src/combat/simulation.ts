@@ -154,7 +154,7 @@ export class CombatSimulation {
   hitEnemy(enemy: Enemy, damage: number, breakDamage: number, grade: Grade, phase: string) {
     if (enemy.hp <= 0 || !this.hits.accept(`${this.attackSerial}:${phase}`, enemy.id)) return false;
     const actual = Math.round(damage * (enemy.state === 'Broken' ? 1.6 : 1));
-    this.recordOutcome({kind:phase==='basic'?'basic-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
+    this.recordOutcome({kind:phase==='basic'?'basic-hit':phase.startsWith('counter:')?'counter-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
     this.emit('hit', String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect' });
     this.hitStopUntil = this.now + balance.hitStop;
@@ -178,8 +178,8 @@ export class CombatSimulation {
     const elapsed = this.now - this.actionStart;
     if (this.state.state === 'Dodge' && elapsed >= balance.dodge.iframeStart && elapsed <= balance.dodge.iframeEnd) { this.defenseOutcome('evade',enemy);this.emit('notice', 'Evaded'); return; }
     if (pattern.parryable && this.state.state === 'Parry' && elapsed <= (pattern.kind === 'basic' ? balance.parry.basicWindow : balance.parry.window) && inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, 4, 1.7)) {
-      this.lastParryAt=this.now;this.defenseOutcome('parry',enemy);this.player.sp = gainSp(this.player.sp, balance.sp.parry); this.counters.parries++; this.applyBreak(enemy, balance.parry.break);
-      this.emit('parry', `PERFECT PARRY · +${balance.sp.parry} SP · NO DAMAGE`, enemy, { strong: true, grade:'Perfect' }); this.state.set('Idle'); return;
+      this.lastParryAt=this.now;this.defenseOutcome('parry',enemy);this.player.sp = gainSp(this.player.sp, balance.sp.parry); this.counters.parries++;this.hitEnemy(enemy,physicalDamage(this.weaponDefinition.damage*balance.parry.counterMultiplier,this.attributes.strength),balance.parry.break,'Perfect',`counter:${enemy.attackStart}:${[...enemy.hits].at(-1)??0}`);
+      this.emit('parry', `PERFECT PARRY · +${balance.sp.parry} SP · COUNTER HIT · NO DAMAGE`, enemy, { strong: true, grade:'Perfect' }); this.state.set('Idle'); return;
     }
     const failedCounter = this.state.state === 'Parry';
     let damage = pattern.damage * (failedCounter ? balance.parry.failureDamageMultiplier : 1);
@@ -294,7 +294,7 @@ export class CombatSimulation {
         enemy.hits.add(i); this.emit('slash', pattern.name, enemy, { target: enemy.id, strong: !pattern.parryable,shape:pattern.shape,motion:pattern.motion });
         if (containsHit(pattern.shape, enemy, enemy.yaw, this.player)) this.receiveAttack(enemy, pattern);
         else if (this.state.state === 'Dodge' && this.now-this.actionStart >= balance.dodge.iframeStart && this.now-this.actionStart <= balance.dodge.iframeEnd && containsHit(pattern.shape,enemy,enemy.yaw,this.dodgeOrigin)) {this.defenseOutcome('evade',enemy);this.emit('notice', 'Evaded');}
-        if (enemy.state as string === 'Broken') return;
+        if (['Broken','Dead'].includes(enemy.state)) return;
       }
       if (elapsed >= pattern.hits.at(-1)! + 220) { enemy.pattern = null; enemy.state = 'Recovery'; enemy.until = this.now + pattern.recovery;this.nextEnemyAttackAt=this.now+350; }
       return;

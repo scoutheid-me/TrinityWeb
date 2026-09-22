@@ -176,7 +176,7 @@ export class LabScene {
       if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,enemy.state==='Chase'?2.5:0,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       const phase=enemyPhase(enemy,sim.now,300);
-      if(enemy.species==='boar'){const t=enemy.pattern?Math.min(1,(sim.now-enemy.attackStart)/enemy.pattern.telegraph):0;actor.root.rotation.x=enemy.hp<=0?0:Math.sin(t*Math.PI)*.18; if(enemy.pattern&&t===1)actor.root.rotation.x=-.18;}
+      if(enemy.species==='boar'){const t=enemy.pattern?Math.min(1,(sim.now-enemy.attackStart)/enemy.pattern.telegraph):0;actor.root.rotation.x=enemy.hp<=0?0:Math.sin(t*Math.PI)*.3; if(enemy.pattern&&t===1)actor.root.rotation.x=-.3;}
       if(enemy.species!=='boar'&&phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
       else if(actor.rightArm)actor.rightArm.rotation.y=0;
       if (enemy.flashUntil>sim.now) actor.root.position.y += .04*Math.sin(sim.now*.1);
@@ -228,14 +228,15 @@ export class LabScene {
       this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+chargeDuration(preview.definition,preview.stage)-sim.now:100,true,'#80e9ff');
     }else this.debugVolume?.mesh.setEnabled(false);
     if(this.firstPerson){
-      if(target&&sim.autoFaceTarget){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,.35);this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
+      if(target&&sim.autoFaceTarget){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,1.65-(target.species==='boar'?.7:1.1));this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
+      const focusDistance=target?Math.hypot(target.x-sim.player.x,target.z-sim.player.z):5;const focusFov=target&&sim.autoFaceTarget?Math.max(.8,Math.min(1.65,2*Math.atan(2/Math.max(1,focusDistance)))):.8;this.firstCamera.fov+=(focusFov-this.firstCamera.fov)*Math.min(1,dt*8);
       this.firstCamera.position.set(sim.player.x,1.65+(state==='Dodge'?-.12:0),sim.player.z);
       const look=new Vector3(-Math.cos(this.camera.alpha)*Math.sin(this.camera.beta),-Math.cos(this.camera.beta),-Math.sin(this.camera.alpha)*Math.sin(this.camera.beta));
       this.firstCamera.setTarget(this.firstCamera.position.add(look));
       if((!sim.target||!sim.autoFaceTarget)&&sim.free)sim.player.yaw=Math.atan2(look.x,look.z);
     }
     const desired = new Vector3(sim.player.x,1.2,sim.player.z);
-    if (target&&sim.autoFaceTarget&&!this.firstPerson) { desired.x += (target.x-sim.player.x)*.18; desired.z += (target.z-sim.player.z)*.18;
+    if (target&&sim.autoFaceTarget&&!this.firstPerson) { desired.x += (target.x-sim.player.x)*.45; desired.z += (target.z-sim.player.z)*.45;desired.y=target.species==='boar'?.85:1.1;this.camera.beta+=(1.15-this.camera.beta)*Math.min(1,dt*8);
       const yaw = Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;
       const diff = Math.atan2(Math.sin(yaw-this.camera.alpha),Math.cos(yaw-this.camera.alpha)); this.camera.alpha += diff*Math.min(1,dt*4);
     }
@@ -245,7 +246,7 @@ export class LabScene {
     const b = this.camera.target.x*dirX+this.camera.target.z*dirZ;
     const a=dirX*dirX+dirZ*dirZ, c=this.camera.target.x**2+this.camera.target.z**2-12.4**2;
     const maxRadius=(-b+Math.sqrt(Math.max(0,b*b-a*c)))/Math.max(.01,a);
-    const desiredRadius=Math.min(this.cameraDistance,Math.max(2,maxRadius));
+    const desiredRadius=Math.min(target&&sim.autoFaceTarget?Math.max(this.cameraDistance,Math.min(10,Math.hypot(target.x-sim.player.x,target.z-sim.player.z)+3)):this.cameraDistance,Math.max(2,maxRadius));
     this.camera.radius += (desiredRadius-this.camera.radius)*Math.min(1,dt*16);
     this.shake *= Math.exp(-dt*18); this.camera.target.y += Math.sin(sim.now*.12)*this.shake;
     for (let i=this.pendingEffects.length-1;i>=0;i--) {

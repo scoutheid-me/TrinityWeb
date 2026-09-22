@@ -1,3 +1,15 @@
+# September 21: interaction defaults, counter damage and readable defense
+
+Interact now defaults to E and target switching to T. Saves with the untouched old G/E pair migrate when T is free; custom mappings are preserved. The name frame has a straight left edge, and HP uses a fixed stepped silhouette with a moving cutoff, so the thin right portion empties before the thicker portion.
+
+Perfect Parry now returns 2× equipped weapon base damage, scaled by Strength, while retaining zero incoming damage, 14 SP and 32 Break. Counter hits use their own outcome kind and do not count as basic or Art hits. Lethal counters correctly defeat the attacker. Failed parry commitment retains its 1.5× damage penalty.
+
+Boar basics now display a bound-key parry cue and more pronounced body anticipation. Target cameras use species center height, a wider close-range first-person field of view, and third-person framing between player and opponent. Auto-facing remains optional. The orb offers the Guild board and a seven-lesson guided route: targeting, locked movement, basics, dodge, Perfect Parry/counter, Arts and Break. The prior five-lesson entry route remains available. Guided facing overrides are restored on exit and excluded from persisted preferences.
+
+Validation: 101 unit tests and all 25 browser scenarios pass, including the full Guild journey, actual boar counter damage, binding migration, guided targeting and fixed-width HP depletion. HP at 75% and 45%, and boar defense framing were visually inspected. TypeScript/Vite build and production startup pass; the existing bundle-size warning remains.
+
+---
+
 # September 21: training orb, boar and skill selection
 
 An entrance orb at (2, -9) uses the saved Interact binding and proximity checks. It offers repeat Aether Sentinel or Woodland Boar fights only when no lesson/trial/live opponent is active. Starting a bout restores player resources and returns the player to the arena start. The room remains empty until an encounter is chosen.

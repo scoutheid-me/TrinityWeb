@@ -53,12 +53,12 @@ export class HUD {
   update(view:LabScene){
     const sim=this.sim,p=sim.player,e=sim.target??sim.enemies.find(e=>e.hp>0)??sim.enemies[0];
     const bar=(id:string,value:number,max:number)=>this.el(id).style.width=`${Math.max(0,Math.min(100,value/max*100))}%`;
-    bar('hp',p.hp,sim.hpMax);bar('stamina',p.stamina,sim.staminaMax);bar('sp',p.sp,100);
+    this.el('hp').style.setProperty('--hp-empty',`${100-Math.max(0,Math.min(100,p.hp/sim.hpMax*100))}%`);bar('stamina',p.stamina,sim.staminaMax);bar('sp',p.sp,100);
     this.root.querySelector('.player-name b')!.textContent=sim.profile.name;
     this.el('hp-value').textContent=`${Math.ceil(p.hp)} / ${sim.hpMax}`;this.el('stamina-value').textContent=`${Math.floor(p.stamina)}`;this.el('sp-value').textContent=String(Math.floor(p.sp));
     this.el('enemy-hud').hidden=!e;
     if(e){this.root.querySelector('.enemy-title b')!.textContent=e.species==='boar'?'Woodland Boar':'Aether Sentinel';this.root.querySelector('.enemy-title span')!.textContent=e.species==='boar'?'TRAINING BEAST':'TRAINING CONSTRUCT';bar('enemy-hp',e.hp,e.maxHp);bar('enemy-break',e.break,100);this.el('enemy-values').textContent=`${Math.ceil(e.hp)} / ${e.maxHp}`;this.el('enemy-state').textContent=e.hp<=0?`DEFEATED · ${bindingText(this.bindings,'reset')} TO RESET`:e.state==='Broken'?'BROKEN · DAMAGE ×1.6':e.pattern?`${e.pattern.name.toUpperCase()} · ${e.pattern.parryable?'PARRY OR DODGE':'DODGE'}`:e.state.toUpperCase();}
-    const selected=sim.flags.freezeAI||sim.art?undefined:imminentThreat(sim,true);const threat=selected?{enemy:selected.enemy,at:selected.phase!.contactAt}:undefined;
+    const selected=sim.flags.freezeAI||sim.art?undefined:imminentThreat(sim);const threat=selected&&(selected.enemy.species==='boar'||selected.enemy.pattern?.kind==='skill')?{enemy:selected.enemy,at:selected.phase!.contactAt}:undefined;
     const defense=this.el('defense-cue');defense.hidden=!threat||!this.showTiming;
     if(threat){const parryable=threat.enemy.pattern!.parryable,remaining=threat.at-sim.now-(parryable?80:150);defense.classList.toggle('sweep',!parryable);defense.querySelector('i')!.style.transform='rotate(45deg) scale('+Math.max(.5,Math.min(2,1+remaining/600))+')';defense.querySelector('span')!.textContent=(remaining<=55?'NOW · ':'BUILD-UP · ')+(parryable?'PARRY '+bindingText(this.bindings,'parry'):'DODGE '+bindingText(this.bindings,'dodge'));}
     this.root.classList.toggle('low-health',p.hp/sim.hpMax<.3);
