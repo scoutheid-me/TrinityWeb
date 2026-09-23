@@ -1,3 +1,5 @@
+Current assessment and implementation priorities: [September 23 playtest roadmap](PLAYTEST_ROADMAP.md). The following audit is historical; several foundation tasks have since shipped.
+
 # September 19 follow-up
 
 Implemented the first contact/footprint pass: shared box/sector/disk geometry for indicators and collision, Blender-authored rigid-joint clips sampled at contact deadlines, actual-reach slash effects, and shared audio/HUD skill selection. Floor warnings now show each attacker. Production rigs, continuous blade sweeps, multi-enemy coordination and the other gates below remain outstanding. The earlier assessment is retained as the audit baseline.

@@ -2,7 +2,7 @@ import {arts} from '../data/arts';
 export const challenges={
   positioning:{name:'Footwork',description:'Land 3 basic hits and evade a strike. Read the cleave lane and move through an opening.',reward:'aether-step',requires:[]},
   breaking:{name:'Break the guard',description:'Land a Combat Art and Break the sentinel. Build SP with basics or counters first.',reward:'resonant-cleave',requires:['positioning']},
-  countering:{name:'Counter discipline',description:'Perfect Parry 3 strikes. A failed counter takes 50% extra damage.',reward:'stillwater-return',requires:['breaking']},
+  countering:{name:'Counter discipline',description:'Perfect Counter 3 strikes. A failed counter takes 50% extra damage.',reward:'stillwater-return',requires:['breaking']},
   trial:{name:'Guild Trial',description:'Defeat two sentinels with your chosen build. Only one enemy commits to an attack at a time.',reward:'wayfarer-oath',requires:['positioning','breaking','countering']},
 } as const;
 export type ChallengeId=keyof typeof challenges;

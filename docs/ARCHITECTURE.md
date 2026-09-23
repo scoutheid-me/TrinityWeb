@@ -65,3 +65,7 @@ The location display is Training Room, nested under Guild Hall / Town of Beginni
 TrainingOrb owns proximity-gated repeat opponent selection, sharing the Interact binding with WeaponRack. Enemy species chooses boar or Sentinel patterns and presentation; legacy enemies without species remain Sentinels. Profile.boarSeen migrates to false. PersonalMenu lists learned skills; LoadoutTray displays one selected skill and assigns it to a unique slot through equipLoadout.
 
 Perfect Parry uses the shared hit executor with a counter-specific phase and counter-hit ledger kind, preserving damage/death/Break handling without granting Art/basic hit objectives. HUD HP depletion clips a full-width fill inside the fixed outer silhouette. Orb-guided tutorial adds two orientation stages before the existing lessons and keeps temporary auto-facing out of saves.
+
+## September 23: Counter presentation and musical preparation
+
+The visible action name is Counter. Existing parry action/event/state/save IDs deliberately remain stable to preserve remaps and progression. Counterable enemy basics and skills share a five-note minor-pentatonic phrase, ending in a chord 80 ms before contact; follow-up phrases compress after the previous hit. Red attacks retain the low dodge phrase. HUD and audio select the same imminent threat; player Arts suppress defensive timing phrases. All scheduling remains derived from simulation milliseconds and cancels on pause. See PLAYTEST_ROADMAP.md for the current combat review; earlier audit sections are historical.

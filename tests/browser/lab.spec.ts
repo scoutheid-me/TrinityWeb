@@ -93,8 +93,8 @@ test('player remaps controls, resolves conflicts, persists them and restores def
  await page.keyboard.down('d');await page.waitForTimeout(250);await page.keyboard.up('d');expect(await page.evaluate(()=>window.trinity.sim.player.x)).toBeLessThan(initial-.4);
  await page.locator('#menu').click();await page.locator('#open-controls').click();await expect(page.locator('#controls-menu')).toBeVisible();
  const frozen=await page.evaluate(()=>window.trinity.sim.now);
- await page.getByRole('button',{name:'Parry primary binding',exact:true}).click();await page.keyboard.press('j');await expect(page.locator('#binding-status')).toContainText('already assigned');
- await page.keyboard.press('k');await expect(page.getByRole('button',{name:'Parry primary binding',exact:true})).toHaveText('K');
+ await page.getByRole('button',{name:'Counter primary binding',exact:true}).click();await page.keyboard.press('j');await expect(page.locator('#binding-status')).toContainText('already assigned');
+ await page.keyboard.press('k');await expect(page.getByRole('button',{name:'Counter primary binding',exact:true})).toHaveText('K');
  await page.getByRole('button',{name:'Dodge primary binding',exact:true}).click();await page.mouse.down({button:'middle'});await page.mouse.up({button:'middle'});
  await expect(page.getByRole('button',{name:'Dodge primary binding',exact:true})).toHaveText('MMB');
  expect(await page.evaluate(()=>window.trinity.sim.now)).toBe(frozen);
@@ -103,11 +103,11 @@ test('player remaps controls, resolves conflicts, persists them and restores def
  await page.keyboard.press('k');expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Parry');await page.waitForTimeout(450);
  await page.mouse.click(900,600,{button:'middle'});expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Dodge');
  await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled();
- await page.locator('#open-controls').click();await expect(page.getByRole('button',{name:'Parry primary binding',exact:true})).toHaveText('K');
+ await page.locator('#open-controls').click();await expect(page.getByRole('button',{name:'Counter primary binding',exact:true})).toHaveText('K');
  await expect(page.getByRole('button',{name:'Dodge primary binding',exact:true})).toHaveText('MMB');
  await page.getByRole('button',{name:'Move forward primary binding',exact:true}).click();await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'Move forward primary binding',exact:true})).toHaveText('W');
  await page.screenshot({path:'test-results/controls-menu.png'});
- await page.locator('#bindings-defaults').click();await expect(page.getByRole('button',{name:'Parry primary binding',exact:true})).toHaveText('Q');
+ await page.locator('#bindings-defaults').click();await expect(page.getByRole('button',{name:'Counter primary binding',exact:true})).toHaveText('Q');
  await page.locator('#controls-done').click();await page.locator('#begin').click();await dismissInvitation(page);await page.keyboard.press('q');expect(await page.evaluate(()=>window.trinity.sim.state.state)).toBe('Parry');
 });
 test('basics are untimed and Art cues align with musical deadlines and stop on pause',async({page})=>{
@@ -156,11 +156,11 @@ test('all tutorial lessons can be completed through combat',async({page})=>{
 });
 
 
-test('enemy basics are animation-led and player Art suppresses competing cues',async({page})=>{
+test('enemy basics have musical counter cues and player Art suppresses competing cues',async({page})=>{
  await ready(page);await setupClose(page);
  await page.evaluate(()=>{const s=window.trinity.sim;s.flags.freezeAI=false;s.enemies[0].until=0;});
  await page.waitForFunction(()=>window.trinity.sim.enemies[0].pattern?.kind==='basic');
- await expect(page.locator('#defense-cue')).toBeHidden();expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes)).toEqual([]);
+ await expect(page.locator('#defense-cue')).toBeVisible();expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(5);
  await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.spawnEnemy();s.player.z=0;s.enemies[0].z=2;s.enemies[0].nextPattern=1;s.enemies[0].until=0;s.player.sp=30;});
  await expect(page.locator('#defense-cue')).toBeVisible();await page.keyboard.down('1');
  await expect(page.locator('#defense-cue')).toBeHidden();await expect(page.locator('#timing')).toHaveCSS('opacity','1');

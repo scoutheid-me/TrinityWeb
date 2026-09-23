@@ -6,6 +6,6 @@ export function bookLibrary(sim:CombatSimulation){return `<details class="nested
 export function bindBookLibrary(root:HTMLElement,sim:CombatSimulation){root.querySelectorAll<HTMLButtonElement>('[data-book-node]').forEach(b=>b.onclick=()=>{
  const book=skillBooks.find(book=>book.nodes.some(n=>n.art===b.dataset.bookNode))!,node=book.nodes.find(n=>n.art===b.dataset.bookNode)!,req=bookRequirements(node,sim.progression);
  root.querySelectorAll('[data-book-node]').forEach(el=>el.setAttribute('aria-pressed',String(el===b)));
- const labels:Record<string,string>={hits:'basic hits',evades:'successful evades',parries:'perfect parries',breaks:'Breaks',kills:'victories'};
+ const labels:Record<string,string>={hits:'basic hits',evades:'successful evades',parries:'Perfect Counters',breaks:'Breaks',kills:'victories'};
  b.closest('.book-preview')!.querySelector('.book-node-detail')!.innerHTML=`<h3>${arts[node.art].name}</h3><p>${sim.progression.learned[node.art]?'Already known through your current training.':'Not yet learned.'}</p><ul><li>Book ownership: unavailable until the future tutorial dungeon is implemented.</li>${req.parents.map(r=>`<li>${r.met?'✓':'○'} Learn ${arts[r.id].name}</li>`).join('')}${req.practice.map(r=>`<li>${r.met?'✓':'○'} ${r.current} / ${r.required} eligible ${labels[r.key]}</li>`).join('')}</ul><p>Preview only. This screen does not grant skills or replace the combat induction reward.</p>${skillCard(arts[node.art],sim)}`;
  });}

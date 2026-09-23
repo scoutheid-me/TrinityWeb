@@ -10,7 +10,7 @@ These instructions apply to the Combat Lab and all future work in this repositor
 - Guild challenges must clearly describe the awarded Art before entry and show its name, purpose, cost and usage on completion. Unlocks/mastery come from eligible encounter outcomes, never tutorial/debug telemetry. Keep four unique learned, weapon-compatible equipped slots and migrate saved controls/progress. Starter/training Arts stay simple single-event moves. The old four-part Guild Trial UI is retired; preserve existing earned skills in save migration. Wayfarer’s Oath remains a two-event Art obtainable through eligible field progression.
 - Keep UI text compact, with highlighted hover/focus help and expandable details. The first-person personal journal is viewport-mounted and keeps the simulation running; explicit pause and focus-loss safety still pause.
 - Preserve the user's original GUI/HUD reference images in `References/HUD/`; consult them for visual direction while building original runtime UI.
-- Perfect Parry negates incoming damage, rewards SP/Break and returns weapon-scaled counter damage; a hit during failed parry commitment deals extra damage. Keep counter windows and the failure multiplier in balance data.
+- Perfect Counter negates incoming damage, rewards SP/Break and returns weapon-scaled counter damage; a hit during failed counter commitment deals extra damage. Keep counter windows and the failure multiplier in balance data.
 - Preserve a playable build. Run core combat tests and browser integration checks, inspect the actual scene, and report measured results and honest limitations. Do not claim milestones complete based only on compilation. Keep the design and implementation documents in `docs/` current.
 
 ## Blender / 3D Asset Pipeline
@@ -44,3 +44,5 @@ Keep this section persistent so future sessions do not need the user to repeat t
 - GM item tuning belongs to the paused settings overlay. Persist overrides separately from character progression, validate all edits, offer reset/export, and prevent GM encounters from earning progression. Radar charts use fixed documented scales and expose exact values.
 
 - T clears a lone target; freeform attacks use player facing. Creature turning is rate-limited and committed attacks stop tracking. Rear hits deal +20% damage in a 120° rear arc, measured at contact.
+
+- Player-facing terminology is Counter (legacy parry IDs remain for save compatibility). Enemy Counter cues use a five-note musical ascent resolving 80 ms before contact; basic attacks have quieter cues. Keep red dodge cues distinct and player Art music prioritized. See docs/PLAYTEST_ROADMAP.md for current review and release gates.

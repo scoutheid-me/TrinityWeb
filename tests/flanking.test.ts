@@ -27,6 +27,6 @@ it('Perfect Linear passes a committed cleave which misses, leaving a rear attack
 });
 it('enemy crescendo ends on the defensive timing cue and yields to an Art phrase',()=>{
  const s=new CombatSimulation();s.spawnEnemy();s.player.z=0;const e=s.enemies[0];e.z=2;e.pattern=sentinelPatterns[1];e.attackStart=s.now;e.state='Telegraph';
- const notes=enemyTimingPhrases(s)[0].notes;expect(notes).toHaveLength(8);expect(notes.at(-1)?.at).toBe(e.attackStart+1500-80);expect(notes.slice(0,4).every((n,i)=>i===0||n.level!>notes[i-1].level!)).toBe(true);
+ const notes=enemyTimingPhrases(s)[0].notes;expect(notes).toHaveLength(10);expect(notes.at(-1)?.at).toBe(e.attackStart+1500-80);expect(notes.slice(0,5).every((n,i)=>i===0||n.level!>notes[i-1].level!)).toBe(true);
  s.player.sp=100;s.activateArt(0);expect(enemyTimingPhrases(s)).toEqual([]);
 });

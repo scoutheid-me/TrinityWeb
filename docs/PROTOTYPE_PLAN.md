@@ -1,3 +1,5 @@
+Current priority order and external playtest gates: [September 23 combat review](PLAYTEST_ROADMAP.md).
+
 # Current roadmap
 
 Use [EXPANSION_PLAN.md](EXPANSION_PLAN.md) as the current staged expansion plan. It incorporates the contact/footprint pass, beginner single-input Arts and the new HUD. The earlier review below is retained as historical design context; outdated feature-status statements are superseded by STATUS.md.

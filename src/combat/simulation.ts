@@ -106,7 +106,7 @@ export class CombatSimulation {
     let def=base?structuredClone(base):null;
     if(def&&(!this.progression.learned[def.id]||def.weapon!=='any'&&this.weapon!==def.weapon)){this.emit("notice","Art not learned or wrong weapon");return false;}
     if(def?.id==="crescent-break"){if(this.progression.masteryChoice==="recovery")def.recovery=200;if(this.progression.masteryChoice==="break"){def.recovery=460;for(const node of def.nodes)node.break*=1.35;}}
-    if(def?.counterWindow&&this.now-this.lastParryAt>def.counterWindow){this.emit("notice","Perfect Parry first · counter opportunity required");return false;}
+    if(def?.counterWindow&&this.now-this.lastParryAt>def.counterWindow){this.emit("notice","Perfect Counter first · counter opportunity required");return false;}
     if (!def) { this.emit('notice', 'No Art equipped'); return false; }
     if (!this.state.can('ArtStartup')) { this.emit('notice', 'Recovering — wait for the opening'); return false; }
     const after = spendSp(this.player.sp, def.cost);
@@ -184,7 +184,7 @@ export class CombatSimulation {
     if (this.state.state === 'Dodge' && elapsed >= balance.dodge.iframeStart && elapsed <= balance.dodge.iframeEnd) { this.defenseOutcome('evade',enemy);this.emit('notice', 'Evaded'); return; }
     if (pattern.parryable && this.state.state === 'Parry' && elapsed <= (pattern.kind === 'basic' ? balance.parry.basicWindow : balance.parry.window) && inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, 4, 1.7)) {
       this.lastParryAt=this.now;this.defenseOutcome('parry',enemy);this.player.sp = gainSp(this.player.sp, balance.sp.parry); this.counters.parries++;this.hitEnemy(enemy,physicalDamage(this.weaponDefinition.damage*balance.parry.counterMultiplier,this.attributes.strength),balance.parry.break,'Perfect',`counter:${enemy.attackStart}:${[...enemy.hits].at(-1)??0}`);
-      this.emit('parry', `PERFECT PARRY · +${balance.sp.parry} SP · COUNTER HIT · NO DAMAGE`, enemy, { strong: true, grade:'Perfect' }); this.state.set('Idle'); return;
+      this.emit('parry', `PERFECT COUNTER · +${balance.sp.parry} SP · COUNTER HIT · NO DAMAGE`, enemy, { strong: true, grade:'Perfect' }); this.state.set('Idle'); return;
     }
     const failedCounter = this.state.state === 'Parry';
     let damage = pattern.damage * (failedCounter ? balance.parry.failureDamageMultiplier : 1);

@@ -14,11 +14,11 @@ export class CombatAudio {
     for(const note of phrases.flatMap(p=>p.notes)){
       if(note.at<sim.now-40)continue;
       const when=ctx.currentTime+Math.max(0,(note.at-sim.now)/1000/rate);
-      const duration=note.voice==='defense'?(note.accent?.16:.09):note.accent?.20:.12;this.scheduledCueTimes.push(note.at);
+      const duration=note.chord?.24:note.voice==='defense'?(note.accent?.16:.12):note.accent?.20:.12;this.scheduledCueTimes.push(note.at);
       // An original rising musical phrase: soft preparation notes and a clear accented sweet spot.
-      for(const harmonic of [1,2]){
+      for(const harmonic of (note.chord?[1,1.2,1.5,2]:[1,2])){
         const voice=ctx.createOscillator(),gain=ctx.createGain();voice.type=note.voice==='defense'?'triangle':'sine';voice.frequency.value=note.frequency*harmonic;
-        gain.gain.setValueAtTime(0,when);gain.gain.linearRampToValueAtTime((note.level??(note.accent?.065:.027))/harmonic,when+.004);gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
+        gain.gain.setValueAtTime(0,when);gain.gain.linearRampToValueAtTime((note.level??(note.accent?.065:.027))/(harmonic*(note.chord?1.7:1)),when+.008);gain.gain.exponentialRampToValueAtTime(.0001,when+duration);
         voice.connect(gain);gain.connect(ctx.destination);voice.start(when);voice.stop(when+duration+.01);voice.onended=()=>{voice.disconnect();gain.disconnect();};this.phraseVoices.push(voice);
       }
     }

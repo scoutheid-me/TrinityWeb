@@ -1,3 +1,13 @@
+# September 23: musical Counter cues and playtest review
+
+Player-facing Parry terminology is now Counter in bindings, HUD, tutorials, NPC text, the manual and skill-book requirements. Internal action/state/event/save IDs remain unchanged, preserving existing mappings and progress. Enemy basics and counterable skills play a rising five-note minor-pentatonic melody, resolving in a short chord 80 ms before impact. Basic phrases are quieter; successive-hit phrases start after the prior contact and compress their spacing. Red attacks retain a low dodge cue. HUD and audio now select the same imminent threat, and player Arts retain cue priority.
+
+Validation: 119 unit tests and all 30 browser scenarios pass, including the whole tutorial, saved Counter remapping, live Counter damage, basic musical cues, Art priority, pause cancellation and both camera perspectives. Build passes with the existing large-chunk warning. Production startup assertion passes. The updated in-game Counter cue was visually inspected; subjective headphone/speaker mixing and device latency remain human-playtest work.
+
+[PLAYTEST_ROADMAP.md](PLAYTEST_ROADMAP.md) contains the current code-grounded review, implementation boundaries, three-weapon throughput findings and proposed external release gates. It distinguishes shipped features from proposed work. Highest priority: measured weapon/Counter balance and a polished duel, then a small route/dungeon with an actual Skill Book reward; not broad world expansion. No public release has been deployed by this task.
+
+---
+
 # September 22: freeform combat and rear openings
 
 T now releases a sole nearby target, and cycles when another living target is nearby. Freeform strikes retain normal movement/facing controls in both views. Sentinel and boar use limited turn speeds with slower wind-up tracking; committed strikes and recovery do not track. They turn into alignment before chasing or starting another attack. A Perfect Linear regression confirms passing a committed cleave avoids its hit and leaves the rear exposed.
