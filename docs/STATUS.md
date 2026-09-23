@@ -1,3 +1,15 @@
+# September 22: freeform combat and rear openings
+
+T now releases a sole nearby target, and cycles when another living target is nearby. Freeform strikes retain normal movement/facing controls in both views. Sentinel and boar use limited turn speeds with slower wind-up tracking; committed strikes and recovery do not track. They turn into alignment before chasing or starting another attack. A Perfect Linear regression confirms passing a committed cleave avoids its hit and leaves the rear exposed.
+
+Rear hits gain 20% damage within a 120-degree rear cone, measured at contact. Floating REAR text and a brighter hit tone report it; the monster manual explains the opening. Circular sweeps still cover the rear. Sword basics now deal 8 base single / 6 per group victim, rapier 10 single with 3 Break, greatsword 12 with 4 Break. Shared Arts continue using original base damage. Existing explicit GM overrides remain user-controlled.
+
+Art and enemy skill audio use rising preparation notes with increasing volume and distinct timbres. Accents remain synchronized to the existing gameplay deadlines; basic enemy attacks remain animation-led and player Arts suppress competing enemy phrases. Radar dots/labels expose visible hover, keyboard-focus and click help with exact values and explanations, clamped inside the viewport.
+
+Validation: 117 unit tests passed. All 30 browser scenarios passed across the full run and targeted reruns after fixing radar hover hit areas and updating the cue-count expectation. The new scenario checks T release and freeform hits in both perspectives. Build passed with the existing large-bundle warning. Radar popup and original room/weapon presentation were visually inspected. Audio scheduling is tested; subjective headphone mixing remains a player-feedback tuning task.
+
+---
+
 # September 21: three weapon roles and visible armory
 
 The rack displays the actual sword, rapier and greatsword GLBs instead of its generic practice blades. Comparison entries show current/base damage, attack cycle, nominal wind-up, recovery, reach, arc/lane, target count, Break and guard reduction. Current Strength/Dexterity affect the live numbers. The cooldown tradeoff is recovery commitment, not a separate skill cooldown timer.

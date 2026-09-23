@@ -14,7 +14,7 @@
     {
       "id": "sword",
       "name": "One-handed sword",
-      "description": "Versatile blade with the strongest guard; leaves the off hand free for a future shield. Group hits gain damage per target.",
+      "description": "Versatile blade with the strongest guard; leaves the off hand free for a future shield. Group hits deal less damage per target.",
       "damage": 8,
       "startup": 87,
       "recovery": 240,
@@ -26,7 +26,7 @@
       },
       "guard": 0.2,
       "model": "/assets/weapons/training_sword.glb",
-      "multiTargetDamage": 10
+      "multiTargetDamage": 6
     },
     {
       "id": "rapier",
@@ -35,7 +35,7 @@
       "damage": 10,
       "startup": 55,
       "recovery": 140,
-      "break": 2,
+      "break": 3,
       "shape": {
         "kind": "box",
         "range": 3.1,

@@ -164,7 +164,7 @@ test('enemy basics are animation-led and player Art suppresses competing cues',a
  await page.evaluate(()=>{const s=window.trinity.sim;s.reset();s.spawnEnemy();s.player.z=0;s.enemies[0].z=2;s.enemies[0].nextPattern=1;s.enemies[0].until=0;s.player.sp=30;});
  await expect(page.locator('#defense-cue')).toBeVisible();await page.keyboard.down('1');
  await expect(page.locator('#defense-cue')).toBeHidden();await expect(page.locator('#timing')).toHaveCSS('opacity','1');
- expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(2);
+ expect(await page.evaluate(()=>window.trinity.audio.scheduledCueTimes.length)).toBe(4);
  await page.screenshot({path:'test-results/single-art.png'});
 });
 

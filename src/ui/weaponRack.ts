@@ -16,7 +16,7 @@ export class WeaponRack {
  update(active:boolean){this.prompt.hidden=!active||!this.available||!this.panel.hidden;this.prompt.textContent=`${bindingText(this.bindings(),'interact')} · Inspect weapon rack`;if(!active||!this.available)this.close();}
  open(){if(!this.available)return;this.panel.hidden=false;this.render();}
  chart(id:string){const w=weapons[id],cycle=Math.round(chargeTime(this.sim.attributes.dexterity)*w.startup/87)+balance.basic.active+w.recovery;return radarChart(w.name,[
- {label:'Damage',score:w.damage/16,detail:w.damage+' base per target; '+(w.multiTargetDamage??w.damage)+' per target with multiple hits. Current single hit: '+Math.round(physicalDamage(w.damage,this.sim.attributes.strength))+'. Scale: 16 base.'},
+ {label:'Damage',score:w.damage/16,detail:w.damage+' base per target; '+(w.maxTargets===1?'single target only':(w.multiTargetDamage??w.damage)+' per target when hitting a group')+'. Current single hit: '+Math.round(physicalDamage(w.damage,this.sim.attributes.strength))+'. Scale: 16 base.'},
  {label:'Reach',score:w.shape.range/4,detail:w.shape.range+' m from player center. Scale: 4 m.'},
  {label:'Coverage',score:w.shape.kind==='sector'?w.shape.halfArc/Math.PI:w.shape.kind==='box'?Math.atan2(w.shape.halfWidth,w.shape.range)/Math.PI:1,detail:w.shape.kind==='sector'?Math.round(w.shape.halfArc*360/Math.PI)+'° fan; all targets in area. Scale: 360°.':w.shape.kind==='box'?(w.shape.halfWidth*2)+' m wide lane; '+(w.maxTargets??'all')+' target.':'Circle'},
  {label:'Break',score:w.break/8,detail:w.break+' Break per victim. Scale: 8. Filling enemy Break staggers it.'},

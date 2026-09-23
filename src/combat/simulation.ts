@@ -1,3 +1,4 @@
+import {creatureFacing,angleDelta,turnToward,rearMultiplier} from './facing';
 import {freshProfile} from '../progression/profile';
 import {weapons,basicWeaponDamage} from '../data/weapons';
 import {EncounterLedger,type OutcomeKind,type CombatOutcome} from './encounter';
@@ -9,7 +10,7 @@ import { boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } 
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
-export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; }
+export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; }
 export interface Enemy extends Point { id: string; species?:'sentinel'|'boar'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
   profile=freshProfile();
@@ -79,7 +80,7 @@ export class CombatSimulation {
   resetEnemies() { this.enemies = []; this.spawnEnemy(); this.lockedId = null; }
   toggleLock(switchTarget = false) {
     const targets = this.enemies.filter(e => e.hp > 0 && Math.hypot(e.x - this.player.x, e.z - this.player.z) < 20);
-    if (!switchTarget && this.lockedId) { this.lockedId = null; return; }
+    if (this.lockedId && (!switchTarget || !targets.some(e=>e.id!==this.lockedId))) { this.lockedId = null; return; }
     const index = targets.findIndex(e => e.id === this.lockedId);
     this.lockedId = targets[(index + 1) % targets.length]?.id ?? null;
   }
@@ -153,10 +154,11 @@ export class CombatSimulation {
   }
   hitEnemy(enemy: Enemy, damage: number, breakDamage: number, grade: Grade, phase: string) {
     if (enemy.hp <= 0 || !this.hits.accept(`${this.attackSerial}:${phase}`, enemy.id)) return false;
-    const actual = Math.round(damage * (enemy.state === 'Broken' ? 1.6 : 1));
+    const rear=rearMultiplier(enemy,this.player);
+    const actual = Math.round(damage * rear * (enemy.state === 'Broken' ? 1.6 : 1));
     this.recordOutcome({kind:phase==='basic'?'basic-hit':phase.startsWith('counter:')?'counter-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
-    this.emit('hit', String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect' });
+    this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1 });
     this.hitStopUntil = this.now + balance.hitStop;
     if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='boar'?'Boar defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
     else this.applyBreak(enemy, breakDamage);
@@ -288,10 +290,11 @@ export class CombatSimulation {
     if (enemy.state === 'Broken') { if (this.now >= enemy.until) { enemy.break = 0; enemy.state = 'Recovery'; enemy.until = this.now + 600; } return; }
     if (enemy.state === 'Recovery') { if (this.now >= enemy.until) enemy.state = 'Chase'; return; }
     const dx = this.player.x - enemy.x, dz = this.player.z - enemy.z, distance = Math.hypot(dx, dz);
+    const facing=creatureFacing[enemy.species??'sentinel'],desired=Math.atan2(dx,dz);
     if (enemy.pattern) {
       const elapsed = this.now - enemy.attackStart, pattern = enemy.pattern;
       // Tracking stops before impact, making the windup readable and dodgeable.
-      if (elapsed < pattern.telegraph - (pattern.kind === 'basic' ? 500 : 260)) enemy.yaw = Math.atan2(dx, dz);
+      if (elapsed < pattern.telegraph - (pattern.kind === 'basic' ? 500 : 260)) enemy.yaw = turnToward(enemy.yaw,desired,facing.windupTurnRate*dt);
       enemy.state = elapsed < pattern.telegraph ? 'Telegraph' : 'Attack';
       for (let i = 0; i < pattern.hits.length; i++) if (elapsed >= pattern.hits[i] && !enemy.hits.has(i)) {
         enemy.hits.add(i); this.emit('slash', pattern.name, enemy, { target: enemy.id, strong: !pattern.parryable,shape:pattern.shape,motion:pattern.motion });
@@ -303,7 +306,10 @@ export class CombatSimulation {
       return;
     }
     if (distance > balance.enemy.aggro || this.now < enemy.until) { enemy.state = 'Idle'; return; }
-    enemy.yaw = Math.atan2(dx, dz);
+    enemy.yaw = turnToward(enemy.yaw,desired,facing.turnRate*dt);
+    enemy.state='Chase';
+    // Turn in place before closing or attacking.
+    if(Math.abs(angleDelta(enemy.yaw,desired))>Math.PI/6)return;
     if (distance > (enemy.species==='boar'?1.8:2.25)) { enemy.state = 'Chase'; enemy.x += dx / distance * balance.enemy.speed * dt; enemy.z += dz / distance * balance.enemy.speed * dt; this.bound(enemy); }
     else {
       if(this.now<this.nextEnemyAttackAt||this.enemies.some(other=>other!==enemy&&other.pattern))return;
