@@ -10,7 +10,10 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:browser": "playwright test",
-    "test:production": "playwright test --config playwright.production.config.ts"
+    "test:production": "playwright test --config playwright.production.config.ts",
+    "build:playtest": "npm run export:skills && tsc --noEmit && vite build --mode playtest --outDir dist-playtest",
+    "benchmark": "vitest run tests/balance-benchmark.test.ts",
+    "test:playtest": "playwright test --config playwright.playtest.config.ts"
   },
   "dependencies": {
     "@babylonjs/core": "9.27.0",

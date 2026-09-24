@@ -124,3 +124,5 @@ header .quiet{visibility:hidden;pointer-events:none}.personal-menu-open header .
 @media(max-width:700px){#personal-menu-toggle{top:14px;right:14px}.personal-menu-open header #menu{top:64px!important}.personal-menu-open header #open-controls{top:116px!important}.personal-menu-open header .tutorial-open{top:168px!important}.personal-menu-open header .guild-open{top:220px!important}.personal-menu-open header #perspective{top:272px!important}#controls-menu.personal-live{inset:320px 14px auto 14px;width:auto;max-height:calc(100vh - 340px)}}
 
 .stat-radar g[data-help]{pointer-events:bounding-box;cursor:help}.stat-radar g[data-help]:hover text,.stat-radar g[data-help]:focus text{fill:#946700;text-decoration:underline}.stat-radar g[data-help]:focus{outline:1px solid #bb963b}
+.public-playtest #debug,.public-playtest #debug-toggle{display:none!important}#playtest-settings label{display:flex;gap:10px;align-items:center;margin:10px 0}#playtest-settings input[type=number]{width:80px}#playtest-settings p{font-size:12px;line-height:1.5}#playtest-settings button{margin:5px 0}
+.reduced-flash .player-panel,.reduced-flash #grade{animation:none!important}

@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'tests/playtest',outputDir:'test-results/playtest',timeout:60000,workers:1,use:{channel:'msedge',headless:true,viewport:{width:1440,height:900},baseURL:'http://127.0.0.1:4174',launchOptions:{args:['--enable-unsafe-webgpu']}},webServer:{command:'node node_modules/vite/bin/vite.js preview --outDir dist-playtest --host 127.0.0.1 --port 4174',url:'http://127.0.0.1:4174',reuseExistingServer:true,timeout:30000}});

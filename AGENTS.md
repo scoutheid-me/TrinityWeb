@@ -40,7 +40,7 @@ Keep this section persistent so future sessions do not need the user to repeat t
 - Character creation collects a name and man/woman character before entry; preserve existing progression during migration. Rename only in paused game settings. Start in first person. Entry directs players to the entrance orb for the single Guild Combat Trial, which awards only Linear and explains its Perfect/Good movement. Interact defaults to E (target switching defaults to T) and is remappable; rack prompts must reflect the saved binding.
 
 - Friends lists NPC contacts, not places or trial-launch buttons. Ilyra has one induction quest; completed quests live in its collapsible archive. No automatic Wayfarer title.
-- Current basic balance: sword 8 single / 6 per victim in groups, 60° fan; rapier 10 single-target / 3 Break; greatsword 12 per victim / 4 Break. Shared Basic Arts always use original weapon base damage.
+- Current basic balance: sword 8 single / 6 per victim in groups, 60° fan; rapier 10 single-target / 3 Break; greatsword 28 per victim / 9 Break. Shared Basic Arts always use original weapon base damage. Rapier Art Break ×1.1; greatsword Art Break ×1.6. Greatsword must lead overall damage and Break, especially AoE; rapier wins speed and sword is versatile. Verify with npm run benchmark.
 - GM item tuning belongs to the paused settings overlay. Persist overrides separately from character progression, validate all edits, offer reset/export, and prevent GM encounters from earning progression. Radar charts use fixed documented scales and expose exact values.
 
 - T clears a lone target; freeform attacks use player facing. Creature turning is rate-limited and committed attacks stop tracking. Rear hits deal +20% damage in a 120° rear arc, measured at contact.

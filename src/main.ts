@@ -1,3 +1,7 @@
+import {CombatRecap} from './combat/recap';
+import {defaultAttributes} from './data/balance';
+import {playtestBuild,buildId} from './release';
+import {playtestSettings} from './ui/playtest';
 import {GMMenu} from './ui/gm';
 import {TrainingOrb} from './ui/trainingOrb';
 import {createCharacter,renameSettings,GuildInvitation} from './ui/onboarding';
@@ -27,6 +31,7 @@ async function main(){
   installGlossary();
   let save=defaultSave();
   try{save=await loadSave();}catch(error){console.warn('Local save unavailable; using session settings.',error);hud.notice('Local save unavailable — session mode');}
+  if(playtestBuild)save.attributes={...defaultAttributes};
   sim.profile=save.profile;sim.autoFaceTarget=save.settings.autoFaceTarget;sim.weapon=save.weapon;sim.progression=save.progression;sim.attributes=save.attributes;sim.loadout=save.loadout;sim.counters=save.counters;sim.reset();
   for(const key of Object.keys(sim.attributes))hud.input(`stat-${key}`).value=String(sim.attributes[key as keyof typeof sim.attributes]);
   await createCharacter(sim.profile,async()=>{save.profile=structuredClone(sim.profile);try{await saveGame(save);}catch{hud.notice('Character saved for this session only.');}});
@@ -36,10 +41,10 @@ async function main(){
   const advance=()=>{const current=performance.now();if(!paused){if(hud.slowMotion)sim.invalidateRewards("Slow motion enabled");input.updateMovement();sim.update(Math.min(100,current-last)*(hud.slowMotion?.35:1));}last=current;};
   hud.root.classList.add('game-paused');
   const overlay=hud.el('overlay'),begin=hud.el('begin') as HTMLButtonElement;
-  function setPaused(value:boolean){if(!value){const gm=document.getElementById('gm-menu');if(gm)gm.hidden=true;}if(controls&&!controls.panel.hidden){if(!value)return;controls.close();}advance();if(value&&guild?.visible){guild.panel.hidden=true;hud.root.classList.remove('journal-open');}paused=value;hud.root.classList.toggle('game-paused',value);input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume training':'Enter the Training Room';}else{view.canvas.focus();audio.unlock();started=true;}last=performance.now();}
+  function setPaused(value:boolean){window.dispatchEvent(new Event('trinity-audio-stop'));if(!value){const gm=document.getElementById('gm-menu');if(gm)gm.hidden=true;}if(controls&&!controls.panel.hidden){if(!value)return;controls.close();}advance();if(value&&guild?.visible){guild.panel.hidden=true;hud.root.classList.remove('journal-open');}paused=value;hud.root.classList.toggle('game-paused',value);input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume training':'Enter the Training Room';}else{view.canvas.focus();audio.unlock();started=true;}last=performance.now();}
   function requestPause(){if(!paused&&(sim.encounter.active||tutorial.active)&&sim.player.hp>0){hud.notice('Finish the trial before opening game settings.');return;}setPaused(!paused);}
   let orb:TrainingOrb|undefined;let rack:WeaponRack|undefined;let controls:ControlsMenu|undefined;let guild:GuildBoard|undefined;
-  const input=new GameInput(sim,view,advance,()=>{if(orb&&!orb.panel.hidden){orb.close();return;}if(rack&&!rack.panel.hidden){rack.close();return;}const tray=document.getElementById('loadout-tray');if(tray&&!tray.hidden){tray.hidden=true;return;}guild?.visible?guild.close():requestPause();},()=>hud.toggleDebug(),()=>audio.unlock(),()=>{if(orb?.available)orb.open();else rack?.open();},()=>togglePersonalMenu());
+  const input=new GameInput(sim,view,advance,()=>{if(orb&&!orb.panel.hidden){orb.close();return;}if(rack&&!rack.panel.hidden){rack.close();return;}const tray=document.getElementById('loadout-tray');if(tray&&!tray.hidden){tray.hidden=true;return;}guild?.visible?guild.close():requestPause();},()=>{if(!playtestBuild)hud.toggleDebug();},()=>audio.unlock(),()=>{if(orb?.available)orb.open();else rack?.open();},()=>togglePersonalMenu());
   input.sensitivity=save.settings.sensitivity;input.bindings=save.settings.bindings;hud.setBindings(input.bindings);
   controls=new ControlsMenu(input,()=>setPaused(true),()=>{hud.setBindings(input.bindings);if(tutorial.active)tutorial.render();void persist();},()=>false);
   const autoFace=controls.panel.querySelector<HTMLInputElement>('#auto-face-target')!;autoFace.checked=sim.autoFaceTarget;autoFace.onchange=()=>{sim.autoFaceTarget=autoFace.checked;void persist();};
@@ -60,6 +65,7 @@ async function main(){
   const musicLabel=document.createElement('label');musicLabel.innerHTML='<input id="timing-music" type="checkbox"> Musical timing cues';hud.el('debug').append(musicLabel);
   hud.input('timing-music').checked=audio.timingMusic;hud.input('timing-music').onchange=()=>{audio.timingMusic=hud.input('timing-music').checked;audio.stopTiming();void persist();};
   begin.disabled=false;begin.textContent='Enter the Training Room';hud.el('load-status').textContent=`${view.backend} ready · Headphones recommended`;
+  view.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();setPaused(true);hud.el('load-status').textContent='Graphics context lost. Your saved progress is retained. Reload to recover.';});
   begin.onclick=()=>{const entering=!started;if(sim.player.hp<=0)sim.reset();setPaused(false);if(entering)hud.notice('Touch the entrance orb to begin the Guild Combat Trial.');};hud.el('menu').onclick=()=>requestPause();
   window.addEventListener('blur',()=>{if(started&&!paused)setPaused(true);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!paused)setPaused(true);});
@@ -77,16 +83,25 @@ async function main(){
   hud.input('sound').checked=audio.enabled;hud.input('sound').onchange=()=>audio.enabled=hud.input('sound').checked;
   const preferences=document.createElement('details');preferences.className='system-preferences';preferences.innerHTML='<summary>Audio & graphics</summary>';hud.root.querySelector('.intro')!.append(preferences);
   for(const id of ['quality','sensitivity','sound','timing-music'])preferences.append(hud.el(id).closest('label')!);
-  new GMMenu(sim);
+  if(!playtestBuild)new GMMenu(sim);
+  else{hud.root.classList.add('public-playtest');hud.el('debug').hidden=true;hud.root.querySelectorAll('[data-action]').forEach(e=>e.remove());}
+  const recap=new CombatRecap();const report=document.createElement('details');report.innerHTML='<summary>Last encounter</summary><p>No completed encounter yet.</p>';report.className='system-preferences';hud.root.querySelector('.intro')!.append(report);
+  let lastFrame=performance.now();const frameTimes:number[]=[];
+  let importing=false,pendingSave=Promise.resolve();const comfort=save.settings.comfort;
+  const applyComfort=()=>{Object.assign(audio,{cueVolume:comfort.cueVolume,effectsVolume:comfort.effectsVolume,cueOffsetMs:comfort.cueOffsetMs});view.reducedMotion=comfort.reducedMotion;view.reducedFlash=comfort.reducedFlash;hud.root.classList.toggle('reduced-flash',comfort.reducedFlash);audio.stopTiming();};applyComfort();
+  playtestSettings(audio,comfort,applyComfort,persist,loadSave,()=>{importing=true;},()=>{importing=false;},()=>({renderer:view.backend,quality:view.quality,viewport:{width:innerWidth,height:innerHeight},stats:view.stats(),frameTimesMs:frameTimes.length?{samples:frameTimes.length,p50:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.5)],p95:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.95)],p99:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.99)]}:null,counters:{...sim.counters},lastEncounter:recap.last,comfort:{...comfort},assetErrors:view.assetErrors}));
+  const stamp=document.createElement('small');stamp.textContent=buildId;hud.el('load-status').after(stamp);
   renameSettings(sim.profile,()=>void persist());
-  async function persist(){const data:SaveData={version:3,profile:structuredClone(sim.profile),weapon:tutorial.persistentWeapon,progression:structuredClone(sim.progression),attributes:{...sim.attributes},loadout:[...tutorial.persistentLoadout],settings:{autoFaceTarget:tutorial.persistentAutoFace,quality:view.quality,sensitivity:input.sensitivity,sound:audio.enabled,timingMusic:audio.timingMusic,bindings:structuredClone(input.bindings)},counters:{...sim.counters}};try{await saveGame(data);}catch(error){console.warn('Could not save Trinity settings.',error);hud.notice('Could not save settings');}}
+  async function persist(){if(importing)return;const data:SaveData={version:3,profile:structuredClone(sim.profile),weapon:tutorial.persistentWeapon,progression:structuredClone(sim.progression),attributes:{...sim.attributes},loadout:[...tutorial.persistentLoadout],settings:{comfort:{...comfort},autoFaceTarget:tutorial.persistentAutoFace,quality:view.quality,sensitivity:input.sensitivity,sound:audio.enabled,timingMusic:audio.timingMusic,bindings:structuredClone(input.bindings)},counters:{...sim.counters}};try{pendingSave=pendingSave.catch(()=>{}).then(()=>saveGame(data));await pendingSave;}catch(error){console.warn('Could not save Trinity settings.',error);hud.notice('Could not save settings');}}
   window.addEventListener('pagehide',()=>void persist());
   view.engine.runRenderLoop(()=>{
+    const frameNow=performance.now();if(!paused){frameTimes.push(frameNow-lastFrame);if(frameTimes.length>600)frameTimes.shift();}lastFrame=frameNow;
     hud.root.classList.toggle('gm-mode',sim.gmMode);
     const before=sim.now;advance();const dt=Math.max(.001,(sim.now-before)/1000);
     audio.syncTiming(sim,paused,hud.slowMotion?.35:1);
     if(!paused){
       view.update(sim,dt);
+      recap.observe(sim,sim.events);if(recap.last){const r=recap.last;report.querySelector('p')!.textContent=`${r.result} · ${r.weapon} · ${r.seconds}s · ${r.damageDealt} damage dealt / ${r.damageTaken} taken · ${r.counters} Counters · ${r.breaks} Breaks · ${r.rearHits} rear hits · ${r.artMisses} missed Arts. Practice summaries never award progress.`;}
       tutorial.observe(sim.events);
       for(const event of sim.events){view.effect(event,sim);hud.event(event);audio.event(event);
         if(event.type==='hit'){

@@ -47,3 +47,6 @@ Wayfarer’s Oath is the first paired Art, earned only by completing all Guild t
 ## Two-handed overhead basic
 
 The training greatsword uses 12 base damage (15 at Strength 10), a 420 ms nominal startup scaled by Dexterity, and 520 ms recovery. This compares with 4 base damage for the one-handed sword and 3 for the rapier. It remains untimed and grants the usual 10 SP only on contact. Its footprint is a 2.2 m forward box, 0.96 m wide, matching a vertical cut rather than the former broad fan. The dedicated motion lifts into anticipation, accelerates down through the contact deadline, follows through and returns to guard. Both hands stay constrained to the existing Blender-authored grip/arm hierarchy.
+
+### Current balance and comfort pass (September 23)
+Counter costs 16 stamina. Success adds weapon-scaled return damage and Break (32 sword, 34 rapier, 46 greatsword); failed commitment retains the 1.5 incoming multiplier. Shared Arts multiply Break by the weapon's artBreakMultiplier (1 sword, 1.1 rapier, 1.6 greatsword). Audio calibration offsets presentation only, never authoritative hit windows. Encounter recaps are presentation-only and cannot award progression. See PLAYTEST_ROADMAP.md and balance/weapon-benchmark.json for scope and measured balance.

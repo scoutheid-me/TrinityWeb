@@ -1,3 +1,4 @@
+import {playtestBuild} from '../release';
 import {actions,actionLabels,assignBinding,bindingLabel,defaultBindings,type Action} from '../input/bindings';
 import type {GameInput} from '../input/input';
 
@@ -35,7 +36,7 @@ export class ControlsMenu {
   }
   render(){
     const rows=this.panel.querySelector('#binding-rows')!;rows.replaceChildren();
-    for(const action of actions){
+    for(const action of actions){if(playtestBuild&&action==='debug')continue;
       const row=document.createElement('div');row.className='binding-row';const label=document.createElement('span');label.textContent=actionLabels[action];row.append(label);
       for(const slot of [0,1] as const){
         const cell=document.createElement('div'),button=document.createElement('button'),clear=document.createElement('button');cell.className='binding-cell';

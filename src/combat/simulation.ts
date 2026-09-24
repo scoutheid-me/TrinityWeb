@@ -10,7 +10,7 @@ import { boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } 
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
-export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; }
+export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; breakAmount?:number; }
 export interface Enemy extends Point { id: string; species?:'sentinel'|'boar'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
 export class CombatSimulation {
   profile=freshProfile();
@@ -104,6 +104,7 @@ export class CombatSimulation {
     if(!validLoadout(this.loadout,this.progression,this.weapon)){this.emit('notice','Invalid loadout — open Skills in your personal menu');return false;}
     const id = this.loadout[slot], base = id ? arts[id] : null;
     let def=base?structuredClone(base):null;
+    if(def)for(const node of def.nodes)node.break*=this.weaponDefinition.artBreakMultiplier??1;
     if(def&&(!this.progression.learned[def.id]||def.weapon!=='any'&&this.weapon!==def.weapon)){this.emit("notice","Art not learned or wrong weapon");return false;}
     if(def?.id==="crescent-break"){if(this.progression.masteryChoice==="recovery")def.recovery=200;if(this.progression.masteryChoice==="break"){def.recovery=460;for(const node of def.nodes)node.break*=1.35;}}
     if(def?.counterWindow&&this.now-this.lastParryAt>def.counterWindow){this.emit("notice","Perfect Counter first · counter opportunity required");return false;}
@@ -144,7 +145,8 @@ export class CombatSimulation {
   }
   parry() {
     if(this.buffer('parry'))return true;
-    if (!this.state.can('Parry') || !this.useStamina(balance.parry.cost)) return false;
+    if(!this.state.can('Parry')){this.emit('notice',this.state.state==='HitReaction'?'Too late · the hit already landed':'Recovering · Counter unavailable');return false;}
+    if(!this.useStamina(balance.parry.cost)){this.emit('notice',`Counter needs ${balance.parry.cost} stamina`);return false;}
     this.state.set('Parry'); this.actionStart = this.now; this.actionEnd = this.now + balance.parry.duration; this.faceTarget(); return true;
   }
   applyBreak(enemy: Enemy, amount: number) {
@@ -158,7 +160,7 @@ export class CombatSimulation {
     const actual = Math.round(damage * rear * (enemy.state === 'Broken' ? 1.6 : 1));
     this.recordOutcome({kind:phase==='basic'?'basic-hit':phase.startsWith('counter:')?'counter-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
-    this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1 });
+    this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1,breakAmount:enemy.hp>0?breakDamage:0 });
     this.hitStopUntil = this.now + balance.hitStop;
     if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='boar'?'Boar defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
     else this.applyBreak(enemy, breakDamage);
@@ -183,12 +185,12 @@ export class CombatSimulation {
     const elapsed = this.now - this.actionStart;
     if (this.state.state === 'Dodge' && elapsed >= balance.dodge.iframeStart && elapsed <= balance.dodge.iframeEnd) { this.defenseOutcome('evade',enemy);this.emit('notice', 'Evaded'); return; }
     if (pattern.parryable && this.state.state === 'Parry' && elapsed <= (pattern.kind === 'basic' ? balance.parry.basicWindow : balance.parry.window) && inHitVolume(this.player.x, this.player.z, this.player.yaw, enemy.x, enemy.z, 4, 1.7)) {
-      this.lastParryAt=this.now;this.defenseOutcome('parry',enemy);this.player.sp = gainSp(this.player.sp, balance.sp.parry); this.counters.parries++;this.hitEnemy(enemy,physicalDamage(this.weaponDefinition.damage*balance.parry.counterMultiplier,this.attributes.strength),balance.parry.break,'Perfect',`counter:${enemy.attackStart}:${[...enemy.hits].at(-1)??0}`);
+      this.lastParryAt=this.now;this.defenseOutcome('parry',enemy);this.player.sp = gainSp(this.player.sp, balance.sp.parry); this.counters.parries++;this.hitEnemy(enemy,physicalDamage(this.weaponDefinition.damage*balance.parry.counterMultiplier,this.attributes.strength),balance.parry.break+Math.max(0,this.weaponDefinition.break-2)*2,'Perfect',`counter:${enemy.attackStart}:${[...enemy.hits].at(-1)??0}`);
       this.emit('parry', `PERFECT COUNTER · +${balance.sp.parry} SP · COUNTER HIT · NO DAMAGE`, enemy, { strong: true, grade:'Perfect' }); this.state.set('Idle'); return;
     }
     const failedCounter = this.state.state === 'Parry';
     let damage = pattern.damage * (failedCounter ? balance.parry.failureDamageMultiplier : 1);
-    if (failedCounter) this.emit('notice', `COUNTER FAILED · ${Math.round((balance.parry.failureDamageMultiplier - 1) * 100)}% EXTRA DAMAGE`);
+    if (failedCounter) this.emit('notice', `COUNTER FAILED · ${Math.round((balance.parry.failureDamageMultiplier - 1) * 100)}% EXTRA DAMAGE · ${!pattern.parryable?'Red attack: dodge instead':elapsed>(pattern.kind==='basic'?balance.parry.basicWindow:balance.parry.window)?'Too early: window expired':'Face the attacker'}`);
     if (this.state.state === 'Guard' && this.useStamina(balance.guard.cost)) damage *= this.weaponDefinition.guard;
     this.defenseOutcome('damage',enemy,damage,failedCounter);
     this.player.hp = Math.max(0, this.player.hp - damage); this.emit('hit', `−${Math.round(damage)}`, this.player, { amount: damage, target: 'player', strong: true });

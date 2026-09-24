@@ -1,3 +1,4 @@
+import {bodyPose,bodyPhase,type BodyClip} from './bodyMotion';
 import {footprintPose} from './footprintMotion';
 import {greatswordPose} from './greatswordMotion';
 import {holdGrip} from './twoHandGrip';
@@ -17,8 +18,9 @@ import { balance, chargeTime } from '../data/balance';
 import type { CombatSimulation, Enemy, CombatEvent } from '../combat/simulation';
 
 export type Quality = 'low' | 'medium' | 'high';
-type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; };
+type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; bodyMotion?:{clip:BodyClip;start:number;contact:number;recovery:number}; };
 export class LabScene {
+  reducedMotion=false;reducedFlash=false;
   engine!: AbstractEngine;
   scene!: Scene;
   camera!: ArcRotateCamera;
@@ -177,9 +179,12 @@ export class LabScene {
     for (const enemy of sim.enemies) {
       let actor = this.actors.get(enemy.id);
       if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
-      this.animate(actor,enemy.x,enemy.z,enemy.yaw,enemy.state==='Chase'?2.5:0,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
+      const actualSpeed=Math.min(3,Math.hypot(enemy.x-actor.root.position.x,enemy.z-actor.root.position.z)/Math.max(.001,dt));
+      this.animate(actor,enemy.x,enemy.z,enemy.yaw,actualSpeed,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       const phase=enemyPhase(enemy,sim.now,300);
-      if(enemy.species==='boar'){const t=enemy.pattern?Math.min(1,(sim.now-enemy.attackStart)/enemy.pattern.telegraph):0;actor.root.rotation.x=enemy.hp<=0?0:Math.sin(t*Math.PI)*.3; if(enemy.pattern&&t===1)actor.root.rotation.x=-.3;}
+      if(phase&&enemy.pattern)actor.bodyMotion={clip:enemy.species==='boar'?(enemy.pattern.kind==='basic'?'boar_jab':'boar_sweep'):'sentinel',start:phase.startAt,contact:phase.contactAt,recovery:enemy.pattern.recovery+220};
+      const body=enemy.state==='Broken'?bodyPose('broken',1-(enemy.until-sim.now)/balance.enemy.stagger):actor.bodyMotion?bodyPose(actor.bodyMotion.clip,bodyPhase(sim.now,actor.bodyMotion.start,actor.bodyMotion.contact,actor.bodyMotion.recovery)):bodyPose('hit',1);
+      if(enemy.hp>0){actor.root.rotation.x=body.pitch;actor.root.rotation.z=body.roll;actor.root.position.y+=body.height;}
       if(enemy.species!=='boar'&&phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
       else if(actor.rightArm)actor.rightArm.rotation.y=0;
       if (enemy.flashUntil>sim.now) actor.root.position.y += .04*Math.sin(sim.now*.1);
@@ -217,8 +222,8 @@ export class LabScene {
     }
       if(this.equippedWeapon==='greatsword'){
         let heavy={pitch:-.95,lift:0,yaw:0};
-        if(state==='BasicAttackStartup')heavy=greatswordPose(sim.now,sim.actionStart,sim.actionEnd);
-        else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact){const at=sim.lastContact.at;heavy=greatswordPose(sim.now<sim.hitStopUntil?at:sim.now,at-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87,at);}
+        if(state==='BasicAttackStartup')heavy=greatswordPose(sim.now,sim.actionStart,sim.actionEnd,sim.weaponDefinition.recovery);
+        else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact){const at=sim.lastContact.at;heavy=greatswordPose(sim.now<sim.hitStopUntil?at:sim.now,at-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87,at,sim.weaponDefinition.recovery);}
         else if(pose)heavy={pitch:-.95+pose.pitch*.55,lift:0,yaw:pose.yaw};
         if(footprintMotion){heavy.yaw=footprintMotion.yaw;if(footprint.kind==='box')heavy.pitch=0;}
         // The authored edge is local X; roll 90 degrees so the edge, not the flat,
@@ -230,8 +235,10 @@ export class LabScene {
       }
     for(const [i,arm] of this.firstArms.entries()){arm.setEnabled(this.firstPerson&&this.equippedWeapon==='greatsword');if(this.firstWeapon&&this.equippedWeapon==='greatsword')holdGrip(arm,this.firstWeapon,i===0?'left':'right');}
     const artCue=!!sim.art&&sim.art.grades[sim.art.stage]===null&&Math.abs(sim.now-sim.art.start-chargeDuration(sim.art.definition,sim.art.stage))<=balance.timing.perfect;
-    this.timingFlash.setEnabled(artCue);
-    if (state==='Dodge') this.player.root.position.y = -.22;
+    this.timingFlash.setEnabled(artCue&&!this.reducedFlash);
+    const bodyClip=state==='Dodge'?'dodge':state==='Parry'?'counter':state==='HitReaction'?'hit':null;
+    const playerBody=bodyClip?bodyPose(bodyClip,(sim.now-sim.actionStart)/Math.max(1,sim.actionEnd-sim.actionStart)):sim.now-sim.lastParryAt<300?bodyPose('counter',.6+.4*(sim.now-sim.lastParryAt)/300):bodyPose('hit',1);
+    if(state!=='Dead'){this.player.root.rotation.x=playerBody.pitch;this.player.root.rotation.z=playerBody.roll;this.player.root.position.y+=playerBody.height;}
     const target = sim.target;
     this.ring.setEnabled(!!target); if (target) this.ring.position.set(target.x,.07,target.z);
     const visible=new Set<string>();
@@ -249,8 +256,8 @@ export class LabScene {
       this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+chargeDuration(preview.definition,preview.stage)-sim.now:100,true,'#80e9ff');
     }else this.debugVolume?.mesh.setEnabled(false);
     if(this.firstPerson){
-      if(target&&sim.autoFaceTarget){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,1.65-(target.species==='boar'?.7:1.1));this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
-      const focusDistance=target?Math.hypot(target.x-sim.player.x,target.z-sim.player.z):5;const focusFov=target&&sim.autoFaceTarget?Math.max(.8,Math.min(1.65,2*Math.atan(2/Math.max(1,focusDistance)))):.8;this.firstCamera.fov+=(focusFov-this.firstCamera.fov)*Math.min(1,dt*8);
+      if(target&&sim.autoFaceTarget){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,1.65-(target.species==='boar'?.9:1.2));this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
+      const focusDistance=target?Math.hypot(target.x-sim.player.x,target.z-sim.player.z):5;const focusFov=target&&sim.autoFaceTarget?Math.max(.8,Math.min(1.65,2*Math.atan(2.5/Math.max(1,focusDistance)))):.8;this.firstCamera.fov+=(focusFov-this.firstCamera.fov)*Math.min(1,dt*8);
       this.firstCamera.position.set(sim.player.x,1.65+(state==='Dodge'?-.12:0),sim.player.z);
       const look=new Vector3(-Math.cos(this.camera.alpha)*Math.sin(this.camera.beta),-Math.cos(this.camera.beta),-Math.sin(this.camera.alpha)*Math.sin(this.camera.beta));
       this.firstCamera.setTarget(this.firstCamera.position.add(look));
@@ -279,10 +286,10 @@ export class LabScene {
   }
   effect(event: CombatEvent, sim: CombatSimulation) {
     if (event.type==='hit'||event.type==='parry'||event.type==='break') {
-      this.shake=event.strong?.09:balance.shake;
+      this.shake=this.reducedMotion?0:event.strong?.09:balance.shake;
       const color = event.target==='player'?'#ff7c79':event.type==='parry'?'#fff0ba':'#83f3ff';
       const mat = this.material(`spark-${sim.now}`,color,1.2);
-      for(let i=0;i<Math.ceil(10*this.effects);i++) {
+      for(let i=0;i<Math.ceil((this.reducedFlash?2:10)*this.effects);i++) {
         const spark=MeshBuilder.CreateSphere('impact',{diameter:.045,segments:4},this.scene); spark.position.set(event.x,1.1,event.z); spark.material=mat;
         this.pendingEffects.push({mesh:spark,life:.32,max:.32,velocity:new Vector3(Math.sin(i*2.4)*3,1+i%3,Math.cos(i*2.4)*3)});
       }

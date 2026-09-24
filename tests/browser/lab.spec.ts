@@ -37,7 +37,7 @@ test('real controls, assets, timing, Arts, camera, debug and save',async({page},
 
  await page.locator('#debug-hitboxes').check();expect(await page.evaluate(()=>window.trinity.view.showHitboxes)).toBe(true);
  await page.locator('#debug-hitboxes').uncheck();
- await page.locator('#close-debug').click();await page.locator('#menu').click();await page.locator('.system-preferences summary').click();await page.locator('#quality').selectOption('low');expect(await page.evaluate(()=>window.trinity.view.quality)).toBe('low');await page.locator('#quality').selectOption('medium');await page.locator('#begin').click();await dismissInvitation(page);await page.locator('#game').focus();
+ await page.locator('#close-debug').click();await page.locator('#menu').click();await page.getByText('Audio & graphics',{exact:true}).click();await page.locator('#quality').selectOption('low');expect(await page.evaluate(()=>window.trinity.view.quality)).toBe('low');await page.locator('#quality').selectOption('medium');await page.locator('#begin').click();await dismissInvitation(page);await page.locator('#game').focus();
  await page.evaluate(()=>{window.trinity.sim.reset();window.trinity.sim.flags.freezeAI=true;window.trinity.view.camera.alpha=-Math.PI/2;});
  await page.waitForTimeout(600);
  await page.screenshot({path:'test-results/combat-lab.png'});

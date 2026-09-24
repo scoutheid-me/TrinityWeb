@@ -69,3 +69,9 @@ Perfect Parry uses the shared hit executor with a counter-specific phase and cou
 ## September 23: Counter presentation and musical preparation
 
 The visible action name is Counter. Existing parry action/event/state/save IDs deliberately remain stable to preserve remaps and progression. Counterable enemy basics and skills share a five-note minor-pentatonic phrase, ending in a chord 80 ms before contact; follow-up phrases compress after the previous hit. Red attacks retain the low dodge phrase. HUD and audio select the same imminent threat; player Arts suppress defensive timing phrases. All scheduling remains derived from simulation milliseconds and cancels on pause. See PLAYTEST_ROADMAP.md for the current combat review; earlier audit sections are historical.
+
+## Playtest preparation
+
+The playtest Vite mode excludes GM construction, ignores local GM overrides, blocks debug hotkeys and prevents live reset through the debug binding. Developer builds retain tooling. Existing saved attributes reset to shipped starting attributes in the public mode because no earned attribute progression exists yet. New comfort fields migrate additively within save v3. UI imports validate a versioned backup envelope, show a preview, preserve pre-import data and replace the save in one IndexedDB transaction; autosaves are serialized and disabled during import/reload. Diagnostics are downloaded only on request, with bounded frame percentiles, backend, settings and an anonymous encounter summary. No automatic upload or tracking service exists.
+
+CombatRecap consumes presentation events for optional post-encounter summaries only, never rewards. Benchmark tests exercise the actual simulation under stationary and live-AI scenarios; generated results state their limits. Additive Blender body curves use shared contact deadlines. Comfort settings affect audio scheduling/levels and presentation effects, never hit grading.

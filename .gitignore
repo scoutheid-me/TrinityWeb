@@ -10,3 +10,6 @@ playwright-report/
 *.log
 .env
 .env.*
+
+dist-playtest/
+release/

@@ -9,7 +9,7 @@
     "goodMultiplier": 0.6,
     "missMultiplier": 0
   },
-  "notes": "Original Trinity balance. Node multiplier × equipped weapon base damage × Strength scaling gives Perfect damage; Basic Arts use any weapon; Combat Arts may restrict weapon/class; Skill Books group themed trees. General forms trade lower coefficients for versatility; distances in meters. Arena boundaries can shorten travel. Weapon recovery is action commitment rather than a separate cooldown. Missing maxTargets means all targets in the footprint. multiTargetDamage is per-victim basic damage when more than one living target is caught; Art multipliers always use damage, not multiTargetDamage. Rack practiceArt names the weapon-specific training unlock.",
+  "notes": "Original Trinity balance. Node multiplier × equipped weapon base damage × Strength scaling gives Perfect damage; Basic Arts use any weapon; Combat Arts may restrict weapon/class; Skill Books group themed trees. General forms trade lower coefficients for versatility; distances in meters. Arena boundaries can shorten travel. Weapon recovery is action commitment rather than a separate cooldown. Missing maxTargets means all targets in the footprint. multiTargetDamage is per-victim basic damage when more than one living target is caught; Art multipliers always use damage, not multiTargetDamage. Weapon artBreakMultiplier scales Art node Break; absent means 1. Rack practiceArt names the weapon-specific training unlock.",
   "weapons": [
     {
       "id": "sword",
@@ -44,16 +44,17 @@
       "guard": 0.25,
       "model": "/assets/weapons/training_rapier.glb",
       "maxTargets": 1,
-      "practiceArt": "needle-step"
+      "practiceArt": "needle-step",
+      "artBreakMultiplier": 1.1
     },
     {
       "id": "greatsword",
       "name": "Two-handed sword",
-      "description": "Heavy diagonal cleaves catch groups. High damage and Break, with a long vulnerable recovery.",
-      "damage": 12,
-      "startup": 420,
-      "recovery": 680,
-      "break": 4,
+      "description": "Heavy diagonal cleaves catch groups. Highest sustained damage and Break, especially against groups. Both hands committed; slower than one-handed attacks.",
+      "damage": 28,
+      "startup": 320,
+      "recovery": 400,
+      "break": 9,
       "shape": {
         "kind": "sector",
         "range": 3.2,
@@ -61,7 +62,8 @@
       },
       "guard": 0.4,
       "model": "/assets/weapons/training_greatsword.glb",
-      "practiceArt": "iron-horizon"
+      "practiceArt": "iron-horizon",
+      "artBreakMultiplier": 1.6
     }
   ],
   "skillBooks": [

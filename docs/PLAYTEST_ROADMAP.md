@@ -94,3 +94,13 @@ Ask each tester: Which action felt unreliable? What told you when to Counter? Di
 ## Immediate next implementation recommendation
 
 Build the repeatable three-weapon encounter benchmark and a compact optional post-fight recap first, then use its evidence to tune the Counter/Break/resource economy. In parallel as a workstream (not a requirement to use agents), author one finished attack/defense animation set. Only expand into the short dungeon when those duels remain readable, fair and responsive in both perspectives.
+
+## Recommendations 1–3 implementation pass — September 23
+
+The first three ordered work packages now have a prototype implementation. The user's latest direction supersedes the earlier single-target role target: greatsword must lead overall damage and Break, including single-target and AOE. Rapier retains speed, mobility and stronger single-target basics than sword; sword retains guard and flexible coverage.
+
+- Balance: real-simulation 30-second single/group and live Sentinel scenarios, weapon-scaled Art Break, a presentation-only encounter recap, and Counter commitment/resource tuning. See balance/weapon-benchmark.json. Greatsword base damage is 28, basic Break 9, Art Break multiplier 1.6, and recovery 400 ms. Rapier remains 10/3/1.1; sword 8 single or 6 group / 2 / 1.0. Counter costs 16 stamina.
+- Duel presentation: original Blender-authored additive anticipation/contact/recovery and defense curves, enemy movement-driven footwork, close-range target framing, preserved two-hand constraints. This is a rigid-part prototype polish pass, not final skinned animation or continuous blade collision.
+- Playtest safety: separate public build, hidden GM/debug paths, cue/impact volumes, bounded calibration, reduced shake/flash, save preview/import with recovery backup, optional anonymous diagnostics and release ZIP tooling. See PLAYTEST_HANDOFF.md.
+
+Remaining acceptance gates are human readability/fun tests, low-end hardware measurements and public HTTPS hosting. The packaged release has not been published. Multi-enemy direction, dungeon/Book progression, authored production animation and bundle optimization remain subsequent work; none is implied complete by this pass.

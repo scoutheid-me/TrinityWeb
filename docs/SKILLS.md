@@ -22,9 +22,9 @@ Walk close to the rack and press E. It displays original Blender models and comp
 | --- | ---: | ---: | ---: | --- | --- |
 | Sword | 8 | 6 when 2+ living targets are caught | 2 | 2.9 m, 60° fan | 87 / 240 ms |
 | Rapier | 10 | Single target only | 3 | 3.1 m, 0.44 m lane | 55 / 140 ms |
-| Greatsword | 12 | 12 | 4 | 3.2 m, about 155° fan | 420 / 680 ms |
+| Greatsword | 28 | 28 | 9 | 3.2 m, about 155° fan | 320 / 400 ms |
 
-Basic group scaling counts living targets in the strike footprint and applies once per victim. It never changes Art scaling. Final damage rounds after Strength scaling; at starting Strength 10 the sword does 10 single / 8 group damage, rapier 13, and greatsword 15. Basic contact adds 140 ms to the attack cycle. Dexterity scales wind-up. Sword guard is strongest and leaves a future shield hand free; usable shields are not implemented.
+Basic group scaling counts living targets in the strike footprint and applies once per victim. It never changes Art scaling. Final damage rounds after Strength scaling; at starting Strength 10 the sword does 10 single / 8 group damage, rapier 13, and greatsword 35. Basic contact adds 140 ms to the attack cycle. Dexterity scales wind-up. Sword guard is strongest and leaves a future shield hand free; usable shields are not implemented.
 
 Needle Step is a rapier-only mobile thrust. Iron Horizon is a greatsword-only broad cleave. Other retained specialist forms require the sword; regular-combat unlock requirements remain in the bank.
 
@@ -43,3 +43,5 @@ T cycles nearby living targets; with no other target it unlocks for freeform mov
 Rear weak points give 20% extra damage within a 120° cone behind the enemy, checked at each actual hit (including Arts). Linear hitting on approach does not retroactively earn a rear bonus; use the resulting opening for the next strike. Floating REAR damage and a brighter hit sound identify the bonus. It stacks with Broken damage, without extra Break.
 
 Art cues build in pitch and volume toward release; enemy Counter cues use a five-note minor-pentatonic ascent ending in a chord, while dodge cues retain a distinct low warning. The defensive accent precedes impact by 80 ms for counters / 150 ms for dodges. Enemy basics now have a quieter five-note Counter melody; player basics remain untimed. Enemy musical cues yield during player Arts. Radar points and labels share visible hover/focus/click help with exact values; expandable guides remain available.
+
+September 23 balance: greatsword is intentionally the highest overall damage/Break weapon, including sustained single target. Rapier remains fast and mobile, and beats sword single-target. Shared/specialist Art Break scales ×1.1 with rapier and ×1.6 with greatsword (shown in skill details). Counter costs 16 stamina; Counter Break is 32 plus twice the weapon Basic Break above 2. Its damage remains twice weapon base, with +14 SP and zero incoming damage on success. See balance/weapon-benchmark.json for real-executor benchmarks.

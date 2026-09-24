@@ -1,3 +1,4 @@
+import {playtestBuild} from '../release';
 import type {CombatSimulation} from '../combat/simulation';
 import type {LabScene} from '../engine/scene';
 import {actions,defaultBindings,movementIntent,type Action} from './bindings';
@@ -40,7 +41,7 @@ export class GameInput {
   actionFor(code:string):Action|undefined{return actions.find(action=>this.bindings[action].includes(code));}
   held(action:Action){return this.bindings[action].some(code=>code!==null&&this.keys.has(code));}
   private down(code:string){
-    if(this.suspended)return;const action=this.actionFor(code);if(!action)return;
+    if(this.suspended)return;const action=this.actionFor(code);if(!action)return;if(playtestBuild&&(action==='debug'||action==='reset'&&this.sim.player.hp>0))return;
     if(action==='menu'){this.menu();return;}if(action==='pause'){this.togglePause();return;}if(action==='debug'){this.toggleDebug();return;}
     if(!this.enabled)return;this.sync();this.unlock();const already=this.held(action);this.keys.add(code);this.updateMovement();if(already)return;
     if(action==='interact')this.interact();
