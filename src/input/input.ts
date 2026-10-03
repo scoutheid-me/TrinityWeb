@@ -4,6 +4,7 @@ import type {LabScene} from '../engine/scene';
 import {actions,defaultBindings,movementIntent,type Action} from './bindings';
 export class GameInput {
   private lookAt=performance.now();
+  retry:(()=>void)|null=null;
   keys=new Set<string>(); sensitivity=1; enabled=false; suspended=false; dragging=false; pointerX=0; pointerY=0;
   bindings=defaultBindings();
   constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void,private interact:()=>void=()=>{},private menu:()=>void=()=>{}){
@@ -24,7 +25,7 @@ export class GameInput {
     // A live personal window accepts UI clicks while camera drag remains available.
     window.addEventListener('pointerdown',e=>{
       if(e.target===view.canvas||!this.view.firstPerson||!this.enabled||this.suspended||this.actionFor(`Mouse${e.button}`)!=='orbit')return;
-      if(!(e.target as HTMLElement).closest('#personal-artifact,header,#controls-menu,#guild-board,#loadout-tray'))return;
+      if(!(e.target as HTMLElement).closest('#journey-modal,#personal-artifact,header,#controls-menu,#guild-board,#loadout-tray'))return;
       e.preventDefault();this.pointerX=e.clientX;this.pointerY=e.clientY;this.down(`Mouse${e.button}`);
     });
     window.addEventListener('contextmenu',e=>{if(this.view.firstPerson&&(e.target as HTMLElement).closest('#ui'))e.preventDefault();});
@@ -46,7 +47,7 @@ export class GameInput {
     if(!this.enabled)return;this.sync();this.unlock();const already=this.held(action);this.keys.add(code);this.updateMovement();if(already)return;
     if(action==='interact')this.interact();
     if(action==='attack')this.sim.pressAttack();if(action==='dodge')this.sim.dodge();if(action==='parry')this.sim.parry();
-    if(action==='lock')this.sim.toggleLock();if(action==='switchTarget')this.sim.toggleLock(true);if(action==='reset')this.sim.reset();
+    if(action==='lock')this.sim.toggleLock();if(action==='switchTarget')this.sim.toggleLock(true);if(action==='reset'){if(this.retry)this.retry();else this.sim.reset();}
     if(action.startsWith('art'))this.sim.activateArt(Number(action.at(-1))-1);
     this.dragging=this.held('orbit');
   }

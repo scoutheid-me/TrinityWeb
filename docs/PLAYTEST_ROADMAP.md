@@ -104,3 +104,9 @@ The first three ordered work packages now have a prototype implementation. The u
 - Playtest safety: separate public build, hidden GM/debug paths, cue/impact volumes, bounded calibration, reduced shake/flash, save preview/import with recovery backup, optional anonymous diagnostics and release ZIP tooling. See PLAYTEST_HANDOFF.md.
 
 Remaining acceptance gates are human readability/fun tests, low-end hardware measurements and public HTTPS hosting. The packaged release has not been published. Multi-enemy direction, dungeon/Book progression, authored production animation and bundle optimization remain subsequent work; none is implied complete by this pass.
+
+## October 2 connected-cavern pass
+
+The current expansion replaces forced room lessons with a connected exploration route, an optional accepted/declined exit quest, basic goblins and captain, persistent treasure/Col, three introductory primers and Mira's town greeting. See CAVERN_PROLOGUE.md. Linear remains in the separate Guild Hall induction. New Message/Alert panes are translucent and angled; actual model previews support starting weapon selection.
+
+Next gates: human navigation/pacing tests; more authored goblin combat animation; production-quality cavern landmarks and NPC model; low-end device profiling and HTTPS deployment. The 15–20 minute target and AAA visual quality are not claimed achieved.

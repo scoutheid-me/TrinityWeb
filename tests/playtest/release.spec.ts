@@ -4,7 +4,7 @@ import {defaultSave} from '../../src/save/save';
 import {backupText} from '../../src/save/backup';
 test('public build hides developer tools and supports safe backup preview, import and comfort settings',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/?webgl');await createTestCharacter(page);expect(await page.evaluate(()=>Object.hasOwn(window,'trinity'))).toBe(false);await expect(page.locator('#open-gm')).toHaveCount(0);await expect(page.locator('[data-action]')).toHaveCount(0);
+ await page.goto('/?webgl&training');await createTestCharacter(page);expect(await page.evaluate(()=>Object.hasOwn(window,'trinity'))).toBe(false);await expect(page.locator('#open-gm')).toHaveCount(0);await expect(page.locator('[data-action]')).toHaveCount(0);
  await page.locator('#playtest-settings summary').click();await page.locator('#reduced-motion').check();await page.locator('#reduced-flash').check();await page.locator('#cue-offset').fill('75');
  await page.locator('#import-save').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{}')});await expect(page.locator('#save-tools-status')).toContainText('rejected');await expect(page.locator('#apply-import')).toBeDisabled();
  const download=page.waitForEvent('download');await page.locator('#export-save').click();expect((await download).suggestedFilename()).toBe('trinity-save.json');

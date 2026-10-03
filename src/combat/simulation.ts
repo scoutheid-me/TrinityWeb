@@ -1,3 +1,5 @@
+import {projectToCavern} from '../world/cavern';
+import {freshJourney} from '../world/journey';
 import {creatureFacing,angleDelta,turnToward,rearMultiplier} from './facing';
 import {freshProfile} from '../progression/profile';
 import {weapons,basicWeaponDamage} from '../data/weapons';
@@ -6,21 +8,23 @@ import {freshProgression,awardFieldSkills,canStart,awardChallenge,validLoadout,t
 import {containsHit,type HitShape} from './geometry';
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
 import { arts, artShape, chargeDuration, type ArtDefinition } from '../data/arts';
-import { boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
+import { goblinPatterns, captainPatterns, boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
-export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; breakAmount?:number; }
-export interface Enemy extends Point { id: string; species?:'sentinel'|'boar'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; }
+export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; breakAmount?:number; artId?:string; source?:'basic'|'art'|'counter'; }
+export interface Enemy extends Point { id: string; species?:'sentinel'|'boar'|'goblin'|'captain'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; lessonPattern?:number; }
 export class CombatSimulation {
-  profile=freshProfile();
+  profile=freshProfile();journey=freshJourney(false);suppressFieldProgression=false;
+  get rewardEligible(){return !this.gmMode&&this.fieldEligible&&!this.practiceMode&&!Object.values(this.flags).some(Boolean)&&Object.entries(defaultAttributes).every(([k,v])=>this.attributes[k as keyof Attributes]===v);}
   now = 0;autoFaceTarget=true;gmMode=false;
   private fieldEligible=true;practiceMode=false;progression=freshProgression();weapon:string="sword";encounter=new EncounterLedger();lastParryAt=-Infinity;nextEnemyAttackAt=0;
   get weaponDefinition(){return weapons[this.weapon]??weapons.sword;}
   setWeapon(id:string){if(!weapons[id]||!this.free||this.encounter.active||this.practiceMode)return false;this.weapon=id;this.loadout=this.loadout.map(key=>key&&(arts[key]?.weapon==='any'||arts[key]?.weapon===id)?key:null);if(!this.loadout.some(Boolean))this.loadout=['focused-strike',null,null,null];return true;}
   private recordOutcome(o:Omit<CombatOutcome,'encounterId'|'eligible'>){
     this.encounter.record(o);
-    if(this.gmMode||!this.fieldEligible||this.practiceMode||Object.values(this.flags).some(Boolean)||Object.entries(defaultAttributes).some(([k,v])=>this.attributes[k as keyof Attributes]!==v)||this.encounter.active&&!this.encounter.eligible)return;
+    if(this.suppressFieldProgression||this.gmMode||!this.fieldEligible||this.practiceMode||Object.values(this.flags).some(Boolean)||Object.entries(defaultAttributes).some(([k,v])=>this.attributes[k as keyof Attributes]!==v)||this.encounter.active&&!this.encounter.eligible)return;
+    if(this.journey.book){const p=this.journey.practice;if(o.kind==='basic-hit')p.hits++;if(o.kind==='evade')p.evades++;if(o.kind==='parry')p.parries++;if(o.kind==='break')p.breaks++;}
     const f=this.progression.field;
     if(o.kind==='basic-hit')f.hits++;if(o.kind==='evade')f.evades++;if(o.kind==='parry')f.parries++;if(o.kind==='break')f.breaks++;if(o.kind==='defeat')f.kills++;
     const before=Object.keys(this.progression.learned).length;awardFieldSkills(this.progression);if(Object.keys(this.progression.learned).length>before)this.emit('notice','NEW ART LEARNED · check your skill bank');
@@ -72,8 +76,8 @@ export class CombatSimulation {
     this.lastContact=null; this.cancelBufferedInput(); this.state.reset(); this.art = null; this.actionEnd = 0; this.hits.clear(); this.lockedId = null; this.events = []; this.hitStopUntil = 0;
     this.input = { x: 0, z: 0, sprint: false, guard: false }; this.enemies = [];
   }
-  spawnEnemy(species:'sentinel'|'boar'='sentinel') {
-    if (this.enemies.filter(e => e.hp > 0).length >= 5) return;
+  spawnEnemy(species:'sentinel'|'boar'|'goblin'|'captain'='sentinel') {
+    if (this.enemies.filter(e => e.hp > 0).length >= (this.journey.active?20:5)) return;
     const index = this.enemies.length;
     this.enemies.push({ id: `${species}-${index}`, species, x: index ? Math.sin(index * 2.4) * 5 : 0, z: index ? Math.cos(index * 2.4) * 5 : 2.5, yaw: Math.PI, hp: species==='boar'?220:balance.enemy.hp, maxHp: species==='boar'?220:balance.enemy.hp, break: 0, state: 'Idle', until: this.now + 1200, attackStart: 0, pattern: null, nextPattern: 0, hits: new Set(), flashUntil: 0 });
   }
@@ -160,7 +164,7 @@ export class CombatSimulation {
     const actual = Math.round(damage * rear * (enemy.state === 'Broken' ? 1.6 : 1));
     this.recordOutcome({kind:phase==='basic'?'basic-hit':phase.startsWith('counter:')?'counter-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
-    this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1,breakAmount:enemy.hp>0?breakDamage:0 });
+    this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { source:phase==='basic'?'basic':phase.startsWith('counter:')?'counter':'art',artId:phase.startsWith('counter:')?undefined:this.art?.definition.id,amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1,breakAmount:enemy.hp>0?breakDamage:0 });
     this.hitStopUntil = this.now + balance.hitStop;
     if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='boar'?'Boar defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
     else this.applyBreak(enemy, breakDamage);
@@ -193,7 +197,7 @@ export class CombatSimulation {
     if (failedCounter) this.emit('notice', `COUNTER FAILED · ${Math.round((balance.parry.failureDamageMultiplier - 1) * 100)}% EXTRA DAMAGE · ${!pattern.parryable?'Red attack: dodge instead':elapsed>(pattern.kind==='basic'?balance.parry.basicWindow:balance.parry.window)?'Too early: window expired':'Face the attacker'}`);
     if (this.state.state === 'Guard' && this.useStamina(balance.guard.cost)) damage *= this.weaponDefinition.guard;
     this.defenseOutcome('damage',enemy,damage,failedCounter);
-    this.player.hp = Math.max(0, this.player.hp - damage); this.emit('hit', `−${Math.round(damage)}`, this.player, { amount: damage, target: 'player', strong: true });
+    this.player.hp = Math.max(0, this.player.hp - damage); this.emit('hit', `−${Math.round(damage)}`, this.player, { motion:this.state.state==='Guard'?'guard':undefined, amount: damage, target: 'player', strong: true });
     // A committed Art retains its timing through nonlethal hits; damage still matters.
     if(this.art?.definition.armor && this.player.hp > 0 && ['ArtStartup','ArtSequence'].includes(this.state.state))return;
     this.art = null; this.cancelBufferedInput();
@@ -268,7 +272,7 @@ export class CombatSimulation {
     this.player.x += this.player.vx * dt; this.player.z += this.player.vz * dt;
     this.bound(this.player);
   }
-  private bound(point: Point) { const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
+  private bound(point: Point) { if(this.journey.active){if(!this.journey.facts.includes('boss')&&point.z>103)point.z=103;Object.assign(point,projectToCavern(point));return;}const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
   private resolveBodies() {
     const live=this.enemies.filter(e=>e.hp>0);
     for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
@@ -316,6 +320,6 @@ export class CombatSimulation {
     else {
       if(this.now<this.nextEnemyAttackAt||this.enemies.some(other=>other!==enemy&&other.pattern))return;
       const patternIndex=this.encounter.active&&this.encounter.challenge==='positioning'?0:sentinelSequence[enemy.nextPattern++ % sentinelSequence.length];
-      enemy.pattern = enemy.species==='boar'?boarPatterns[patternIndex===0?0:1]:sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
+      enemy.pattern = enemy.species==='goblin'?goblinPatterns[enemy.lessonPattern??(patternIndex===0?0:1)]:enemy.species==='captain'?captainPatterns[enemy.hp<enemy.maxHp*.5?patternIndex:patternIndex===1?0:patternIndex]:enemy.species==='boar'?boarPatterns[patternIndex===0?0:1]:sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
   }
 }

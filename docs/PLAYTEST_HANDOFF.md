@@ -1,6 +1,6 @@
-# Trinity combat playtest — 2026-09-23
+# Trinity cavern playtest — 2026-10-02
 
-This package is a combat-only prototype. There is no playable town, dungeon or Skill Book reward yet.
+This package includes the connected cavern prologue and separate Training Room. The town is a small endpoint, not a completed world. See CAVERN_PROLOGUE.md for the route and remaining limitations.
 
 ## Running and hosting
 
@@ -8,7 +8,13 @@ Run npm run build:playtest to produce dist-playtest. The release ZIP contains th
 
 Supported test target: desktop Edge/Chrome with keyboard and mouse. WebGPU detection falls back to WebGL; append ?webgl to force the fallback. Start on Medium, try Low if needed. Mobile/controller play is not supported yet.
 
-## Ten-minute test
+## Exploration playtest
+
+Create a named character and starting weapon, read the waking scene and choose whether to accept Find an exit. Explore without lesson prompts. Look for treasure and rest lanterns, buy a potion from the cache, fight goblin patrols, defeat the captain and meet Mira. If you accepted the quest, choose one of three Skill Books. Verify declining grants no Book reward. Record your completion time; 15–20 minutes is a target awaiting human measurement.
+
+The current local package is release/Trinity-Cavern-Playtest-2026-10-02.zip. Existing training saves can enter the prologue from paused settings.
+
+## Optional Training Room test
 
 1. Create a character; enter the Training Room. Walk to the entrance orb and press E. Complete the Guild Combat Trial to earn Linear.
 2. Walk to the rack and try sword, rapier and greatsword. Greatsword should lead damage and Break; rapier should feel fastest; sword has the best guard and flexible coverage.

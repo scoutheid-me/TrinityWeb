@@ -1,3 +1,4 @@
+import {insideCavern} from '../world/cavern';
 import {bodyPose,bodyPhase,type BodyClip} from './bodyMotion';
 import {footprintPose} from './footprintMotion';
 import {greatswordPose} from './greatswordMotion';
@@ -8,7 +9,7 @@ import {artShape,chargeDuration} from '../data/arts';
 import {duelPose} from './duelMotion';
 import {HitIndicator} from './hitIndicator';
 import {enemyPhase} from '../combat/timeline';
-import { Quaternion, AbstractEngine, ArcRotateCamera, FreeCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
+import { Texture, LoadAssetContainerAsync, AssetContainer, AnimationGroup, Quaternion, AbstractEngine, ArcRotateCamera, FreeCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import glslangJs from '@babylonjs/core/assets/glslang/glslang.js?url';
 import glslangWasm from '@babylonjs/core/assets/glslang/glslang.wasm?url';
@@ -18,8 +19,9 @@ import { balance, chargeTime } from '../data/balance';
 import type { CombatSimulation, Enemy, CombatEvent } from '../combat/simulation';
 
 export type Quality = 'low' | 'medium' | 'high';
-type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; bodyMotion?:{clip:BodyClip;start:number;contact:number;recovery:number}; };
+type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; groups?:AnimationGroup[];skinned?:boolean; bodyMotion?:{clip:BodyClip;start:number;contact:number;recovery:number}; };
 export class LabScene {
+  hallNodes:TransformNode[]=[];goblinContainer:AssetContainer|null=null;captainContainer:AssetContainer|null=null;goblinBlade:TransformNode|null=null;sparkTexture:Texture|null=null;
   reducedMotion=false;reducedFlash=false;
   engine!: AbstractEngine;
   scene!: Scene;
@@ -82,23 +84,32 @@ export class LabScene {
     this.glow = new GlowLayer('aether glow', this.scene, { mainTextureRatio: .35 }); this.glow.intensity = .35;
     this.pipeline = new DefaultRenderingPipeline('presentation', false, this.scene, [this.camera,this.firstCamera]); this.pipeline.fxaaEnabled = true;
     this.instrumentation = new SceneInstrumentation(this.scene); this.instrumentation.captureFrameTime = true;
-    this.environment();
+    this.environment();this.hallNodes=[...this.scene.meshes];
     const hero = await this.asset(character==='woman'?'/assets/characters/wayfarer_woman.glb':'/assets/characters/wayfarer.glb');
     this.swordTemplate = await this.asset('/assets/weapons/aether_sword.glb'); this.swordTemplate.setEnabled(false);
     this.enemyTemplate = await this.asset('/assets/enemies/aether_sentinel.glb'); this.enemyTemplate.setEnabled(false);this.boarTemplate=await this.asset('/assets/enemies/woodland_boar.glb');this.boarTemplate.setEnabled(false);
  const orb=MeshBuilder.CreateSphere('Training encounter orb',{diameter:.7,segments:24},this.scene);orb.position.set(2,1.25,-9);orb.material=this.material('orb glow','#60dfec',1);const pedestal=MeshBuilder.CreateCylinder('Orb pedestal',{diameter:1,height:.65,tessellation:12},this.scene);pedestal.position.set(2,.325,-9);pedestal.material=this.material('orb pedestal','#74858a');
+    this.hallNodes.push(orb,pedestal);
     this.player = this.actor(hero, 'wayfarer', false);
     for(const [i,arm] of [this.player.leftArm,this.player.rightArm].entries()){if(arm){const copy=arm.clone('view '+arm.name,this.firstCamera)!;copy.position.set(i===0?-.22:.22,-.12,-.25);for(const mesh of copy.getChildMeshes())if(/pauldron|upper_arm/.test(mesh.name))mesh.setEnabled(false);copy.setEnabled(false);this.firstArms.push(copy);}}
     this.timingFlash = MeshBuilder.CreateSphere('blade timing cue',{diameter:.16,segments:8},this.scene);this.timingFlash.parent=this.player.sword;this.timingFlash.position.set(0,0,1.25);this.timingFlash.material=this.material('timing light','#ceffff',2);
     const column = await this.asset('/assets/environments/guild_column.glb'); column.setEnabled(false);
-    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; const copy = column.clone(`column-${i}`, null)!; copy.setEnabled(true); copy.position.set(Math.sin(a)*13.4,0,Math.cos(a)*13.4); this.cast(copy); }
-    const rack = await this.asset('/assets/props/weapon_rack.glb'); rack.position.set(weaponRack.x,0,weaponRack.z); rack.rotation.y = weaponRack.yaw; this.cast(rack);
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; const copy = column.clone(`column-${i}`, null)!; copy.setEnabled(true); copy.position.set(Math.sin(a)*13.4,0,Math.cos(a)*13.4); this.cast(copy);this.hallNodes.push(copy); }
+    const rack = await this.asset('/assets/props/weapon_rack.glb'); rack.position.set(weaponRack.x,0,weaponRack.z); rack.rotation.y = weaponRack.yaw; this.cast(rack);this.hallNodes.push(rack);
     for(const mesh of rack.getChildMeshes())if(/practice_blade|practice_guard/.test(mesh.name))mesh.setEnabled(false);
     for(const [i,w] of Object.values(weapons).entries()){const display=await this.asset(w.model);display.name='rack display '+w.id;display.parent=rack;display.position.set((i-1)*.6,.65,.25);display.rotation.x=-Math.PI/2;display.scaling.setAll(.8);this.cast(display);}
     this.ring = MeshBuilder.CreateTorus('lock indicator', { diameter: 1.8, thickness: .035, tessellation: 48 }, this.scene); this.ring.material = this.material('lock', '#72e6ef', 1); this.ring.position.y = .07;
     this.setQuality('medium');
     window.addEventListener('resize', () => this.engine.resize());
     await this.scene.whenReadyAsync();
+  }
+  async loadGoblins(){if(!this.goblinContainer){this.goblinContainer=await LoadAssetContainerAsync('/assets/enemies/goblin.glb',this.scene);this.loadedAssets.push('/assets/enemies/goblin.glb');this.captainContainer=await LoadAssetContainerAsync('/assets/enemies/goblin_captain.glb',this.scene);this.loadedAssets.push('/assets/enemies/goblin_captain.glb');this.goblinBlade=await this.asset('/assets/weapons/goblin_cleaver.glb');this.goblinBlade.setEnabled(false);this.sparkTexture=new Texture('/assets/textures/goblin_sparkle.png',this.scene);this.sparkTexture.hasAlpha=true;}}
+  private goblinActor(enemy:Enemy):Actor{
+    const entries=(enemy.species==='captain'?this.captainContainer:this.goblinContainer)!.instantiateModelsToScene(n=>enemy.id+'-'+n,false,{doNotInstantiate:true});const root=new TransformNode(enemy.id,this.scene);for(const n of entries.rootNodes)n.parent=root;
+    const hand=root.getDescendants().find(n=>n.name.endsWith('Hand_R')) as TransformNode|undefined;
+    const sword=(this.goblinBlade??this.swordTemplate).clone(enemy.id+' blade',hand??root)!;sword.setEnabled(true);sword.position.set(0,0,0);sword.rotation.set(0,0,Math.PI/2);sword.scaling.setAll(hand?100:1);
+    if(enemy.species==='captain')root.scaling.setAll(1.25);else root.scaling.setAll(.85);
+    this.cast(root);return {root,sword,phase:0,slashUntil:0,groups:entries.animationGroups,skinned:true};
   }
   material(name: string, hex: string, emission = 0) {
     const mat = new StandardMaterial(name, this.scene); mat.diffuseColor = Color3.FromHexString(hex); mat.specularColor = new Color3(.12,.15,.18); mat.emissiveColor = mat.diffuseColor.scale(emission); return mat;
@@ -175,13 +186,17 @@ export class LabScene {
   update(sim: CombatSimulation, dt: number) {
     void this.syncWeapon(sim.weapon);
     const poseDt=sim.now<sim.hitStopUntil?0:dt;
-    for (const [id, actor] of this.actors) if (!sim.enemies.some(e => e.id === id)) { actor.root.dispose(); this.actors.delete(id); }
+    for (const [id, actor] of this.actors) if (!sim.enemies.some(e => e.id === id)) { actor.groups?.forEach(g=>g.dispose());actor.root.getChildMeshes().forEach(m=>m.skeleton?.dispose());actor.root.dispose(); this.actors.delete(id); }
     for (const enemy of sim.enemies) {
       let actor = this.actors.get(enemy.id);
+      if (!actor&&(enemy.species==='goblin'||enemy.species==='captain')&&this.goblinContainer){actor=this.goblinActor(enemy);this.actors.set(enemy.id,actor);}
       if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
       const actualSpeed=Math.min(3,Math.hypot(enemy.x-actor.root.position.x,enemy.z-actor.root.position.z)/Math.max(.001,dt));
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,actualSpeed,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       const phase=enemyPhase(enemy,sim.now,300);
+      if(actor.groups){const clip=actor.groups.find(g=>g.name.endsWith(actualSpeed>.2?'walk':'idle'))??actor.groups[0];for(const g of actor.groups){if(!g.isStarted){g.start(true);g.pause();}if(g!==clip)g.setWeightForAllAnimatables(0);else{g.setWeightForAllAnimatables(1);g.goToFrame(g.from+(sim.now*.03)%(Math.max(1,g.to-g.from)));}}
+       if(phase&&enemy.pattern){const shoulder=actor.root.getDescendants().find(n=>n.name.endsWith('Shoulder_R')) as TransformNode|undefined;const elbow=actor.root.getDescendants().find(n=>n.name.endsWith('Elbow_R')) as TransformNode|undefined;const motion=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,1);if(shoulder?.rotationQuaternion)shoulder.rotationQuaternion=shoulder.rotationQuaternion.multiply(Quaternion.FromEulerAngles(motion.pitch*.65,motion.yaw*.65,0));if(elbow?.rotationQuaternion)elbow.rotationQuaternion=elbow.rotationQuaternion.multiply(Quaternion.FromEulerAngles(0,0,-.6));}}
+
       if(phase&&enemy.pattern)actor.bodyMotion={clip:enemy.species==='boar'?(enemy.pattern.kind==='basic'?'boar_jab':'boar_sweep'):'sentinel',start:phase.startAt,contact:phase.contactAt,recovery:enemy.pattern.recovery+220};
       const body=enemy.state==='Broken'?bodyPose('broken',1-(enemy.until-sim.now)/balance.enemy.stagger):actor.bodyMotion?bodyPose(actor.bodyMotion.clip,bodyPhase(sim.now,actor.bodyMotion.start,actor.bodyMotion.contact,actor.bodyMotion.recovery)):bodyPose('hit',1);
       if(enemy.hp>0){actor.root.rotation.x=body.pitch;actor.root.rotation.z=body.roll;actor.root.position.y+=body.height;}
@@ -273,8 +288,9 @@ export class LabScene {
     const dirX=Math.cos(this.camera.alpha)*Math.sin(this.camera.beta), dirZ=Math.sin(this.camera.alpha)*Math.sin(this.camera.beta);
     const b = this.camera.target.x*dirX+this.camera.target.z*dirZ;
     const a=dirX*dirX+dirZ*dirZ, c=this.camera.target.x**2+this.camera.target.z**2-12.4**2;
-    const maxRadius=(-b+Math.sqrt(Math.max(0,b*b-a*c)))/Math.max(.01,a);
-    const desiredRadius=Math.min(target&&sim.autoFaceTarget?Math.max(this.cameraDistance,Math.min(10,Math.hypot(target.x-sim.player.x,target.z-sim.player.z)+3)):this.cameraDistance,Math.max(2,maxRadius));
+    let maxRadius=(-b+Math.sqrt(Math.max(0,b*b-a*c)))/Math.max(.01,a);
+    if(sim.journey.active){maxRadius=12;for(let r=.25;r<=12;r+=.25){if(!insideCavern({x:this.camera.target.x+dirX*r,z:this.camera.target.z+dirZ*r},.3)){maxRadius=Math.max(.5,r-.25);break;}}}
+    const desiredRadius=Math.min(target&&sim.autoFaceTarget?Math.max(this.cameraDistance,Math.min(10,Math.hypot(target.x-sim.player.x,target.z-sim.player.z)+3)):this.cameraDistance,Math.max(sim.journey.active?.5:2,maxRadius));
     this.camera.radius += (desiredRadius-this.camera.radius)*Math.min(1,dt*16);
     this.shake *= Math.exp(-dt*18); this.camera.target.y += Math.sin(sim.now*.12)*this.shake;
     for (let i=this.pendingEffects.length-1;i>=0;i--) {
@@ -290,7 +306,7 @@ export class LabScene {
       const color = event.target==='player'?'#ff7c79':event.type==='parry'?'#fff0ba':'#83f3ff';
       const mat = this.material(`spark-${sim.now}`,color,1.2);
       for(let i=0;i<Math.ceil((this.reducedFlash?2:10)*this.effects);i++) {
-        const spark=MeshBuilder.CreateSphere('impact',{diameter:.045,segments:4},this.scene); spark.position.set(event.x,1.1,event.z); spark.material=mat;
+        const spark=sim.journey.active&&this.sparkTexture?MeshBuilder.CreatePlane('Synty impact sparkle',{size:.12},this.scene):MeshBuilder.CreateSphere('impact',{diameter:.045,segments:4},this.scene);if(sim.journey.active&&this.sparkTexture){mat.diffuseTexture=this.sparkTexture;mat.opacityTexture=this.sparkTexture;mat.useAlphaFromDiffuseTexture=true;mat.backFaceCulling=false;spark.billboardMode=7;} spark.position.set(event.x,1.1,event.z); spark.material=mat;
         this.pendingEffects.push({mesh:spark,life:.32,max:.32,velocity:new Vector3(Math.sin(i*2.4)*3,1+i%3,Math.cos(i*2.4)*3)});
       }
       setTimeout(()=>mat.dispose(),500);

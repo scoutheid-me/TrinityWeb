@@ -1,3 +1,5 @@
+import {Dungeon} from './world/dungeon';
+import './journey.css';
 import {CombatRecap} from './combat/recap';
 import {defaultAttributes} from './data/balance';
 import {playtestBuild,buildId} from './release';
@@ -32,19 +34,22 @@ async function main(){
   let save=defaultSave();
   try{save=await loadSave();}catch(error){console.warn('Local save unavailable; using session settings.',error);hud.notice('Local save unavailable — session mode');}
   if(playtestBuild)save.attributes={...defaultAttributes};
+  sim.journey=save.journey;if(new URLSearchParams(location.search).has('training'))sim.journey.active=false;
   sim.profile=save.profile;sim.autoFaceTarget=save.settings.autoFaceTarget;sim.weapon=save.weapon;sim.progression=save.progression;sim.attributes=save.attributes;sim.loadout=save.loadout;sim.counters=save.counters;sim.reset();
   for(const key of Object.keys(sim.attributes))hud.input(`stat-${key}`).value=String(sim.attributes[key as keyof typeof sim.attributes]);
-  await createCharacter(sim.profile,async()=>{save.profile=structuredClone(sim.profile);try{await saveGame(save);}catch{hud.notice('Character saved for this session only.');}});
+  const newCharacter=!sim.profile.created;
+  await createCharacter(sim.profile,async()=>{save.profile=structuredClone(sim.profile);try{await saveGame(save);}catch{hud.notice('Character saved for this session only.');}},id=>{sim.weapon=id;save.weapon=id;});
   const view=new LabScene(document.querySelector<HTMLCanvasElement>('#game')!);
   await view.init(sim.profile.character);view.togglePerspective();hud.root.classList.add('first-person');view.canvas.setAttribute('aria-label','Trinity first-person combat arena');view.setQuality(save.settings.quality);audio.enabled=save.settings.sound;audio.timingMusic=save.settings.timingMusic;view.update(sim,0.016);
+  let dungeon:Dungeon|undefined;
   let paused=true,started=false,last=performance.now(),lastSave=last;
-  const advance=()=>{const current=performance.now();if(!paused){if(hud.slowMotion)sim.invalidateRewards("Slow motion enabled");input.updateMovement();sim.update(Math.min(100,current-last)*(hud.slowMotion?.35:1));}last=current;};
+  const advance=()=>{const current=performance.now();if(!paused&&!dungeon?.dialogOpen){if(hud.slowMotion)sim.invalidateRewards("Slow motion enabled");input.updateMovement();sim.update(Math.min(100,current-last)*(hud.slowMotion?.35:1));}last=current;};
   hud.root.classList.add('game-paused');
   const overlay=hud.el('overlay'),begin=hud.el('begin') as HTMLButtonElement;
   function setPaused(value:boolean){window.dispatchEvent(new Event('trinity-audio-stop'));if(!value){const gm=document.getElementById('gm-menu');if(gm)gm.hidden=true;}if(controls&&!controls.panel.hidden){if(!value)return;controls.close();}advance();if(value&&guild?.visible){guild.panel.hidden=true;hud.root.classList.remove('journal-open');}paused=value;hud.root.classList.toggle('game-paused',value);input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume training':'Enter the Training Room';}else{view.canvas.focus();audio.unlock();started=true;}last=performance.now();}
-  function requestPause(){if(!paused&&(sim.encounter.active||tutorial.active)&&sim.player.hp>0){hud.notice('Finish the trial before opening game settings.');return;}setPaused(!paused);}
+  function requestPause(){if(!paused&&(sim.encounter.active||tutorial.active||dungeon?.combat)&&sim.player.hp>0){hud.notice('Finish the trial before opening game settings.');return;}setPaused(!paused);}
   let orb:TrainingOrb|undefined;let rack:WeaponRack|undefined;let controls:ControlsMenu|undefined;let guild:GuildBoard|undefined;
-  const input=new GameInput(sim,view,advance,()=>{if(orb&&!orb.panel.hidden){orb.close();return;}if(rack&&!rack.panel.hidden){rack.close();return;}const tray=document.getElementById('loadout-tray');if(tray&&!tray.hidden){tray.hidden=true;return;}guild?.visible?guild.close():requestPause();},()=>{if(!playtestBuild)hud.toggleDebug();},()=>audio.unlock(),()=>{if(orb?.available)orb.open();else rack?.open();},()=>togglePersonalMenu());
+  const input=new GameInput(sim,view,advance,()=>{if(orb&&!orb.panel.hidden){orb.close();return;}if(rack&&!rack.panel.hidden){rack.close();return;}const tray=document.getElementById('loadout-tray');if(tray&&!tray.hidden){tray.hidden=true;return;}guild?.visible?guild.close():requestPause();},()=>{if(!playtestBuild)hud.toggleDebug();},()=>audio.unlock(),()=>{if(dungeon?.active)dungeon.interact();else if(orb?.available)orb.open();else rack?.open();},()=>togglePersonalMenu());
   input.sensitivity=save.settings.sensitivity;input.bindings=save.settings.bindings;hud.setBindings(input.bindings);
   controls=new ControlsMenu(input,()=>setPaused(true),()=>{hud.setBindings(input.bindings);if(tutorial.active)tutorial.render();void persist();},()=>false);
   const autoFace=controls.panel.querySelector<HTMLInputElement>('#auto-face-target')!;autoFace.checked=sim.autoFaceTarget;autoFace.onchange=()=>{sim.autoFaceTarget=autoFace.checked;void persist();};
@@ -64,15 +69,15 @@ async function main(){
   rack=new WeaponRack(sim,()=>input.bindings,()=>void persist());
   const musicLabel=document.createElement('label');musicLabel.innerHTML='<input id="timing-music" type="checkbox"> Musical timing cues';hud.el('debug').append(musicLabel);
   hud.input('timing-music').checked=audio.timingMusic;hud.input('timing-music').onchange=()=>{audio.timingMusic=hud.input('timing-music').checked;audio.stopTiming();void persist();};
-  begin.disabled=false;begin.textContent='Enter the Training Room';hud.el('load-status').textContent=`${view.backend} ready · Headphones recommended`;
+  begin.disabled=true;begin.textContent='Enter the Training Room';hud.el('load-status').textContent=`${view.backend} ready · Headphones recommended`;
   view.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();setPaused(true);hud.el('load-status').textContent='Graphics context lost. Your saved progress is retained. Reload to recover.';});
-  begin.onclick=()=>{const entering=!started;if(sim.player.hp<=0)sim.reset();setPaused(false);if(entering)hud.notice('Touch the entrance orb to begin the Guild Combat Trial.');};hud.el('menu').onclick=()=>requestPause();
+  begin.onclick=()=>{const entering=!started;if(sim.player.hp<=0){if(dungeon?.active)dungeon.retry();else sim.reset();}setPaused(false);if(dungeon?.active&&entering)dungeon.enter(true);else if(entering)hud.notice('Touch the entrance orb to begin the Guild Combat Trial.');};hud.el('menu').onclick=()=>requestPause();
   window.addEventListener('blur',()=>{if(started&&!paused)setPaused(true);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!paused)setPaused(true);});
   hud.root.querySelectorAll<HTMLButtonElement>('[data-slot]').forEach(b=>{
     b.oncontextmenu=e=>e.preventDefault();
-    b.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();if(!paused){advance();audio.unlock();sim.activateArt(Number(b.dataset.slot));b.setPointerCapture(e.pointerId);}b.blur();view.canvas.focus();};
-    b.onpointerup=()=>{if(!paused){advance();sim.releaseArt(Number(b.dataset.slot));}b.blur();view.canvas.focus();};
+    b.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();if(!paused&&!dungeon?.dialogOpen){advance();audio.unlock();sim.activateArt(Number(b.dataset.slot));b.setPointerCapture(e.pointerId);}b.blur();view.canvas.focus();};
+    b.onpointerup=()=>{if(!paused&&!dungeon?.dialogOpen){advance();sim.releaseArt(Number(b.dataset.slot));}b.blur();view.canvas.focus();};
     b.onpointercancel=()=>sim.cancelArtCharge();
   });
   hud.input('debug-hitboxes').onchange=()=>view.showHitboxes=hud.input('debug-hitboxes').checked;
@@ -92,17 +97,24 @@ async function main(){
   playtestSettings(audio,comfort,applyComfort,persist,loadSave,()=>{importing=true;},()=>{importing=false;},()=>({renderer:view.backend,quality:view.quality,viewport:{width:innerWidth,height:innerHeight},stats:view.stats(),frameTimesMs:frameTimes.length?{samples:frameTimes.length,p50:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.5)],p95:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.95)],p99:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.99)]}:null,counters:{...sim.counters},lastEncounter:recap.last,comfort:{...comfort},assetErrors:view.assetErrors}));
   const stamp=document.createElement('small');stamp.textContent=buildId;hud.el('load-status').after(stamp);
   renameSettings(sim.profile,()=>void persist());
-  async function persist(){if(importing)return;const data:SaveData={version:3,profile:structuredClone(sim.profile),weapon:tutorial.persistentWeapon,progression:structuredClone(sim.progression),attributes:{...sim.attributes},loadout:[...tutorial.persistentLoadout],settings:{comfort:{...comfort},autoFaceTarget:tutorial.persistentAutoFace,quality:view.quality,sensitivity:input.sensitivity,sound:audio.enabled,timingMusic:audio.timingMusic,bindings:structuredClone(input.bindings)},counters:{...sim.counters}};try{pendingSave=pendingSave.catch(()=>{}).then(()=>saveGame(data));await pendingSave;}catch(error){console.warn('Could not save Trinity settings.',error);hud.notice('Could not save settings');}}
+  async function persist(){if(importing)return;const data:SaveData={version:3,journey:structuredClone(sim.journey),profile:structuredClone(sim.profile),weapon:tutorial.persistentWeapon,progression:structuredClone(sim.progression),attributes:{...sim.attributes},loadout:[...tutorial.persistentLoadout],settings:{comfort:{...comfort},autoFaceTarget:tutorial.persistentAutoFace,quality:view.quality,sensitivity:input.sensitivity,sound:audio.enabled,timingMusic:audio.timingMusic,bindings:structuredClone(input.bindings)},counters:{...sim.counters}};try{pendingSave=pendingSave.catch(()=>{}).then(()=>saveGame(data));await pendingSave;}catch(error){console.warn('Could not save Trinity settings.',error);hud.notice('Could not save settings');}}
   window.addEventListener('pagehide',()=>void persist());
+  dungeon=new Dungeon(sim,view,()=>input.bindings,persist,()=>input.clear());
+  dungeon.world.setHallNodes(view.hallNodes);await view.loadGoblins();await dungeon.init();input.retry=()=>dungeon?.active?dungeon.retry():sim.reset();
+  const prologue=document.createElement('button');prologue.id='start-prologue';prologue.textContent='Explore the under-town prologue';prologue.onclick=()=>{dungeon!.start();setPaused(false);};hud.root.querySelector('.intro')!.append(prologue);
+  const training=document.createElement('button');training.id='return-training';training.textContent='Separate practice · Training Room';training.onclick=()=>{dungeon!.training();hud.root.querySelector('.location')!.innerHTML='<i></i>TRAINING ROOM<small>TOWN OF BEGINNINGS · GUILD HALL</small>';setPaused(false);};hud.root.querySelector('.intro')!.append(training);
+  if(dungeon.active){hud.root.querySelector('.intro h1')!.textContent='Beneath the First Dawn';hud.root.querySelector('.intro > p')!.textContent='A 15–20 minute introductory journey · combat, treasure and a first Skill Book.';begin.textContent='Begin / continue prologue';}
+  begin.disabled=false;
   view.engine.runRenderLoop(()=>{
     const frameNow=performance.now();if(!paused){frameTimes.push(frameNow-lastFrame);if(frameTimes.length>600)frameTimes.shift();}lastFrame=frameNow;
     hud.root.classList.toggle('gm-mode',sim.gmMode);
+    input.suspended=!!dungeon?.dialogOpen;
     const before=sim.now;advance();const dt=Math.max(.001,(sim.now-before)/1000);
     audio.syncTiming(sim,paused,hud.slowMotion?.35:1);
     if(!paused){
       view.update(sim,dt);
       recap.observe(sim,sim.events);if(recap.last){const r=recap.last;report.querySelector('p')!.textContent=`${r.result} · ${r.weapon} · ${r.seconds}s · ${r.damageDealt} damage dealt / ${r.damageTaken} taken · ${r.counters} Counters · ${r.breaks} Breaks · ${r.rearHits} rear hits · ${r.artMisses} missed Arts. Practice summaries never award progress.`;}
-      tutorial.observe(sim.events);
+      dungeon?.update(sim.events,sim.now-before);tutorial.observe(sim.events);
       for(const event of sim.events){view.effect(event,sim);hud.event(event);audio.event(event);
         if(event.type==='hit'){
           const pos=Vector3.Project(new Vector3(event.x,2,event.z),Matrix.IdentityReadOnly,view.scene.getTransformMatrix(),view.camera.viewport.toGlobal(view.engine.getRenderWidth(),view.engine.getRenderHeight()));
@@ -111,10 +123,11 @@ async function main(){
       }sim.events=[];
       if(sim.player.hp<=0){hud.notice(`You fell · Press ${bindingText(input.bindings,'reset')} to rise again`);}
     }
-    menuButton.textContent=bindingText(input.bindings,'menu')+' · Menu';personalMenu.update();guild.observe();rack.update(!paused&&!guild.visible);orb.update(!paused&&!guild.visible);hud.update(view);view.scene.render();
+    menuButton.textContent=bindingText(input.bindings,'menu')+' · Menu';personalMenu.update();guild.observe();rack.update(!paused&&!guild.visible&&!dungeon?.active);orb.update(!paused&&!guild.visible&&!dungeon?.active);hud.update(view);view.scene.render();
     if(performance.now()-lastSave>5000){lastSave=performance.now();void persist();}
   });
   // Stable development-only automation surface: tests use the real simulation and renderer.
-  if(import.meta.env.DEV){Object.assign(window,{trinity:{sim,view,input,hud,audio,controls,tutorial,guild,loadoutTray,rack,orb,personalMenu,invitation,pause:setPaused,persist,snapshot:()=>({state:sim.state.state,player:{...sim.player},enemies:sim.enemies.map(e=>({...e,hits:[...e.hits]})),counters:{...sim.counters},loadout:sim.loadout,stats:view.stats(),assets:view.loadedAssets,assetErrors:view.assetErrors,paused})}});}
+  if(import.meta.env.DEV){Object.assign(window,{trinity:{dungeon,sim,view,input,hud,audio,controls,tutorial,guild,loadoutTray,rack,orb,personalMenu,invitation,pause:setPaused,persist,snapshot:()=>({state:sim.state.state,player:{...sim.player},enemies:sim.enemies.map(e=>({...e,hits:[...e.hits]})),counters:{...sim.counters},loadout:sim.loadout,stats:view.stats(),assets:view.loadedAssets,assetErrors:view.assetErrors,paused})}});}
+  if(newCharacter&&dungeon.active)begin.click();
 }
 main().catch(error=>{console.error('Trinity could not start.',error);const status=document.getElementById('load-status');if(status)status.textContent=`Startup failed: ${error instanceof Error?error.message:String(error)}. Try reloading with ?webgl.`;});

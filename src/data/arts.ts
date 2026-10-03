@@ -1,3 +1,4 @@
+import {primerArts} from '../world/journey.ts';
 import type {HitShape} from '../combat/geometry';
 export interface ArtDefinition {
   id: string; name: string; description: string; weapon: string; shape?:HitShape; maxTargets?:number; travelStrike?:boolean; goodMovement?:number; sideMovement?:number; restoreStamina?:number; cost: number;
@@ -22,6 +23,7 @@ Object.assign(arts,{
  'needle-step':{id:'needle-step',name:'Needle Step',description:'A fast rapier thrust with a sidestep. Perfect moves 2 m forward and 1.4 m right; Good shortens forward travel. One target only.',weapon:'rapier',cost:20,startup:160,recovery:180,movement:2,goodMovement:.5,sideMovement:1.4,arc:.2,armor:false,motion:'basic',travelStrike:true,maxTargets:1,shape:{kind:'box',range:2,halfWidth:.28},nodes:[{at:430,multiplier:12,break:14,range:2,input:'press'}]},
  'iron-horizon':{id:'iron-horizon',name:'Iron Horizon',description:'A broad two-handed cleave that strikes every foe in front. High damage and Break; commit to the long recovery.',weapon:'greatsword',cost:35,startup:350,recovery:850,movement:.5,arc:1.2,armor:true,motion:'art',shape:{kind:'sector',range:3.6,halfArc:1.2},nodes:[{at:850,multiplier:12,break:60,range:3.6,input:'press'}]},
 } satisfies Record<string,ArtDefinition>);
+Object.assign(arts,primerArts);
 export function chargeDuration(art:ArtDefinition,stage=0){return art.nodes[stage].at-(art.nodes[stage-1]?.at??0);}
 export function validateArts() {
   for (const art of Object.values(arts)) {

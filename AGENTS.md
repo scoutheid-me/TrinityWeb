@@ -46,3 +46,12 @@ Keep this section persistent so future sessions do not need the user to repeat t
 - T clears a lone target; freeform attacks use player facing. Creature turning is rate-limited and committed attacks stop tracking. Rear hits deal +20% damage in a 120° rear arc, measured at contact.
 
 - Player-facing terminology is Counter (legacy parry IDs remain for save compatibility). Enemy Counter cues use a five-note musical ascent resolving 80 ms before contact; basic attacks have quieter cues. Keep red dodge cues distinct and player Art music prioritized. See docs/PLAYTEST_ROADMAP.md for current review and release gates.
+
+## Under-town prologue (current expansion)
+
+- New characters select a premade man/woman, name and starting sword/rapier/greatsword, then enter the connected cavern in first person. Version 2 journey migration resets the obsolete version 1 lesson prologue and its learned skills. Legacy training saves remain available.
+- The cavern is one preloaded explorable scene. Rooms and corridors share geometry and collision layout in src/world/cavern.ts and public/data/cavern-layout.json. No room transitions, loading gates or required lesson checklists. Formal instruction and Linear remain in the separate Guild Hall Trial.
+- Joining grants only Focused Strike. The waking narration precedes a translucent side Message and optional Find an exit Alert. Accepting gives an official quest with a declared Skill Book reward; declining permits exploration but never grants that quest reward. Message/Alert panes stay live; narrative conversations pause.
+- Goblins and captain use the supplied Synty models in D:/Synty. Incompatible imported locomotion joint translations distorted the mesh: current export authors simple FK clips on the model bind skeleton. Preserve attribution and production sources, never copy raw packs or ZIPs into the repository.
+- Captain defeat opens the daylight path. Mira thanks the party and foreshadows organized goblins outside town. Accepted quest completion offers exactly one of three weapon-neutral two-node primers. Only its root is granted; the leaf requires eligible subsequent practice. Treasure, Col, checkpoint and reward claims persist without duplication. Debug encounters cannot grant rewards.
+- Town is a small endpoint, not a completed world. The 15–20 minute duration remains a human playtest target, not a measured claim. See docs/CAVERN_PROLOGUE.md.

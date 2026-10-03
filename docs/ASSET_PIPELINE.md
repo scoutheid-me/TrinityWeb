@@ -130,3 +130,11 @@ The rack now hides its generic practice_blade/practice_guard meshes and displays
 ## September 23 body-motion pass
 
 Blender MCP tools were not exposed. Blender 5.2.2 headless successfully generated art/blender/body_motion.blend and public/assets/animations/body_motion.json using Tools/Blender/build_body_motion.py. The source has named start/contact markers and sampled 60 Hz additive body curves for Sentinel, Boar jab/sweep, Counter, dodge, hit and Break. Runtime bodyPhase maps simulation contact/recovery to the authored marker, preserving authoritative ground position and paired grips. Enemy feet now stop cycling during stationary turns. These improve the existing rigid-part prototype; they are not a new skinned character rig or final production animation library. Blender reported user-preference/thumbnail cache permission warnings, but the source and runtime curve exports succeeded.
+
+## Connected cavern and Synty import
+
+See CAVERN_PROLOGUE.md for source attribution, generation commands, current presentation limits and journey validation. `build_cavern.py` consumes `public/data/cavern-layout.json`; keep that file synchronized with `src/world/cavern.ts`. Floors/corridors use the same circles and capsule widths as movement collision. Export axes use Blender (x,-z,y) for Babylon (x,y,z).
+
+`import_goblin.py` imports the supplied Warrior/King mesh and palette atlas, disables unintended emission and dangling normal-map links, and authors idle/walk FK on the original bind skeleton. Do not copy joint translations from the supplied locomotion skeleton: those offsets visibly tear these meshes. Rig retains centimeter-local hand coordinates, so the meter-scale cleaver socket uses a documented 100x parent-space conversion. Runtime roots use .85 ordinary / 1.25 captain scale. Current combat arm overlays are prototype animation, not a finished animation set.
+
+`render_selection.py` renders the actual runtime hero GLBs. Original Mira portrait generation details are in CAVERN_PROLOGUE.md. Production .blend sources and used runtime derivatives are preserved; raw commercial pack archives are excluded.

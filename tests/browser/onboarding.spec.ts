@@ -1,7 +1,7 @@
 import {startCombatTrial} from '../uiHelpers';
 import {test,expect} from '@playwright/test';
 test('woman creation, first-person entry, remapped rack and saved identity',async({page})=>{
- const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?webgl');
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?webgl&training');
  await expect(page.locator('#character-creation')).toBeVisible();await page.locator('#creation-name').fill('Aria');await page.locator('[name="character"][value="woman"]').check();await page.locator('#character-creation button').click();
  await expect(page.locator('#begin')).toBeEnabled({timeout:45000});expect(await page.evaluate(()=>window.trinity.view.firstPerson)).toBe(true);expect(await page.evaluate(()=>window.trinity.sim.profile.character)).toBe('woman');
  expect(await page.evaluate(()=>window.trinity.view.loadedAssets)).toContain('/assets/characters/wayfarer_woman.glb');await expect(page.locator('.intro h1')).toHaveText('Training Room');await expect(page.locator('.intro')).toContainText('Guild Combat Trial');
@@ -12,7 +12,7 @@ test('woman creation, first-person entry, remapped rack and saved identity',asyn
  await page.evaluate(()=>window.trinity.persist());await page.reload();await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await expect(page.locator('#character-creation')).toHaveCount(0);expect(await page.evaluate(()=>window.trinity.view.firstPerson)).toBe(true);expect(await page.evaluate(()=>window.trinity.sim.profile.name)).toBe('Aria Vale');expect(await page.evaluate(()=>window.trinity.input.bindings.interact[0])).toBe('KeyH');expect(errors).toEqual([]);
 });
 test('accepting the Guild Challenge teaches combat and awards Linear with its dash description',async({page})=>{
- await page.goto('/?webgl');await page.locator('#creation-name').fill('Rowan');await page.locator('[name="character"][value="man"]').check();await page.locator('#character-creation button').click();await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await startCombatTrial(page);
+ await page.goto('/?webgl&training');await page.locator('#creation-name').fill('Rowan');await page.locator('[name="character"][value="man"]').check();await page.locator('#character-creation button').click();await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await page.locator('#begin').click();await startCombatTrial(page);
  await expect(page.locator('#tutorial')).toContainText('GUILD COMBAT TRIAL');expect(await page.evaluate(()=>window.trinity.view.firstPerson)).toBe(true);
  for(let i=0;i<3;i++){await page.keyboard.press('j');await page.waitForTimeout(500);}await page.locator('#tutorial-next').click();
  await page.waitForFunction(()=>{const s=window.trinity.sim,e=s.enemies[0];return e.pattern&&e.attackStart+e.pattern.hits[0]-s.now<180;},null,{polling:'raf'});await page.keyboard.press('Space');await expect(page.locator('#tutorial-next')).toBeEnabled();await page.locator('#tutorial-next').click();

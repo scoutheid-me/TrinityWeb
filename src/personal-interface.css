@@ -100,3 +100,6 @@
 #ui.gm-mode::after{content:'GM · LOCAL BALANCE';position:fixed;top:68px;left:50%;transform:translateX(-50%);padding:5px 12px;background:#594719e6;color:#ffe9a0;border:1px solid #cda33c;font-size:11px;letter-spacing:1px;pointer-events:none;z-index:70}
 #gm-menu label:has(input[type=checkbox]){flex-direction:row;align-items:center}#gm-menu input[type=checkbox]{width:auto;margin:0 8px 0 0}
 #weapon-rack{left:50%;top:50%;transform:translate(-50%,-50%);max-height:84vh}
+/* Keep navigation discs clickable when the adjacent submenu is expanded. */
+.personal-menu-open header .fantasy-icon{z-index:35}
+#ui.personal-menu-open header .fantasy-icon{z-index:35;width:52px;padding:0;font-size:0}#ui.personal-menu-open header .fantasy-icon:hover{width:52px;font-size:0}

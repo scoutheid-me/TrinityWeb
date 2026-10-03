@@ -68,52 +68,83 @@
   ],
   "skillBooks": [
     {
-      "id": "lantern-road-forms",
-      "name": "Lantern Road Forms",
-      "theme": "Four connected forms for making an opening, advancing, recovering and repositioning.",
-      "reward": "Planned final reward of the future tutorial dungeon. Not awarded by the current Guild Combat Trial.",
+      "id": "pathfinder",
+      "name": "Pathfinder’s Primer",
+      "theme": "Short repositioning cuts. Trade raw damage for safer angles.",
+      "reward": "Complete the accepted Find an exit quest with Mira.",
       "nodes": [
         {
-          "art": "focused-strike",
+          "art": "trail-step",
           "parents": [],
           "field": {},
           "x": 50,
-          "y": 12
+          "y": 25
         },
         {
-          "art": "linear",
+          "art": "turning-cut",
           "parents": [
-            "focused-strike"
+            "trail-step"
           ],
           "field": {
             "hits": 12,
             "evades": 2
           },
-          "x": 24,
-          "y": 48
+          "x": 50,
+          "y": 75
+        }
+      ]
+    },
+    {
+      "id": "steadfast",
+      "name": "Steadfast Primer",
+      "theme": "Measured close-range blows that chip away at guard.",
+      "reward": "Complete the accepted Find an exit quest with Mira.",
+      "nodes": [
+        {
+          "art": "stone-tap",
+          "parents": [],
+          "field": {},
+          "x": 50,
+          "y": 25
         },
         {
-          "art": "stillwater-return",
+          "art": "anchored-cut",
           "parents": [
-            "focused-strike"
+            "stone-tap"
           ],
           "field": {
-            "parries": 6
-          },
-          "x": 76,
-          "y": 48
-        },
-        {
-          "art": "aether-step",
-          "parents": [
-            "linear",
-            "stillwater-return"
-          ],
-          "field": {
-            "evades": 6
+            "hits": 12,
+            "breaks": 2
           },
           "x": 50,
-          "y": 84
+          "y": 75
+        }
+      ]
+    },
+    {
+      "id": "renewal",
+      "name": "Renewal Primer",
+      "theme": "Small stamina returns when a precise cut connects.",
+      "reward": "Complete the accepted Find an exit quest with Mira.",
+      "nodes": [
+        {
+          "art": "breathing-cut",
+          "parents": [],
+          "field": {},
+          "x": 50,
+          "y": 25
+        },
+        {
+          "art": "second-breath",
+          "parents": [
+            "breathing-cut"
+          ],
+          "field": {
+            "hits": 12,
+            "parries": 2
+          },
+          "x": 50,
+          "y": 75
         }
       ]
     }
@@ -365,6 +396,178 @@
           "input": "press"
         }
       ]
+    },
+    {
+      "id": "trail-step",
+      "name": "Trail Step",
+      "description": "A short right sidestep and light cut. No invulnerability; one target.",
+      "weapon": "any",
+      "cost": 15,
+      "startup": 150,
+      "recovery": 320,
+      "movement": 0.1,
+      "arc": 0.4,
+      "armor": false,
+      "motion": "basic",
+      "maxTargets": 1,
+      "shape": {
+        "kind": "box",
+        "range": 2.4,
+        "halfWidth": 0.3
+      },
+      "nodes": [
+        {
+          "at": 600,
+          "multiplier": 4,
+          "break": 12,
+          "range": 2.4,
+          "input": "press"
+        }
+      ],
+      "sideMovement": 1
+    },
+    {
+      "id": "turning-cut",
+      "name": "Turning Cut",
+      "description": "A wider sidestep and precise single cut. Positioning, not burst damage.",
+      "weapon": "any",
+      "cost": 18,
+      "startup": 150,
+      "recovery": 320,
+      "movement": 0.1,
+      "arc": 0.4,
+      "armor": false,
+      "motion": "basic",
+      "maxTargets": 1,
+      "shape": {
+        "kind": "box",
+        "range": 2.4,
+        "halfWidth": 0.3
+      },
+      "nodes": [
+        {
+          "at": 600,
+          "multiplier": 5,
+          "break": 16,
+          "range": 2.4,
+          "input": "press"
+        }
+      ],
+      "sideMovement": 1.5
+    },
+    {
+      "id": "stone-tap",
+      "name": "Stone Tap",
+      "description": "A compact, stationary guard-breaking tap. Modest damage, extra Break.",
+      "weapon": "any",
+      "cost": 18,
+      "startup": 150,
+      "recovery": 420,
+      "movement": 0,
+      "arc": 0.4,
+      "armor": false,
+      "motion": "basic",
+      "maxTargets": 1,
+      "shape": {
+        "kind": "box",
+        "range": 2.4,
+        "halfWidth": 0.3
+      },
+      "nodes": [
+        {
+          "at": 600,
+          "multiplier": 4,
+          "break": 26,
+          "range": 2.4,
+          "input": "press"
+        }
+      ]
+    },
+    {
+      "id": "anchored-cut",
+      "name": "Anchored Cut",
+      "description": "A slow single cut with extra Break. The commitment leaves you exposed.",
+      "weapon": "any",
+      "cost": 22,
+      "startup": 150,
+      "recovery": 520,
+      "movement": 0,
+      "arc": 0.4,
+      "armor": false,
+      "motion": "basic",
+      "maxTargets": 1,
+      "shape": {
+        "kind": "box",
+        "range": 2.4,
+        "halfWidth": 0.3
+      },
+      "nodes": [
+        {
+          "at": 600,
+          "multiplier": 5,
+          "break": 34,
+          "range": 2.4,
+          "input": "press"
+        }
+      ]
+    },
+    {
+      "id": "breathing-cut",
+      "name": "Breathing Cut",
+      "description": "A light close strike. Landing it restores 6 stamina, scaled by release quality.",
+      "weapon": "any",
+      "cost": 16,
+      "startup": 150,
+      "recovery": 320,
+      "movement": 0.1,
+      "arc": 0.4,
+      "armor": false,
+      "motion": "basic",
+      "maxTargets": 1,
+      "shape": {
+        "kind": "box",
+        "range": 2.4,
+        "halfWidth": 0.3
+      },
+      "nodes": [
+        {
+          "at": 600,
+          "multiplier": 4,
+          "break": 12,
+          "range": 2.4,
+          "input": "press"
+        }
+      ],
+      "restoreStamina": 6
+    },
+    {
+      "id": "second-breath",
+      "name": "Second Breath",
+      "description": "One patient strike. Landing it restores 10 stamina, scaled by release quality.",
+      "weapon": "any",
+      "cost": 20,
+      "startup": 150,
+      "recovery": 420,
+      "movement": 0.1,
+      "arc": 0.4,
+      "armor": false,
+      "motion": "basic",
+      "maxTargets": 1,
+      "shape": {
+        "kind": "box",
+        "range": 2.4,
+        "halfWidth": 0.3
+      },
+      "nodes": [
+        {
+          "at": 600,
+          "multiplier": 5,
+          "break": 16,
+          "range": 2.4,
+          "input": "press"
+        }
+      ],
+      "restoreStamina": 10
     }
   ]
 }
