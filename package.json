@@ -13,7 +13,9 @@
     "test:production": "playwright test --config playwright.production.config.ts",
     "build:playtest": "npm run export:skills && tsc --noEmit && vite build --mode playtest --outDir dist-playtest",
     "benchmark": "vitest run tests/balance-benchmark.test.ts",
-    "test:playtest": "playwright test --config playwright.playtest.config.ts"
+    "test:playtest": "playwright test --config playwright.playtest.config.ts",
+    "build:pages": "npm run export:skills && tsc --noEmit && vite build --mode playtest --base=/TrinityWeb/ --outDir dist-pages",
+    "test:pages": "playwright test --config playwright.pages.config.ts"
   },
   "dependencies": {
     "@babylonjs/core": "9.27.0",

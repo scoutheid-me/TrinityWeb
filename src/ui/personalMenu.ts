@@ -1,3 +1,4 @@
+import {publicUrl} from '../publicUrl';
 import {cavernAreas as chambers,cavernLinks} from '../world/cavern';
 import {supplies} from '../data/items';
 import {bookLibrary,bindBookLibrary} from './skillBooks';
@@ -32,7 +33,7 @@ export class PersonalMenu {
   const s=this.sim,p=s.profile;let html='';
   if(this.category==='items'){
    html=this.heading('Items')+`<p class="subtle">${s.journey.coins} Col · supplies for safe spaces.</p><div class="inventory-list">${['health','stamina'].map(id=>`<button data-item="${id}" aria-pressed="${this.item===id}">${supplies[id as 'health'].name} <b>×${p.potions[id as 'health']}</b></button>`).join('')}</div><article><h3>${supplies[this.item as 'health'].name}</h3><p>Restores ${this.item==='health'?supplies.health.restore+' HP':supplies.stamina.restore+' stamina'}. Consumed on use. Cannot be used during lessons or encounters.</p><button id="use-supply">Use supply</button><p id="supply-status" role="status"></p><label>Accessible inventory slot<select id="pocket-select">${p.pockets.map((_,i)=>`<option value="${i}" ${this.slot===i?'selected':''}>Slot ${i+1}</option>`).join('')}</select></label><button id="assign-supply">Assign here</button><button id="clear-pocket">Clear slot</button></article>`;
-  }else if(this.category==='arts')html=this.heading('Skills')+`<p class="subtle">Basic Arts work with any weapon. Combat Arts may require a weapon or class. Skill Books open themed trees. Select a skill to inspect and equip it.</p><div class="skill-name-list">${Object.values(arts).filter(a=>s.progression.learned[a.id]).map(a=>`<button data-skill="${a.id}"><span>${a.name}</span><small>${s.loadout.includes(a.id)?'Equipped · '+(s.loadout.indexOf(a.id)+1):'View details'} ›</small></button>`).join('')}</div>${bookLibrary(s)}<a href="/data/skill-bank.json" download>Download skill bank</a>`;
+  }else if(this.category==='arts')html=this.heading('Skills')+`<p class="subtle">Basic Arts work with any weapon. Combat Arts may require a weapon or class. Skill Books open themed trees. Select a skill to inspect and equip it.</p><div class="skill-name-list">${Object.values(arts).filter(a=>s.progression.learned[a.id]).map(a=>`<button data-skill="${a.id}"><span>${a.name}</span><small>${s.loadout.includes(a.id)?'Equipped · '+(s.loadout.indexOf(a.id)+1):'View details'} ›</small></button>`).join('')}</div>${bookLibrary(s)}<a href="${publicUrl('/data/skill-bank.json')}" download>Download skill bank</a>`;
   else if(this.category==='equipment')html=this.heading('Equipment')+this.equipment().map(([slot,name,desc])=>`<details class="nested-info"><summary>${slot}<small>${name}</small></summary><p>${desc}</p></details>`).join('');
   else if(this.category==='friends'){
    const done=s.progression.tutorialCompleted;

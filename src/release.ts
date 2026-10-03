@@ -1,2 +1,2 @@
 export const playtestBuild=import.meta.env.MODE==='playtest';
-export const buildId='trinity-cavern-2026-10-02';
+export const buildId='trinity-cavern-2026-10-02 · '+(import.meta.env.VITE_BUILD_REVISION?.slice(0,7)??'local');

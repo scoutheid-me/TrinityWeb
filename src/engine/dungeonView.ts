@@ -1,3 +1,4 @@
+import {publicUrl} from '../publicUrl';
 import {Color3,Color4,DynamicTexture,ImportMeshAsync,MeshBuilder,PointLight,StandardMaterial,TransformNode,Vector3,type Mesh} from '@babylonjs/core';
 import type {LabScene} from './scene';
 import {cavernAreas,chestAreas} from '../world/cavern';
@@ -6,7 +7,7 @@ export class DungeonView {
  constructor(private view:LabScene){this.root=new TransformNode('Connected cavern',view.scene);this.root.setEnabled(false);}
  setHallNodes(nodes:TransformNode[]){this.hall=nodes;}
  async init(){
-  const asset=async(url:string)=>{const root=new TransformNode(url,this.view.scene);root.parent=this.root;const m=await ImportMeshAsync(url,this.view.scene);for(const n of m.meshes){if(!n.parent)n.parent=root;n.receiveShadows=true;}this.view.loadedAssets.push(url);return root;};
+  const asset=async(url:string)=>{const root=new TransformNode(url,this.view.scene);root.parent=this.root;const m=await ImportMeshAsync(publicUrl(url),this.view.scene);for(const n of m.meshes){if(!n.parent)n.parent=root;n.receiveShadows=true;}this.view.loadedAssets.push(url);return root;};
   await asset('/assets/environments/connected_cavern.glb');this.town=await asset('/assets/environments/beginnings_gate_square.glb');this.town.position.set(0,0,160);
   const chest=await asset('/assets/props/dungeon_chest.glb');chest.setEnabled(false);
   for(const i of chestAreas){const a=cavernAreas[i],copy=chest.clone('cavern-chest-'+i,this.root)!;copy.setEnabled(true);copy.position.set(a.x-5,0,a.z+3);this.chests.set(i,copy);}

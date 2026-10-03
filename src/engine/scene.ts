@@ -1,3 +1,4 @@
+import {publicUrl} from '../publicUrl';
 import {insideCavern} from '../world/cavern';
 import {bodyPose,bodyPhase,type BodyClip} from './bodyMotion';
 import {footprintPose} from './footprintMotion';
@@ -103,7 +104,7 @@ export class LabScene {
     window.addEventListener('resize', () => this.engine.resize());
     await this.scene.whenReadyAsync();
   }
-  async loadGoblins(){if(!this.goblinContainer){this.goblinContainer=await LoadAssetContainerAsync('/assets/enemies/goblin.glb',this.scene);this.loadedAssets.push('/assets/enemies/goblin.glb');this.captainContainer=await LoadAssetContainerAsync('/assets/enemies/goblin_captain.glb',this.scene);this.loadedAssets.push('/assets/enemies/goblin_captain.glb');this.goblinBlade=await this.asset('/assets/weapons/goblin_cleaver.glb');this.goblinBlade.setEnabled(false);this.sparkTexture=new Texture('/assets/textures/goblin_sparkle.png',this.scene);this.sparkTexture.hasAlpha=true;}}
+  async loadGoblins(){if(!this.goblinContainer){this.goblinContainer=await LoadAssetContainerAsync(publicUrl('/assets/enemies/goblin.glb'),this.scene);this.loadedAssets.push('/assets/enemies/goblin.glb');this.captainContainer=await LoadAssetContainerAsync(publicUrl('/assets/enemies/goblin_captain.glb'),this.scene);this.loadedAssets.push('/assets/enemies/goblin_captain.glb');this.goblinBlade=await this.asset('/assets/weapons/goblin_cleaver.glb');this.goblinBlade.setEnabled(false);this.sparkTexture=new Texture(publicUrl('/assets/textures/goblin_sparkle.png'),this.scene);this.sparkTexture.hasAlpha=true;}}
   private goblinActor(enemy:Enemy):Actor{
     const entries=(enemy.species==='captain'?this.captainContainer:this.goblinContainer)!.instantiateModelsToScene(n=>enemy.id+'-'+n,false,{doNotInstantiate:true});const root=new TransformNode(enemy.id,this.scene);for(const n of entries.rootNodes)n.parent=root;
     const hand=root.getDescendants().find(n=>n.name.endsWith('Hand_R')) as TransformNode|undefined;
@@ -146,7 +147,7 @@ export class LabScene {
   private async asset(url: string): Promise<TransformNode> {
     const container = new TransformNode(url, this.scene);
     try {
-      const imported = await ImportMeshAsync(url, this.scene);
+      const imported = await ImportMeshAsync(publicUrl(url), this.scene);
       for (const node of imported.meshes) { if (!node.parent) node.parent = container; node.receiveShadows = true; }
       for (const material of this.scene.materials) if (material instanceof PBRMaterial) { material.environmentIntensity = .8; material.directIntensity = 1.3; }
       this.loadedAssets.push(url);

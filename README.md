@@ -1,3 +1,7 @@
+**Play the latest Trinity:** https://scoutheid-me.github.io/TrinityWeb/
+
+Updates publish automatically after tests pass on `main`. See [hosting instructions](docs/HOSTING.md).
+
 # TRINITY — The Aether Hall
 
 A real-time third-person browser action RPG prototype. This first Combat Lab focuses on quick basic strikes and timed Arts, SP, Combat Arts, dodge/parry, and enemy Break. It is a playable development milestone, not the finished RPG.

@@ -55,3 +55,8 @@ Keep this section persistent so future sessions do not need the user to repeat t
 - Goblins and captain use the supplied Synty models in D:/Synty. Incompatible imported locomotion joint translations distorted the mesh: current export authors simple FK clips on the model bind skeleton. Preserve attribution and production sources, never copy raw packs or ZIPs into the repository.
 - Captain defeat opens the daylight path. Mira thanks the party and foreshadows organized goblins outside town. Accepted quest completion offers exactly one of three weapon-neutral two-node primers. Only its root is granted; the leaf requires eligible subsequent practice. Treasure, Col, checkpoint and reward claims persist without duplication. Debug encounters cannot grant rewards.
 - Town is a small endpoint, not a completed world. The 15–20 minute duration remains a human playtest target, not a measured claim. See docs/CAVERN_PROLOGUE.md.
+
+## Permanent play deployment
+
+- Stable play URL: https://scoutheid-me.github.io/TrinityWeb/ . Push tested work to main to publish automatically through .github/workflows/pages.yml; verify the deployment instead of handing the user a temporary localhost link as the primary play address.
+- Preserve project-path-safe runtime assets via src/publicUrl.ts. build:pages emits the public playtest (no GM/dev hooks) under /TrinityWeb/. A failed CI check must not replace the last playable deployment. See docs/HOSTING.md.
