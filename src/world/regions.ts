@@ -1,8 +1,9 @@
 export const exitDoor={x:-10.8,z:145.6,yaw:Math.atan2(.6,.8)};
 /** Plane across the only town corridor. Shared by collision, mesh and interaction. */
-export function stopAtExit(p:{x:number;z:number},open:boolean){
+export function stopAtExit(p:{x:number;z:number},open:boolean,townSide=false){
  if(open||p.z<130)return;
  const depth=(p.x-exitDoor.x)*.6+(p.z-exitDoor.z)*.8+.65;
+ if(townSide){const back=depth-1.3;if(back<0){p.x-=back*.6;p.z-=back*.8;}return;}
  if(depth>0){p.x-=depth*.6;p.z-=depth*.8;}
 }
 /** One zone for the whole underground scene; the square is a separate location. */

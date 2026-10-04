@@ -80,3 +80,9 @@ Ilyra’s induction now leads into the Lantern Guild journal. Four trials teach 
 Use **First person** on the right menu to switch views. Hold your mapped orbit input (right mouse by default) to look. The **Guild journal** becomes a personal screen-mounted window and keeps combat/movement running. Close it with × or Escape; Escape again pauses. Focus loss still pauses safely. Journey and Arts tabs keep the journal compact; highlighted summaries expand, and dotted HUD terms reveal hover/focus/click help.
 
 The current location is **Guild Hall Training Room**. Walk to the **weapon rack** and press **G** to switch weapons. Use **Edit Arts** for skill slots, stat cards and the downloadable bank. Press **M** to reveal the side menu. First-person settings remain translucent and live; Controls includes a saved target-facing toggle. See [training skills](docs/SKILLS.md) and [Blender MCP setup](docs/BLENDER_MCP_SETUP.md).
+
+### Quick supplies and camera
+
+C uses a health potion; V uses a stamina draught. Both share a five-second cooldown and work between actions, including ordinary combat. Click the supply icons or change their keyboard/mouse bindings in Controls. Full resources do not consume stock.
+
+Mouse movement follows the camera over the game without right-drag. Esc or opening a menu releases camera control. Native pointer capture is attempted automatically after gameplay interactions; browsers may require a click before allowing it. If denied, movement over the canvas still controls the camera. Resume after focus loss restores gameplay safely.

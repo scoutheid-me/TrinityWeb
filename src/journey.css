@@ -35,4 +35,5 @@
 #region-banner small{display:block;font-size:11px;letter-spacing:3px;color:#a9d9de}#region-banner strong{display:block;font-size:clamp(22px,3vw,34px);font-weight:500;letter-spacing:1px;margin:7px 0}#region-banner span{font-size:10px;color:#7acece;letter-spacing:3px}
 @keyframes region-arrival{0%{opacity:0;transform:translate(-58%,0)}12%,78%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-42%,0)}}
 @media(prefers-reduced-motion:reduce){#region-banner{animation-name:region-arrival-reduced}@keyframes region-arrival-reduced{0%,100%{opacity:0}12%,78%{opacity:1}}}
-#mouse-capture-hint{position:absolute;right:24px;bottom:120px;z-index:45;padding:12px 18px;border:1px solid #c1dfdf;background:#e9f2efed;color:#294a51;pointer-events:auto;box-shadow:0 3px 18px #0004}
+
+#quick-supplies{position:absolute;left:24px;bottom:80px;display:grid;gap:4px;pointer-events:auto}#quick-supplies button{padding:7px 10px;background:#e6efead9;border:1px solid #a5bfc0;color:#304d54;font-size:11px;text-align:left}.game-paused #quick-supplies{display:none}

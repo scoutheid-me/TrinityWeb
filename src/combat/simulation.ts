@@ -1,3 +1,4 @@
+import {supplies,supplyCooldownMs} from '../data/items';
 import {stopAtExit} from '../world/regions';
 import {projectToCavern} from '../world/cavern';
 import {freshJourney} from '../world/journey';
@@ -33,6 +34,18 @@ export class CombatSimulation {
   invalidateRewards(reason="Lab modifications"){this.fieldEligible=false;this.encounter.invalidate(reason);}
   equipLoadout(ids:(string|null)[]){if(this.practiceMode||this.encounter.active||!this.free||!validLoadout(ids,this.progression,this.weapon))return false;this.loadout=equipArts(ids);return true;}
   beginChallenge(id:ChallengeId){if(!canStart(this.progression,id))return false;this.reset();this.spawnEnemy();this.flags={invulnerable:false,infiniteSp:false,freezeAI:false};this.attributes={...defaultAttributes};this.player.hp=this.hpMax;this.player.stamina=this.staminaMax;this.encounter.start(id);if(id==="trial"){this.spawnEnemy();for(const e of this.enemies)e.hp=e.maxHp=300;}return true;}
+  supplyReadyAt=0;
+  useSupply(id:'health'|'stamina'){
+    let message='';let used=false;
+    if(this.player.hp<=0)message='Cannot use supplies while defeated.';
+    else if(this.practiceMode)message='Supplies are unavailable during guided lessons.';
+    else if(!this.free)message='Finish your current action before drinking.';
+    else if(this.now<this.supplyReadyAt)message='Supplies ready in '+Math.ceil((this.supplyReadyAt-this.now)/1000)+'s.';
+    else if(this.profile.potions[id]<=0)message='No '+supplies[id].name.toLowerCase()+' remaining.';
+    else if(id==='health'?this.player.hp>=this.hpMax:this.player.stamina>=this.staminaMax)message='Already full.';
+    else {this.profile.potions[id]--;if(id==='health')this.player.hp=Math.min(this.hpMax,this.player.hp+supplies[id].restore);else this.player.stamina=Math.min(this.staminaMax,this.player.stamina+supplies[id].restore);this.supplyReadyAt=this.now+supplyCooldownMs;used=true;message=supplies[id].name+' used · +'+supplies[id].restore+(id==='health'?' HP':' stamina');}
+    this.emit('notice',message);return {used,message};
+  }
   attributes: Attributes = { ...defaultAttributes };
   player = { x: 0, z: -4, yaw: 0, hp: maxHp(10), stamina: maxStamina(10), sp: 0, vx: 0, vz: 0 };
   state = new StateMachine();
@@ -273,7 +286,7 @@ export class CombatSimulation {
     this.player.x += this.player.vx * dt; this.player.z += this.player.vz * dt;
     this.bound(this.player);
   }
-  private bound(point: Point) { if(this.journey.active){if(!this.journey.facts.includes('boss')&&point.z>103&&point.z<130)point.z=103;stopAtExit(point,this.journey.facts.includes('exit-open'));Object.assign(point,projectToCavern(point));return;}const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
+  private bound(point: Point) { if(this.journey.active){if(!this.journey.facts.includes('boss')&&point.z>103&&point.z<130)point.z=103;stopAtExit(point,point===this.player&&this.journey.facts.includes('exit-open'),point===this.player&&this.journey.facts.includes('gate-town-side'));Object.assign(point,projectToCavern(point));return;}const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
   private resolveBodies() {
     const live=this.enemies.filter(e=>e.hp>0);
     for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){

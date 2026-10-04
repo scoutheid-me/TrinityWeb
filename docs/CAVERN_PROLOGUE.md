@@ -42,7 +42,7 @@ Validation on October 2: 133 unit tests passed; all 34 browser integration scena
 
 ## October 3 controls, goblin motion, and town arrival
 
-- Mouse look captures on the click that finishes entry or resumes play. Browsers require a user gesture, so a returning player may need one click in the scene. Focus loss releases capture and pauses safely. Clicking Resume explicitly reacquires it; a Click to resume mouse look button is available if browser capture was lost. M releases the cursor for the live personal menu; closing it requests capture again. Esc releases the cursor; existing combat pause restrictions still apply. Controls includes a persistent opt-out for right-drag look.
+- Mouse look captures on the click that finishes entry or resumes play. Browsers require a user gesture, so a returning player may need one click in the scene. Focus loss releases capture and pauses safely. Clicking Resume explicitly reacquires it; hover mouse-look works when browser capture is unavailable, with no recapture button. M releases the cursor for the live personal menu; closing it requests capture again. Esc releases the cursor; existing combat pause restrictions still apply. Controls includes a persistent opt-out for right-drag look.
 - Synty Polygon idle/walk clips are retargeted by joint directions without copying incompatible bone translations. Original overhead and sweeping attack clips use the War Camp bind rig. Each attack's contact time samples the same normalized authored contact frame, including the captain's second strike. These are prototype animations, not a mocap-quality combat library.
 - `Tools/Blender/build_town.py` exports a stone corridor/portal, rising stone slab, and an original half-timber town square with a slate-roof Guild Hall and indigo banners. Production Blender sources are retained. The square remains a small endpoint, not a full town.
 - E opens the final stone door after the captain is defeated. Collision stays closed during its initial lift; the opened state persists. The Guild Hall entrance leads to the existing Training Room. The labelled Town Square doorway at the rear of the Training Room returns to the square with E (or the rebound interaction key); leaving cancels an active lesson cleanly.
@@ -52,3 +52,21 @@ Validation on October 2: 133 unit tests passed; all 34 browser integration scena
 Fresh, unawakened characters always begin at (0, -6) facing down the connected cavern route toward its far-end daylight exit. Existing awakened saves resume their position. The direct practice shortcut is hidden during the unfinished prologue, preventing accidental bypass of the dungeon.
 
 October 3 validation: 136 unit tests pass. The full 35-scenario browser suite passed before the focus/return-door follow-up; its eight affected arrival, cavern, onboarding and room scenarios passed again after those changes. The final arrival scenario also checks walking through the opened exit and returning from Training Room. Hosted-path production smoke test passes. Blender renders and in-game wind-up/contact/arrival images were inspected. These checks do not establish final animation quality or human route duration.
+
+## Mouse look and quick supplies
+
+Gameplay attempts browser pointer capture on entry and play gestures. If browser policy denies it, movement over the canvas still rotates the camera without dragging; leaving the canvas naturally bounds this fallback. Escape and live menus release look. Native capture still requires browser permission/user activation; no recapture button is shown. Focus loss retains safety pause.
+
+C uses a health potion; V uses a stamina draught. Both actions support keyboard, standard mouse buttons and side buttons through Controls. Older custom mappings are preserved; if C/V is already occupied, the new action remains unbound rather than stealing the key. Quick-supply HUD buttons and inventory use the same simulation method. Supplies work with living enemies (including distant cavern patrols), between actions; they share a five-second cooldown. Full/dead/busy/empty/lesson failures do not consume stock. Counts persist immediately after use.
+
+Validation: 139 unit tests; browser coverage checks denied-pointer-capture hover look, menu/escape release, focus/resume, default potion keys, clickable supplies, mouse remapping, saved stock/bindings, and the existing inventory flow.
+
+## October 4: stone passage and gate pass
+
+Preserved new architecture references in `References/Dungeon/`. Existing HP/SP silhouettes and pale, angled Message/Alert panels retain the earlier HUD references. Chamber centers and encounter IDs stay stable for saves; smaller chambers expose longer connecting corridors. Original Blender architecture adds dressed columns, segmented arches, paving and blue emissive braziers. The final passage climbs three metres using stair treads and a continuous ground-height ramp; actors, camera, footprints, props and damage text follow the same elevation. Town remains at height zero.
+
+The town gate seals on arrival. Approach its town side and press the saved Interact key (E by default) to reopen the cavern route. Returning preserves chest claims, defeated enemies and rewards. Monsters are confined to the underground side even while the player opens the gate. The Guild Hall remains the repeatable formal combat-training destination; revisiting the cavern does not reset its quest or duplicate its rewards.
+
+This is stylized prototype architecture, not a claim of matching the reference render fidelity. Current blue flames are emissive authored geometry. Duration still needs human playtesting.
+
+Validation: 142 unit tests; seven browser scenarios cover onboarding, quest acceptance/decline, supplies, focus/camera recovery, gate return and Guild Hall exit. Arrival rechecked after geometry corrections. The cavern export is 25,774 triangles, eight materials and approximately 2.1 MiB including embedded original masonry texture. Hosted-path production smoke test passes.

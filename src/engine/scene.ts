@@ -1,5 +1,5 @@
 import {publicUrl} from '../publicUrl';
-import {insideCavern} from '../world/cavern';
+import {insideCavern,cavernHeight} from '../world/cavern';
 import {bodyPose,bodyPhase,type BodyClip} from './bodyMotion';
 import {footprintPose} from './footprintMotion';
 import {greatswordPose} from './greatswordMotion';
@@ -186,6 +186,7 @@ export class LabScene {
   }
   update(sim: CombatSimulation, dt: number) {
     void this.syncWeapon(sim.weapon);
+    const ground=(z:number,x:number)=>sim.journey.active?cavernHeight(z,x):0;
     const poseDt=sim.now<sim.hitStopUntil?0:dt;
     for (const [id, actor] of this.actors) if (!sim.enemies.some(e => e.id === id)) { actor.groups?.forEach(g=>g.dispose());actor.root.getChildMeshes().forEach(m=>m.skeleton?.dispose());actor.root.dispose(); this.actors.delete(id); }
     for (const enemy of sim.enemies) {
@@ -194,6 +195,7 @@ export class LabScene {
       if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
       const actualSpeed=Math.min(3,Math.hypot(enemy.x-actor.root.position.x,enemy.z-actor.root.position.z)/Math.max(.001,dt));
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,actualSpeed,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
+      actor.root.position.y+=ground(enemy.z,enemy.x);
       const phase=enemyPhase(enemy,sim.now,300);
       if(actor.groups){
        if(phase&&enemy.pattern)actor.attackMotion={name:enemy.pattern.motion==='sweep'?'attack_sweep':'attack_chop',startAt:phase.startAt,contactAt:phase.contactAt};
@@ -215,6 +217,7 @@ export class LabScene {
     const state = sim.state.state;
     let swing = 0;
     this.animate(this.player,sim.player.x,sim.player.z,sim.player.yaw,Math.hypot(sim.player.vx,sim.player.vz),swing,state==='Guard'||state==='Parry',state==='Dead',state==='HitReaction',poseDt);
+    this.player.root.position.y+=ground(sim.player.z,sim.player.x);
     let pose:ReturnType<typeof duelPose>|null=null;
     if(state==='BasicAttackStartup')pose=duelPose('basic',sim.now,sim.actionStart,sim.actionEnd);
     else if(['BasicAttackActive','BasicAttackRecovery'].includes(state)&&sim.lastContact)pose=duelPose('basic',sim.now<sim.hitStopUntil?sim.lastContact.at:sim.now,sim.lastContact.at-chargeTime(sim.attributes.dexterity)*sim.weaponDefinition.startup/87,sim.lastContact.at);
@@ -263,31 +266,31 @@ export class LabScene {
     const playerBody=bodyClip?bodyPose(bodyClip,(sim.now-sim.actionStart)/Math.max(1,sim.actionEnd-sim.actionStart)):sim.now-sim.lastParryAt<300?bodyPose('counter',.6+.4*(sim.now-sim.lastParryAt)/300):bodyPose('hit',1);
     if(state!=='Dead'){this.player.root.rotation.x=playerBody.pitch;this.player.root.rotation.z=playerBody.roll;this.player.root.position.y+=playerBody.height;}
     const target = sim.target;
-    this.ring.setEnabled(!!target); if (target) this.ring.position.set(target.x,.07,target.z);
+    this.ring.setEnabled(!!target); if (target) this.ring.position.set(target.x,ground(target.z,target.x)+.07,target.z);
     const visible=new Set<string>();
     for(const enemy of sim.enemies){const phase=enemyPhase(enemy,sim.now);if(!phase||!enemy.pattern)continue;
       visible.add(enemy.id);let indicator=this.hitIndicators.get(enemy.id);
       if(indicator&&indicator.shape!==enemy.pattern.shape){indicator.dispose();this.hitIndicators.delete(enemy.id);indicator=undefined;}
       if(!indicator){indicator=new HitIndicator(this.scene,enemy.pattern.shape,'attack footprint '+enemy.id);this.hitIndicators.set(enemy.id,indicator);}
-      indicator.update(enemy.x,enemy.z,enemy.yaw,phase.remaining,enemy.pattern.parryable);
+      indicator.update(enemy.x,enemy.z,enemy.yaw,phase.remaining,enemy.pattern.parryable);indicator.mesh.position.y=ground(enemy.z,enemy.x);
     }
     for(const [id,indicator] of this.hitIndicators)if(!visible.has(id)){indicator.dispose();this.hitIndicators.delete(id);}
     const preview=sim.art&&sim.art.grades[sim.art.stage]!=='Miss'&&sim.state.state!=='ArtRecovery'?sim.art:undefined;
     if(this.showHitboxes||preview){
       const shape=preview?artShape(preview.definition,preview.stage):sim.weaponDefinition.shape;
       if(JSON.stringify(this.debugVolume?.shape)!==JSON.stringify(shape)){this.debugVolume?.dispose();this.debugVolume=new HitIndicator(this.scene,shape,'player hit footprint');}
-      this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+chargeDuration(preview.definition,preview.stage)-sim.now:100,true,'#80e9ff');
+      this.debugVolume!.update(sim.player.x,sim.player.z,sim.player.yaw,preview?preview.start+chargeDuration(preview.definition,preview.stage)-sim.now:100,true,'#80e9ff');this.debugVolume!.mesh.position.y=ground(sim.player.z,sim.player.x);
     }else this.debugVolume?.mesh.setEnabled(false);
     if(this.firstPerson){
-      if(target&&sim.autoFaceTarget){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,1.65-(target.species==='boar'?.9:1.2));this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
+      if(target&&sim.autoFaceTarget){const desiredAlpha=Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;this.camera.alpha+=Math.atan2(Math.sin(desiredAlpha-this.camera.alpha),Math.cos(desiredAlpha-this.camera.alpha))*Math.min(1,dt*14);const distance=Math.hypot(target.x-sim.player.x,target.z-sim.player.z);const beta=Math.atan2(distance,ground(sim.player.z,sim.player.x)+1.65-ground(target.z,target.x)-(target.species==='boar'?.9:1.2));this.camera.beta+=(beta-this.camera.beta)*Math.min(1,dt*14);}
       const focusDistance=target?Math.hypot(target.x-sim.player.x,target.z-sim.player.z):5;const focusFov=target&&sim.autoFaceTarget?Math.max(.8,Math.min(1.65,2*Math.atan(2.5/Math.max(1,focusDistance)))):.8;this.firstCamera.fov+=(focusFov-this.firstCamera.fov)*Math.min(1,dt*8);
-      this.firstCamera.position.set(sim.player.x,1.65+(state==='Dodge'?-.12:0),sim.player.z);
+      this.firstCamera.position.set(sim.player.x,ground(sim.player.z,sim.player.x)+1.65+(state==='Dodge'?-.12:0),sim.player.z);
       const look=new Vector3(-Math.cos(this.camera.alpha)*Math.sin(this.camera.beta),-Math.cos(this.camera.beta),-Math.sin(this.camera.alpha)*Math.sin(this.camera.beta));
       this.firstCamera.setTarget(this.firstCamera.position.add(look));
       if((!sim.target||!sim.autoFaceTarget)&&sim.free)sim.player.yaw=Math.atan2(look.x,look.z);
     }
-    const desired = new Vector3(sim.player.x,1.2,sim.player.z);
-    if (target&&sim.autoFaceTarget&&!this.firstPerson) { desired.x += (target.x-sim.player.x)*.45; desired.z += (target.z-sim.player.z)*.45;desired.y=target.species==='boar'?.85:1.1;this.camera.beta+=(1.15-this.camera.beta)*Math.min(1,dt*8);
+    const desired = new Vector3(sim.player.x,ground(sim.player.z,sim.player.x)+1.2,sim.player.z);
+    if (target&&sim.autoFaceTarget&&!this.firstPerson) { desired.x += (target.x-sim.player.x)*.45; desired.z += (target.z-sim.player.z)*.45;desired.y=ground(target.z,target.x)+(target.species==='boar'?.85:1.1);this.camera.beta+=(1.15-this.camera.beta)*Math.min(1,dt*8);
       const yaw = Math.atan2(target.z-sim.player.z,target.x-sim.player.x)+Math.PI;
       const diff = Math.atan2(Math.sin(yaw-this.camera.alpha),Math.cos(yaw-this.camera.alpha)); this.camera.alpha += diff*Math.min(1,dt*4);
     }
@@ -314,14 +317,14 @@ export class LabScene {
       const color = event.target==='player'?'#ff7c79':event.type==='parry'?'#fff0ba':'#83f3ff';
       const mat = this.material(`spark-${sim.now}`,color,1.2);
       for(let i=0;i<Math.ceil((this.reducedFlash?2:10)*this.effects);i++) {
-        const spark=sim.journey.active&&this.sparkTexture?MeshBuilder.CreatePlane('Synty impact sparkle',{size:.12},this.scene):MeshBuilder.CreateSphere('impact',{diameter:.045,segments:4},this.scene);if(sim.journey.active&&this.sparkTexture){mat.diffuseTexture=this.sparkTexture;mat.opacityTexture=this.sparkTexture;mat.useAlphaFromDiffuseTexture=true;mat.backFaceCulling=false;spark.billboardMode=7;} spark.position.set(event.x,1.1,event.z); spark.material=mat;
+        const spark=sim.journey.active&&this.sparkTexture?MeshBuilder.CreatePlane('Synty impact sparkle',{size:.12},this.scene):MeshBuilder.CreateSphere('impact',{diameter:.045,segments:4},this.scene);if(sim.journey.active&&this.sparkTexture){mat.diffuseTexture=this.sparkTexture;mat.opacityTexture=this.sparkTexture;mat.useAlphaFromDiffuseTexture=true;mat.backFaceCulling=false;spark.billboardMode=7;} spark.position.set(event.x,(sim.journey.active?cavernHeight(event.z,event.x):0)+1.1,event.z); spark.material=mat;
         this.pendingEffects.push({mesh:spark,life:.32,max:.32,velocity:new Vector3(Math.sin(i*2.4)*3,1+i%3,Math.cos(i*2.4)*3)});
       }
       setTimeout(()=>mat.dispose(),500);
     }
     if(event.type==='dodge') {
       const trail=MeshBuilder.CreateTorus('dodge wake',{diameter:1,thickness:.025,tessellation:24},this.scene);
-      trail.position.set(event.x,.09,event.z);trail.scaling.z=.45;trail.material=this.material('dodge mist','#a9c4d0',.5);
+      trail.position.set(event.x,(sim.journey.active?cavernHeight(event.z,event.x):0)+.09,event.z);trail.scaling.z=.45;trail.material=this.material('dodge mist','#a9c4d0',.5);
       const material=trail.material;this.pendingEffects.push({mesh:trail,life:.25,max:.25});setTimeout(()=>material?.dispose(),400);
     }
     if(event.type==='slash') {

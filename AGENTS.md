@@ -63,7 +63,10 @@ Keep this section persistent so future sessions do not need the user to repeat t
 
 ## Current navigation and capture behavior
 
-- Mouse capture is on by default. Request it from gameplay/resume gestures; release it for menus, dialogue and focus loss. Provide a visible recapture control when browser capture is lost. Preserve the Controls opt-out and remapped interaction key.
+- Mouse capture is on by default. Request it from gameplay/resume gestures; release it for menus, dialogue and focus loss. Do not add a recapture button. Attempt native capture on entry and play gestures; use hover mouse-look when browser policy denies capture, and stop look for Escape/menus. Preserve the Controls opt-out and remapped interaction key.
 - Fresh unawakened characters start at the cavern's far end (0, -6), facing toward the connected route to the town exit. Existing awakened saves resume their position. Do not relocate or erase earned progression merely to demonstrate the opening.
 - Treat the entire underground dungeon as one location-banner zone (Under-town Caverns). Internal rooms remain map landmarks without additional arrival animations. Town of Beginnings is a separate trigger zone with re-entry hysteresis.
 - The stone exit beyond the captain is interactable. The Guild Hall entrance leads into Training Room, and its labelled rear Town Square doorway returns outside using the same interaction binding. Cancel active practice cleanly on exit; never grant trial completion or quest rewards for leaving.
+
+- Preserve dungeon architecture references in References/Dungeon without replacing the established References/HUD styling. Cavern actors, cameras and effects use cavernHeight(z,x); keep the Blender stair ramp and runtime height aligned. Town entry seals the gate; E can reopen it from the town side, and enemies remain underground. Preserve claimed rewards on return.
+- Quick supplies default to C (health) and V (stamina), support mouse bindings, and share a five-second cooldown. Permit them between actions in ordinary combat; guided lessons remain restricted.

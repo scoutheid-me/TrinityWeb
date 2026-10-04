@@ -27,9 +27,9 @@ export function validateJourney(raw:unknown):Journey{
  j.visited=Array.isArray(r.visited)?[...new Set(r.visited.filter(i=>Number.isInteger(i)&&i>=0&&i<=9))]:[0];
  j.room=count(r.room,9);j.quest=['offered','accepted','declined','completed'].includes(r.quest??'')?r.quest!:'offered';j.defeated=Array.isArray(r.defeated)?[...new Set(r.defeated.filter(v=>/^cavern-[124567]-[01]$/.test(v)))]:[];for(const key of ['position','checkpoint'] as const){const v=r[key];if(v&&Number.isFinite(v.x)&&Number.isFinite(v.z)&&Math.abs(v.x)<100&&v.z>=-20&&v.z<190)j[key]={x:v.x,z:v.z};}
  j.looted=Array.isArray(r.looted)?[...new Set(r.looted.filter(v=>/^chest-[0-8]$/.test(v)))]:[];
- const known=['joined','awakened','bought','supplies','boss','mira','town-quest','message-read','quest-resolved','exit-open'];j.facts=Array.isArray(r.facts)?[...new Set(r.facts.filter(v=>known.includes(v)))]:[];
+ const known=['joined','awakened','bought','supplies','boss','mira','town-quest','message-read','quest-resolved','exit-open','gate-town-side'];j.facts=Array.isArray(r.facts)?[...new Set(r.facts.filter(v=>known.includes(v)))]:[];
  if(!j.defeated.includes('cavern-7-0')){j.facts=j.facts.filter(v=>!['boss','mira','town-quest'].includes(v));if(j.quest==='completed')j.quest='accepted';}
- if(j.facts.includes('boss')&&j.position.z>148&&!j.facts.includes('exit-open'))j.facts.push('exit-open');
+ if(j.facts.includes('boss')&&j.position.z>148&&!j.facts.includes('exit-open')&&!j.facts.includes('gate-town-side'))j.facts.push('exit-open');
  j.coins=count(r.coins,999999);j.elapsedMs=count(r.elapsedMs,360000000);j.checkpointHp=Math.max(1,count(r.checkpointHp,9999));j.purchases=count(r.purchases,99);
  for(const k of Object.keys(j.practice) as (keyof Journey['practice'])[])j.practice[k]=count(r.practice?.[k]);
  if(j.quest==='completed'&&j.facts.includes('boss')&&primers.some(b=>b.id===r.book))j.book=r.book!;

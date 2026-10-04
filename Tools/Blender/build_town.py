@@ -20,9 +20,9 @@ def save(name):
  bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'art/blender'/f'{name}.blend'))
  bpy.ops.object.select_all(action='SELECT');bpy.context.view_layer.objects.active=next(o for o in bpy.context.scene.objects if o.type=='MESH');bpy.ops.object.join()
  bpy.ops.export_scene.gltf(filepath=str(ROOT/'public/assets/environments'/f'{name}.glb'),export_format='GLB')
-box('Town square',0,-.15,0,42,.3,42,pave)
+box('Town square',0,-.15,3,42,.3,36,pave)
 # Paving joints, kept to broad strips instead of hundreds of separate stones.
-for i in range(-18,19,3):box('Paving seam',i,.006,0,.025,.008,40,stone);box('Paving seam',0,.006,i,40,.008,.025,stone)
+for i in range(-15,19,3):box('Paving seam',i,.006,3,.025,.008,36,stone);box('Paving seam',0,.006,i,40,.008,.025,stone)
 for x,z in [(-16,0),(16,0),(-20,-12),(20,-12),(-14,13),(14,13)]:
  box('Half-timber townhouse',x,3,z,7,6,6,plaster);gable(x,z,8,6,7)
  for dx in [-3,0,3]:box('Upright oak beam',x+dx,3,z-3.04,.2,6,.16,timber)
@@ -45,11 +45,11 @@ bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=Fals
 # Portal authored at origin; runtime places it across the final corridor.
 for x in [-3.3,3.3]:box('Exit carved jamb',x,2,0,.65,4,1.1,trim)
 box('Exit lintel',0,4,0,7.25,.65,1.1,trim)
-for x in [-3.65,3.65]:box('Exit passage wall',x,2,-5,.55,4,10,stone)
-box('Exit passage ceiling',0,4.2,-5,6.5,.45,10,stone)
-box('Exit passage floor',0,-.04,-5,6.5,.08,10,stone)
+for x in [-3.65,3.65]:box('Exit passage wall',x,2,-2,.55,4,4,stone)
+box('Exit passage ceiling',0,4.2,-2,6.5,.45,4,stone)
+box('Exit passage floor',0,-.04,-2,6.5,.08,4,stone)
 for x in [-3.7,3.7]:
- for z in [-1,-4,-7,-10]:box('Hallway pilaster',x,2,z,.6,4,.35,trim)
+ for z in [-1,-3]:box('Hallway pilaster',x,2,z,.6,4,.35,trim)
 save('cavern_exit_portal')
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 box('Sliding stone door',0,2,0,5.9,4,.5,stone)

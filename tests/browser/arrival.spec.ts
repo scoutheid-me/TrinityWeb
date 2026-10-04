@@ -8,7 +8,7 @@ test('captured mouse, animated goblins, stone exit and town entry',async({page})
  expect(await page.evaluate(()=>window.trinity.sim.player.z)).toBeLessThan(0);
  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await expect(page.locator('#overlay')).toBeVisible();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(false);
  await page.locator('#begin').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
- await page.evaluate(()=>document.exitPointerLock());await expect(page.locator('#mouse-capture-hint')).toBeVisible();await page.locator('#mouse-capture-hint').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
+ await page.evaluate(()=>document.exitPointerLock());await expect(page.locator('#mouse-capture-hint')).toHaveCount(0);await page.locator('#game').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
  const before=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.mouse.move(850,400);await page.mouse.move(950,400);
  expect(await page.evaluate(()=>window.trinity.view.camera.alpha)).not.toBe(before);
  await page.keyboard.press('m');await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(false);
@@ -27,6 +27,15 @@ test('captured mouse, animated goblins, stone exit and town entry',async({page})
  await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=0;t.sim.player.z=150;t.view.camera.alpha=-Math.PI/2;t.view.camera.beta=1.5;});
  await expect(page.locator('#region-banner')).toContainText('Town of Beginnings');await page.waitForTimeout(700);await page.screenshot({path:'test-results/town-arrival.png'});
  await page.waitForTimeout(5500);await expect(page.locator('#region-banner')).toBeHidden();
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.journey.facts.includes('gate-town-side'))).toBe(true);
+ await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=-10;t.sim.player.z=146.6;t.view.camera.alpha=Math.PI/2-Math.atan2(.6,.8);});
+ await expect(page.locator('#journey-interact')).toContainText('Return to practice');await page.keyboard.press('e');
+ await expect.poll(()=>page.evaluate(()=>window.trinity.sim.journey.facts.includes('exit-open'))).toBe(true);
+ await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=-19.5;t.sim.player.z=134;t.view.camera.alpha=-Math.PI/2-Math.atan2(.6,.8);t.view.camera.beta=1.45;});
+ await expect.poll(()=>page.evaluate(()=>window.trinity.view.firstCamera.position.y)).toBeCloseTo(-.064,1);
+ await page.waitForTimeout(1500);await page.screenshot({path:'test-results/daylight-stairs.png'});
+ await page.keyboard.down('w');await expect.poll(()=>page.evaluate(()=>window.trinity.sim.player.z),{timeout:10000}).toBeGreaterThan(143);await page.keyboard.up('w');await expect.poll(()=>page.evaluate(()=>window.trinity.view.firstCamera.position.y)).toBeCloseTo(1.65,1);
+ await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=0;t.sim.player.z=150;});
  await page.evaluate(()=>{window.trinity.sim.player.z=169;});await expect(page.locator('#journey-interact')).toContainText('Enter Guild Hall');
  await page.keyboard.press('e');expect(await page.evaluate(()=>window.trinity.dungeon.active)).toBe(false);
  await page.evaluate(()=>{const s=window.trinity.sim;s.player.x=0;s.player.z=-10;window.trinity.view.camera.alpha=Math.PI/2;});await expect(page.locator('#journey-interact')).toContainText('Exit to Town Square');await page.waitForTimeout(200);expect(await page.evaluate(()=>window.trinity.view.scene.getTransformNodeByName('Exit to Town Square').isEnabled())).toBe(true);await page.screenshot({path:'test-results/training-exit.png'});await page.keyboard.press('e');expect(await page.evaluate(()=>window.trinity.dungeon.active)).toBe(true);expect(await page.evaluate(()=>window.trinity.sim.player.z)).toBeGreaterThan(160);await page.screenshot({path:'test-results/guild-hall.png'});expect(errors).toEqual([]);

@@ -16,3 +16,5 @@ it('defaults to captured look while preserving a saved opt-out',()=>{
  const save=defaultSave();expect(save.settings.autoMouseLook).toBe(true);
  save.settings.autoMouseLook=false;expect(migrateSave(save).settings.autoMouseLook).toBe(false);
 });
+
+it('holds returning players on the town side of the sealed gate',()=>{const p={x:exitDoor.x-1,z:exitDoor.z-1};stopAtExit(p,false,true);expect((p.x-exitDoor.x)*.6+(p.z-exitDoor.z)*.8).toBeCloseTo(.65);});

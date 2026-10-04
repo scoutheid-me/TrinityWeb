@@ -4,55 +4,55 @@
       "name": "Stillwater Hollow",
       "x": 0,
       "z": 0,
-      "radius": 11
+      "radius": 9
     },
     {
       "name": "Lantern Crossing",
       "x": 0,
       "z": 30,
-      "radius": 12
+      "radius": 9
     },
     {
       "name": "Broken Aqueduct",
       "x": 30,
       "z": 30,
-      "radius": 11
+      "radius": 9
     },
     {
       "name": "Abandoned Cache",
       "x": -30,
       "z": 30,
-      "radius": 10
+      "radius": 9
     },
     {
       "name": "Goblin Encampment",
       "x": 30,
       "z": 60,
-      "radius": 13
+      "radius": 10
     },
     {
       "name": "Echo Pool",
       "x": 0,
       "z": 60,
-      "radius": 11
+      "radius": 9
     },
     {
-      "name": "The Watcher’s Arch",
+      "name": "The Watcher\u00e2\u20ac\u2122s Arch",
       "x": -30,
       "z": 60,
-      "radius": 12
+      "radius": 9
     },
     {
       "name": "Undergate Den",
       "x": -30,
       "z": 90,
-      "radius": 14
+      "radius": 12
     },
     {
       "name": "Daylight Stair",
       "x": -30,
       "z": 120,
-      "radius": 10
+      "radius": 9
     },
     {
       "name": "Town of Beginnings",

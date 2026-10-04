@@ -140,3 +140,7 @@ See CAVERN_PROLOGUE.md for source attribution, generation commands, current pres
 `render_selection.py` renders the actual runtime hero GLBs. Original Mira portrait generation details are in CAVERN_PROLOGUE.md. Production .blend sources and used runtime derivatives are preserved; raw commercial pack archives are excluded.
 
 Town/exit meshes: regenerate with `blender --background --python Tools/Blender/build_town.py`. The door and portal share src/world/regions.ts coordinates and orientation. Do not place house footprints across the southwest exit corridor. Text faces the square (Blender +Y normal); verify sign readability in Babylon after export.
+
+### Cavern elevation convention
+
+`cavernHeight(z,x)` and `build_cavern.py::height` describe the same ground: -3 m through z=128, rising along the diagonal corridor to 0 at its centre-line z=142, then level with town. Walk collision uses this smooth ramp; visible treads sit within 10 cm. Keep actor feet, cameras, effects, markers and new props on this ground. Chamber centers are save anchors; do not move them without migration. The October 4 pass used headless Blender because no Blender MCP tools were exposed, and preserves its editable source and GLB.

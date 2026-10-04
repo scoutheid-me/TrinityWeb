@@ -1,6 +1,6 @@
 export const actionLabels = {
   forward: 'Move forward', backward: 'Move backward', left: 'Move left', right: 'Move right', sprint: 'Sprint',
-  menu: 'Personal menu', interact: 'Interact', attack: 'Basic attack', dodge: 'Dodge', parry: 'Counter', guard: 'Guard',
+  healthPotion:'Use health potion', staminaPotion:'Use stamina draught', menu: 'Personal menu', interact: 'Interact', attack: 'Basic attack', dodge: 'Dodge', parry: 'Counter', guard: 'Guard',
   lock: 'Toggle lock', switchTarget: 'Switch target', art1: 'Combat Art 1', art2: 'Combat Art 2',
   art3: 'Combat Art 3', art4: 'Combat Art 4', orbit: 'Orbit camera (hold)', reset: 'Reset encounter', pause: 'Pause', debug: 'Lab tools',
 } as const;
@@ -9,15 +9,15 @@ export type Bindings = Record<Action, [string | null, string | null]>;
 export const actions = Object.keys(actionLabels) as Action[];
 export function defaultBindings(): Bindings {
   return {forward:['KeyW',null],backward:['KeyS',null],left:['KeyA',null],right:['KeyD',null],sprint:['ShiftLeft','ShiftRight'],
-    menu:['KeyM',null],interact:['KeyE',null],attack:['Mouse0','KeyJ'],dodge:['Space',null],parry:['KeyQ',null],guard:['KeyF',null],lock:['Tab',null],switchTarget:['KeyT',null],
+    healthPotion:['KeyC',null],staminaPotion:['KeyV',null],menu:['KeyM',null],interact:['KeyE',null],attack:['Mouse0','KeyJ'],dodge:['Space',null],parry:['KeyQ',null],guard:['KeyF',null],lock:['Tab',null],switchTarget:['KeyT',null],
     art1:['Digit1',null],art2:['Digit2',null],art3:['Digit3',null],art4:['Digit4',null],orbit:['Mouse2',null],reset:['KeyR',null],pause:['Escape',null],debug:['Backquote',null]};
 }
 export function supportedBinding(code: unknown): code is string {
-  return typeof code === 'string' && /^(Key[A-Z]|Digit[0-9]|Numpad[0-9]|Numpad(Add|Subtract|Multiply|Divide|Decimal|Enter)|Arrow(Up|Down|Left|Right)|Shift(Left|Right)|Space|Tab|Escape|Backquote|Minus|Equal|BracketLeft|BracketRight|Backslash|Semicolon|Quote|Comma|Period|Slash|Enter|Backspace|Insert|Delete|Home|End|PageUp|PageDown|Mouse[0-2])$/.test(code);
+  return typeof code === 'string' && /^(Key[A-Z]|Digit[0-9]|Numpad[0-9]|Numpad(Add|Subtract|Multiply|Divide|Decimal|Enter)|Arrow(Up|Down|Left|Right)|Shift(Left|Right)|Space|Tab|Escape|Backquote|Minus|Equal|BracketLeft|BracketRight|Backslash|Semicolon|Quote|Comma|Period|Slash|Enter|Backspace|Insert|Delete|Home|End|PageUp|PageDown|Mouse[0-4])$/.test(code);
 }
 export function bindingLabel(code: string | null): string {
   if(!code)return 'Unbound';
-  const names:Record<string,string>={Mouse0:'LMB',Mouse1:'MMB',Mouse2:'RMB',Space:'Space',Escape:'Esc',Backquote:'`',ShiftLeft:'Left Shift',ShiftRight:'Right Shift',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'};
+  const names:Record<string,string>={Mouse0:'LMB',Mouse1:'MMB',Mouse2:'RMB',Mouse3:'Mouse Back',Mouse4:'Mouse Forward',Space:'Space',Escape:'Esc',Backquote:'`',ShiftLeft:'Left Shift',ShiftRight:'Right Shift',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'};
   return names[code]??code.replace(/^Key|^Digit/,'').replace(/^Numpad/,'Num ');
 }
 export function bindingText(bindings:Bindings,action:Action){return bindings[action].filter(Boolean).map(bindingLabel).join(' / ')||'Unbound';}
@@ -34,7 +34,7 @@ export function validateBindings(raw:unknown):Bindings {
   const legacyInteract=values.interact===undefined||JSON.stringify(values.interact)==='[null,null]'||JSON.stringify(values.interact)==='["KeyG",null]';
   if(legacyInteract&&JSON.stringify(values.switchTarget)==='["KeyE",null]'&&!Object.values(values).flat().includes('KeyT')){values.interact=['KeyE',null];values.switchTarget=['KeyT',null];}
   const result=defaultBindings(),used=new Set<string>();
-  for(const action of actions){const pair=values[action]??(['interact','menu'].includes(action)?[Object.values(values).flat().includes(defaultBindings()[action][0])?null:defaultBindings()[action][0],null]:undefined);if(!Array.isArray(pair)||pair.length!==2)return defaultBindings();
+  for(const action of actions){const pair=values[action]??(['interact','menu','healthPotion','staminaPotion'].includes(action)?[Object.values(values).flat().includes(defaultBindings()[action][0])?null:defaultBindings()[action][0],null]:undefined);if(!Array.isArray(pair)||pair.length!==2)return defaultBindings();
     for(const code of pair){if(code===null)continue;if(!supportedBinding(code)||used.has(code)||(code==='Escape'&&action!=='pause'))return defaultBindings();used.add(code);}
     result[action]=[pair[0],pair[1]];
   }
