@@ -10,3 +10,5 @@ Keep them as design references when improving Trinity's GUI/HUD. They are not Tr
 Additional references supplied September 20, 2026 are archived as sao-components-current-reference.png, sao-integrated-status-reference.png, sao-components-additional-reference.png, sao-floating-menu-reference.png, sao-equipment-menu-reference.png and sao-floating-menu-reference-alternate.png. Some repeat earlier images; retain the original attachments as supplied. The status reference informs the stepped green HP ribbon and attached cyan SP/gold stamina strips. The floating-menu references inform the character silhouette, equipment sockets, circular icon rail, and branching selection rows.
 
 September 20 character/branch hierarchy reference: sao-character-branches-reference.png (user clipboard attachment 60511511-7cdb-45e5-a2a8-e3f6101e6214). Preserved unchanged for design reference only.
+
+October 3: town-location-banner.png preserves the supplied location-entry reference. Runtime uses an original cyan-framed region name banner with boundary-triggered slide/fade animation; the reference image is not shipped as a game texture.

@@ -31,3 +31,8 @@
 #ui:has(#journey-dialogue:not([hidden])) #enemy-hud,#ui:has(#journey-dialogue:not([hidden])) #damage-layer,#ui:has(#journey-dialogue:not([hidden])) #defense-cue{visibility:hidden}
 /* Focus-loss and explicit settings take precedence over live story panes. */
 #ui.game-paused #journey-modal,#ui.game-paused #journey-dialogue,#ui.game-paused #journey-interact{visibility:hidden}
+#region-banner{position:absolute;top:18%;left:50%;transform:translateX(-50%);width:min(640px,85vw);padding:18px 34px;text-align:center;pointer-events:none;color:#effdff;background:linear-gradient(115deg,#102d3ddd,#1d3c48ba);border:1px solid #96e7e7;box-shadow:0 0 0 4px #1e576566,inset 0 0 25px #69d6db30,0 5px 30px #0005;clip-path:polygon(3% 0,97% 0,100% 22%,100% 78%,97% 100%,3% 100%,0 78%,0 22%);animation:region-arrival 5.2s both;z-index:20}
+#region-banner small{display:block;font-size:11px;letter-spacing:3px;color:#a9d9de}#region-banner strong{display:block;font-size:clamp(22px,3vw,34px);font-weight:500;letter-spacing:1px;margin:7px 0}#region-banner span{font-size:10px;color:#7acece;letter-spacing:3px}
+@keyframes region-arrival{0%{opacity:0;transform:translate(-58%,0)}12%,78%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-42%,0)}}
+@media(prefers-reduced-motion:reduce){#region-banner{animation-name:region-arrival-reduced}@keyframes region-arrival-reduced{0%,100%{opacity:0}12%,78%{opacity:1}}}
+#mouse-capture-hint{position:absolute;right:24px;bottom:120px;z-index:45;padding:12px 18px;border:1px solid #c1dfdf;background:#e9f2efed;color:#294a51;pointer-events:auto;box-shadow:0 3px 18px #0004}

@@ -1,63 +1,51 @@
-**Play the latest Trinity:** https://scoutheid-me.github.io/TrinityWeb/
+**[Play the latest Trinity](https://scoutheid-me.github.io/TrinityWeb/)**
 
-Updates publish automatically after tests pass on `main`. See [hosting instructions](docs/HOSTING.md).
+Updates publish automatically after tests pass on main. See [hosting instructions](docs/HOSTING.md).
 
-# TRINITY — The Aether Hall
+# Trinity — Beneath the First Dawn
 
-A real-time third-person browser action RPG prototype. This first Combat Lab focuses on quick basic strikes and timed Arts, SP, Combat Arts, dodge/parry, and enemy Break. It is a playable development milestone, not the finished RPG.
+An original single-player anime action RPG prototype. Create a character and explore the connected under-town cavern, fight goblins and their captain, discover treasure, and reach the Town of Beginnings. Accepting the optional exit quest awards a choice of introductory Skill Book. Formal combat lessons and Linear remain in the Guild Hall's separate Training Room.
+
+## Play and controls
+
+The mouse is captured during play. Move it to look without holding a button. **M** opens the live personal menu and releases the cursor. **Esc** releases the mouse and opens settings where allowed; click the scene to recapture if the browser requires it. Capture can be disabled in Controls. Lock-on still faces the target unless disabled in settings.
+
+| Input | Action |
+| --- | --- |
+| WASD / Shift | Move / sprint |
+| E | Interact with nearby chest, door, rack, orb or NPC |
+| Left mouse or J | Untimed basic attack; generates SP |
+| Hold/release 1–4 | Charge and release an equipped Art |
+| Q / F | Counter / hold Guard |
+| Space + movement | Dodge |
+| Tab / T | Lock / switch or clear a lone target |
+| M | Live personal menu, inventory and Arts |
+| Esc | Settings outside combat; release cursor |
+| R | Retry after defeat (development builds also reset) |
+
+All gameplay bindings are editable in paused settings. New characters receive Focused Strike on joining. Perfect Art timing gives full effect, Good gives 60%, and Miss spends SP without a strike. Perfect Counter negates damage, returns weapon-scaled damage and grants SP/Break; failed Counter commitment increases damage taken. Greatsword leads damage and Break, rapier prioritizes fast single-target combat, and sword is versatile.
+
+The stone door beyond the captain leads into a small town square. Interact with the Guild Hall entrance for training. The Town Square doorway at the back of the Training Room returns you outside using E. The wider town and eastern watch are not yet implemented; the intended 15–20 minute route still needs human pacing tests.
 
 ## Run locally
 
-Requires Node.js 24 LTS (the installed runtime used for development).
+With Node.js and npm installed:
 
 ```powershell
 npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5173 and choose **Enter the hall**. Use `?webgl` to explicitly test the WebGL fallback. No account or backend is required.
+Open http://127.0.0.1:5173. Add ?webgl to test the WebGL fallback. No account or backend is required. Character progression, controls, treasure, quest choice and journey position save locally in the browser. Export/import your save in settings when moving between localhost and the permanent site.
 
 ```powershell
 npm test
 npm run test:browser
-npm run build
-npm run test:production
-npm run preview
+npm run build:pages
+npm run test:pages
 ```
 
-Browser tests use the locally installed Microsoft Edge channel. The development-only `window.trinity` interface lets the test suite arrange repeatable encounters, inspect actual simulation state, and measure the real renderer. It is omitted from production builds.
-
-## Controls
-
-| Input | Action |
-| --- | --- |
-| WASD | Camera-relative movement |
-| Shift | Sprint; consumes stamina |
-| Tap left mouse or J | Untimed low-damage basic attack |
-| 1 | Hold to charge Crescent Break; release when the squares meet |
-| 2–4 | Remaining Art slots; initially empty |
-| Space + movement | Directional dodge; forward without movement input |
-| Q | Parry |
-| Hold F | Guard |
-| Tab | Toggle enemy lock |
-| E | Switch lock target |
-| Hold right mouse and drag | Orbit camera |
-| Mouse wheel | Camera distance |
-| R | Reset encounter, including after death |
-| Escape | Pause/resume |
-| Backtick | Developer panel |
-
-Basic attacks commit on press, deal 5 damage at starting Strength, and earn 10 SP per landed hit (cap 100). Holding or releasing does not affect damage or SP. Crescent Break costs 30 SP. Hold its slot button and release on the bright note: Perfect gives full damage and Break, Good gives 60%, and a Miss fails completely with no strike (SP is spent). Its cyan sector shows the actual attack area and tracks the released lunge. Gold attacks can be parried; red sweeps must be dodged. Break creates a 3.4-second opening with ×1.6 damage.
-
-Learned Arts, challenge completions, mastery choice, settings, attributes, four-slot loadout, and aggregate combat counters persist in IndexedDB. Encounter HP/SP/positions and developer cheats intentionally reset each session.
-
-Choose **Controls** from the title/pause screen or the upper-right HUD to remap keyboard and mouse inputs. Every action has primary/alternate slots. Conflicts are reported; clear the old binding before reusing a key. Changes save automatically, and **Restore defaults** resets the profile. Escape always remains a pause/cancel fallback. The A/D strafe direction has been flipped from the initial prototype to correct the camera handedness.
-
-Timing uses defensive diamonds/rings and squares for Art taps, with original musical lead-ins ending on the sweet spot. Musical timing cues can be disabled in Lab tools. A hit during a failed parry deals **50% extra damage**. A successful **Perfect Parry** blocks all damage, gives **14 SP** (capped at 100), and builds enemy Break.
-
-The reviewed roadmap for skills, mastery, musical combat, and animation is in [PROTOTYPE_PLAN.md](docs/PROTOTYPE_PLAN.md). The first earned-Art and mastery slice is available through the Guild board.
-
-Choose **Combat tutorial** on the title/pause screen or HUD for five replayable lessons: basics/SP, dodge, Perfect Parry, Arts, and Break. Each lesson requires an actual combat outcome. Retry restores the practice setup. Exit returns to a fresh encounter. Enemy build-up notes rise toward a final cue 80 ms before parryable hits or 150 ms before sweeps; visual warnings remain available with sound muted.
+Local browser tests use Microsoft Edge; CI uses Chromium. Development-only window.trinity allows repeatable simulation checks and is omitted from the hosted playtest build. See [cavern implementation and validation limits](docs/CAVERN_PROLOGUE.md).
 
 ## Assets and scope
 

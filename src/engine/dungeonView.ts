@@ -1,14 +1,19 @@
+import {exitDoor} from '../world/regions';
 import {publicUrl} from '../publicUrl';
 import {Color3,Color4,DynamicTexture,ImportMeshAsync,MeshBuilder,PointLight,StandardMaterial,TransformNode,Vector3,type Mesh} from '@babylonjs/core';
 import type {LabScene} from './scene';
 import {cavernAreas,chestAreas} from '../world/cavern';
 export class DungeonView {
- root:TransformNode;hall:TransformNode[]=[];markers=new Map<string,Mesh>();chests=new Map<number,TransformNode>();npc!:TransformNode;gate!:Mesh;lights:PointLight[]=[];town!:TransformNode;
+ door!:TransformNode;private doorLift=0;root:TransformNode;hall:TransformNode[]=[];markers=new Map<string,Mesh>();chests=new Map<number,TransformNode>();npc!:TransformNode;gate!:Mesh;lights:PointLight[]=[];town!:TransformNode;
  constructor(private view:LabScene){this.root=new TransformNode('Connected cavern',view.scene);this.root.setEnabled(false);}
  setHallNodes(nodes:TransformNode[]){this.hall=nodes;}
  async init(){
-  const asset=async(url:string)=>{const root=new TransformNode(url,this.view.scene);root.parent=this.root;const m=await ImportMeshAsync(publicUrl(url),this.view.scene);for(const n of m.meshes){if(!n.parent)n.parent=root;n.receiveShadows=true;}this.view.loadedAssets.push(url);return root;};
+  const asset=async(url:string)=>{const root=new TransformNode(url,this.view.scene);root.parent=this.root;const m=await ImportMeshAsync(publicUrl(url),this.view.scene);for(const n of m.meshes){if(!n.parent)n.parent=root;n.receiveShadows=true;}this.view.cast(root);this.view.loadedAssets.push(url);return root;};
   await asset('/assets/environments/connected_cavern.glb');this.town=await asset('/assets/environments/beginnings_gate_square.glb');this.town.position.set(0,0,160);
+  const portal=await asset('/assets/environments/cavern_exit_portal.glb');portal.position.set(exitDoor.x,0,exitDoor.z);portal.rotation.y=exitDoor.yaw;this.door=await asset('/assets/environments/cavern_exit_door.glb');this.door.position.copyFrom(portal.position);this.door.rotation.y=portal.rotation.y;
+  const sign=MeshBuilder.CreatePlane('Guild Hall sign',{width:4.7,height:.7},this.view.scene);sign.parent=this.root;sign.position.set(0,5.6,170.5);sign.rotation.y=Math.PI;const signTex=new DynamicTexture('Guild Hall lettering',{width:1024,height:160},this.view.scene,false);signTex.drawText('ADVENTURERS GUILD',null,105,'66px serif','#ead9a5','#392e25',true);const signMat=this.view.material('Guild lettering','#ffffff',.2);signMat.diffuseTexture=signTex;signMat.backFaceCulling=false;sign.material=signMat;
+  const hallDoor=this.door.clone('Exit to Town Square',null)!;hallDoor.parent=null;hallDoor.setEnabled(true);hallDoor.position.set(0,0,-12.6);hallDoor.rotation.y=Math.PI;hallDoor.scaling.setAll(.7);this.hall.push(hallDoor);
+  const exitSign=MeshBuilder.CreatePlane('Town Square exit label',{width:2.7,height:.5},this.view.scene);exitSign.parent=null;this.hall.push(exitSign);exitSign.position.set(0,1.9,-12.25);exitSign.billboardMode=7;const exitTex=new DynamicTexture('Town Square exit lettering',{width:512,height:96},this.view.scene,false);exitTex.drawText('TOWN SQUARE',null,64,'44px serif','#eee4bc','#253944',true);const exitMat=this.view.material('Exit lettering','#ffffff',.5);exitMat.diffuseTexture=exitTex;exitMat.backFaceCulling=false;exitSign.material=exitMat;
   const chest=await asset('/assets/props/dungeon_chest.glb');chest.setEnabled(false);
   for(const i of chestAreas){const a=cavernAreas[i],copy=chest.clone('cavern-chest-'+i,this.root)!;copy.setEnabled(true);copy.position.set(a.x-5,0,a.z+3);this.chests.set(i,copy);}
   const crate=await asset('/assets/props/goblin_crate.glb');crate.setEnabled(false);
@@ -24,9 +29,10 @@ export class DungeonView {
  }
  show(){this.root.setEnabled(true);for(const n of this.hall)n.setEnabled(false);for(const l of this.lights)l.setEnabled(true);}
  hide(){this.root.setEnabled(false);for(const n of this.hall)n.setEnabled(true);for(const l of this.lights)l.setEnabled(false);this.view.scene.clearColor=new Color4(.37,.57,.67,1);this.view.scene.fogColor=new Color3(.37,.57,.67);this.view.scene.fogDensity=.011;this.view.scene.getLightByName('sky')!.intensity=.8;this.view.scene.getLightByName('sun')!.intensity=1.65;}
- update(p:{x:number;z:number},room:number,looted:string[],boss:boolean){
+ update(p:{x:number;z:number},room:number,looted:string[],boss:boolean,doorOpen=false,dt=16){
+  this.doorLift=Math.min(4.5,Math.max(0,this.doorLift+(doorOpen?1:-1)*dt*.005));this.door.position.y=this.doorLift;
   this.gate.setEnabled(!boss);for(const [i,c] of this.chests)c.rotation.x=looted.includes('chest-'+i)?.12:0;
-  const town=room===9;this.view.scene.clearColor=town?new Color4(.47,.64,.73,1):new Color4(.018,.031,.039,1);this.view.scene.fogColor=town?new Color3(.47,.64,.73):new Color3(.018,.031,.039);this.view.scene.fogDensity=town?.011:.035;this.view.scene.getLightByName('sky')!.intensity=town?.8:.2;this.view.scene.getLightByName('sun')!.intensity=town?1.65:.1;this.view.scene.imageProcessingConfiguration.exposure=1.05;
+  const town=p.z>148&&Math.hypot(p.x,p.z-160)<18;this.view.scene.clearColor=town?new Color4(.47,.64,.73,1):new Color4(.018,.031,.039,1);this.view.scene.fogColor=town?new Color3(.47,.64,.73):new Color3(.018,.031,.039);this.view.scene.fogDensity=town?.011:.035;this.view.scene.getLightByName('sky')!.intensity=town?.8:.2;this.view.scene.getLightByName('sun')!.intensity=town?1.65:.1;this.view.scene.imageProcessingConfiguration.exposure=1.05;
   this.lights[0].position.set(p.x+.5,2.5,p.z-1);const near=[...cavernAreas].sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));for(let i=1;i<3;i++)this.lights[i].position.set(near[i-1].x,3.5,near[i-1].z+2);
  }
 }

@@ -21,27 +21,77 @@ tex=mat.node_tree.nodes.new('ShaderNodeTexImage');tex.image=bpy.data.images.load
 # The source uses Y up. One parent conversion fixes mesh, skeleton and every animation together.
 root=bpy.data.objects.new('goblin_export_root',None);bpy.context.collection.objects.link(root)
 rig.parent=root;root.rotation_euler.z=math.pi
-# Author conservative FK locomotion on this mesh's own bind rig. The supplied
-# locomotion uses incompatible joint offsets; copying its translations tears this mesh.
+# Retarget joint directions, preserving the destination bind offsets and unit scale.
+# Copying source joint translations distorts the War Camp mesh.
 from mathutils import Quaternion
 root.rotation_euler.z=0
 actions=[]
-for clip,frames in [('idle',60),('walk',32)]:
+base_poses={}
+for clip,source_path in [('idle','Idles/A_POLY_GBL_Idle_Standing_Neut.fbx'),('walk','Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx')]:
+ before=set(bpy.data.objects)
+ bpy.ops.import_scene.fbx(filepath=str(ANIM/source_path))
+ imported=set(bpy.data.objects)-before
+ source=next(o for o in imported if o.type=='ARMATURE')
+ source_action=source.animation_data.action
+ start,end=map(int,source_action.frame_range)
+ print('RETARGET',clip,start,end,[b.name for b in source.pose.bones])
+ samples=[]
+ for frame in range(start,end+1):
+  bpy.context.scene.frame_set(frame)
+  samples.append({b.name:b.matrix.translation.copy() for b in source.pose.bones})
  rig.animation_data_clear();rig.animation_data_create();action=bpy.data.actions.new(clip);rig.animation_data.action=action
- for frame in range(1,frames+1):
-  phase=(frame-1)/(frames-1)*math.tau
-  for bone in rig.pose.bones:
-   bone.matrix_basis=Matrix.Identity(4);bone.rotation_mode='QUATERNION'
+ for frame,sample in enumerate(samples,1):
+  for bone in rig.pose.bones:bone.matrix_basis=Matrix.Identity(4);bone.rotation_mode='QUATERNION'
   bpy.context.view_layer.update()
-  for side in ['R','L']:
-   shoulder=rig.pose.bones.get('Shoulder_'+side)
-   sign=1 if shoulder.bone.head_local.x>0 else -1
-   q=shoulder.bone.matrix_local.to_quaternion();shoulder.rotation_quaternion=q.inverted() @ Quaternion((0,0,1),-sign*1.12) @ q
+  for bone in rig.pose.bones:
+   children=[c for c in bone.children if c.name in sample and not c.name.startswith('IK')]
+   if bone.name in sample and children:
+    child=children[0]
+    rest=child.bone.head_local-bone.bone.head_local
+    posed=sample[child.name]-sample[bone.name]
+    if rest.length>.01 and posed.length>.01:
+     desired=rest.rotation_difference(posed) @ bone.bone.matrix_local.to_quaternion()
+     parent_pose=bone.parent.matrix.to_quaternion() if bone.parent else Quaternion()
+     parent_rest=bone.parent.bone.matrix_local.to_quaternion() if bone.parent else Quaternion()
+     local_rest=parent_rest.inverted() @ bone.bone.matrix_local.to_quaternion()
+     bone.rotation_quaternion=local_rest.inverted() @ parent_pose.inverted() @ desired
+     bpy.context.view_layer.update()
+   bone.location=(0,0,0);bone.scale=(1,1,1)
+   bone.keyframe_insert('location',frame=frame);bone.keyframe_insert('rotation_quaternion',frame=frame);bone.keyframe_insert('scale',frame=frame)
+  if frame==1:base_poses[clip]={b.name:b.rotation_quaternion.copy() for b in rig.pose.bones}
+ action.use_fake_user=True;actions.append(action)
+ for o in imported:bpy.data.objects.remove(o,do_unlink=True)
+# Weapon attacks are authored here; the supplied pack contains locomotion only.
+# Frame 24 is contact. Runtime maps each authoritative attack deadline to this frame.
+for clip in ['attack_chop','attack_sweep']:
+ rig.animation_data_clear();rig.animation_data_create();action=bpy.data.actions.new(clip);rig.animation_data.action=action
+ for frame in range(1,49):
+  t=(frame-1)/47
+  # Slow anticipation, quick strike, controlled recovery.
+  if frame<=19:wind=(frame-1)/18;strike=0;recover=0
+  elif frame<=24:wind=1;strike=(frame-19)/5;recover=0
+  elif frame<=27:wind=1;strike=1;recover=0
+  else:wind=1;strike=1;recover=(frame-27)/21
+  strength=1-recover
+  for bone in rig.pose.bones:
+   bone.location=(0,0,0);bone.scale=(1,1,1);bone.rotation_quaternion=base_poses['idle'][bone.name].copy()
+  bpy.context.view_layer.update()
+  for name,child_name in [('Shoulder_R','Elbow_R'),('Elbow_R','Hand_R')]:
+   bone=rig.pose.bones[name];child=rig.pose.bones[child_name]
+   current=(child.matrix.translation-bone.matrix.translation).normalized()
+   if clip=='attack_chop':
+    wind_dir=Vector((-.15,.95,-.2) if name=='Shoulder_R' else (0,.8,.6))
+    hit_dir=Vector((-.1,-.35,1) if name=='Shoulder_R' else (0,-.45,1))
+   else:
+    wind_dir=Vector((-1,.1,-.2) if name=='Shoulder_R' else (-.5,0,.8))
+    hit_dir=Vector((.5,-.1,.8) if name=='Shoulder_R' else (.8,-.15,.5))
+   target=current.lerp(wind_dir.normalized(),wind).lerp(hit_dir.normalized(),strike).lerp(current,recover).normalized()
+   desired=current.rotation_difference(target) @ bone.matrix.to_quaternion()
+   parent_pose=bone.parent.matrix.to_quaternion();parent_rest=bone.parent.bone.matrix_local.to_quaternion()
+   local_rest=parent_rest.inverted() @ bone.bone.matrix_local.to_quaternion()
+   bone.rotation_quaternion=local_rest.inverted() @ parent_pose.inverted() @ desired
    bpy.context.view_layer.update()
   for bone in rig.pose.bones:
-   if clip=='walk' and bone.name in ['UpperLeg_R','UpperLeg_L']:
-    bone.rotation_quaternion=Quaternion((1,0,0),math.sin(phase)*.3*(1 if bone.name.endswith('R') else -1))
-   if bone.name=='Hips':bone.location.y=math.sin(phase)*(.8 if clip=='idle' else 1.5)
    bone.keyframe_insert('location',frame=frame);bone.keyframe_insert('rotation_quaternion',frame=frame);bone.keyframe_insert('scale',frame=frame)
  action.use_fake_user=True;actions.append(action)
 rig.animation_data_clear();rig.animation_data_create()

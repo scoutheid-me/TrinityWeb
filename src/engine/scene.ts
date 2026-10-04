@@ -20,7 +20,7 @@ import { balance, chargeTime } from '../data/balance';
 import type { CombatSimulation, Enemy, CombatEvent } from '../combat/simulation';
 
 export type Quality = 'low' | 'medium' | 'high';
-type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; groups?:AnimationGroup[];skinned?:boolean; bodyMotion?:{clip:BodyClip;start:number;contact:number;recovery:number}; };
+type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; groups?:AnimationGroup[];animationName?:string;attackMotion?:{name:string;startAt:number;contactAt:number};skinned?:boolean; bodyMotion?:{clip:BodyClip;start:number;contact:number;recovery:number}; };
 export class LabScene {
   hallNodes:TransformNode[]=[];goblinContainer:AssetContainer|null=null;captainContainer:AssetContainer|null=null;goblinBlade:TransformNode|null=null;sparkTexture:Texture|null=null;
   reducedMotion=false;reducedFlash=false;
@@ -157,7 +157,7 @@ export class LabScene {
     }
     return container;
   }
-  private cast(node: TransformNode) { for (const mesh of node.getChildMeshes()) this.shadow.addShadowCaster(mesh); }
+  cast(node: TransformNode) { for (const mesh of node.getChildMeshes()) this.shadow.addShadowCaster(mesh); }
   private actor(model: TransformNode, name: string, enemy: boolean): Actor {
     const root = new TransformNode(name, this.scene); model.parent = root; model.setEnabled(true);
     const nodes = model.getDescendants().filter(n => n instanceof TransformNode) as TransformNode[];
@@ -195,12 +195,19 @@ export class LabScene {
       const actualSpeed=Math.min(3,Math.hypot(enemy.x-actor.root.position.x,enemy.z-actor.root.position.z)/Math.max(.001,dt));
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,actualSpeed,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       const phase=enemyPhase(enemy,sim.now,300);
-      if(actor.groups){const clip=actor.groups.find(g=>g.name.endsWith(actualSpeed>.2?'walk':'idle'))??actor.groups[0];for(const g of actor.groups){if(!g.isStarted){g.start(true);g.pause();}if(g!==clip)g.setWeightForAllAnimatables(0);else{g.setWeightForAllAnimatables(1);g.goToFrame(g.from+(sim.now*.03)%(Math.max(1,g.to-g.from)));}}
-       if(phase&&enemy.pattern){const shoulder=actor.root.getDescendants().find(n=>n.name.endsWith('Shoulder_R')) as TransformNode|undefined;const elbow=actor.root.getDescendants().find(n=>n.name.endsWith('Elbow_R')) as TransformNode|undefined;const motion=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,1);if(shoulder?.rotationQuaternion)shoulder.rotationQuaternion=shoulder.rotationQuaternion.multiply(Quaternion.FromEulerAngles(motion.pitch*.65,motion.yaw*.65,0));if(elbow?.rotationQuaternion)elbow.rotationQuaternion=elbow.rotationQuaternion.multiply(Quaternion.FromEulerAngles(0,0,-.6));}}
+      if(actor.groups){
+       if(phase&&enemy.pattern)actor.attackMotion={name:enemy.pattern.motion==='sweep'?'attack_sweep':'attack_chop',startAt:phase.startAt,contactAt:phase.contactAt};
+       const attack=actor.attackMotion&&sim.now<=actor.attackMotion.contactAt+300&&enemy.state!=='Broken'&&enemy.hp>0?actor.attackMotion:null;
+       const name=attack?attack.name:(actualSpeed>.2?'walk':'idle');
+       const clip=actor.groups.find(g=>g.name.endsWith(name))??actor.groups[0];
+       const frame=attack?(sim.now<=attack.contactAt?1+23*Math.max(0,(sim.now-attack.startAt)/Math.max(1,attack.contactAt-attack.startAt)):24+24*Math.min(1,(sim.now-attack.contactAt)/300)):clip.from+((name==='walk'?actor.phase*8:sim.now*.03))%Math.max(1,clip.to-clip.from);
+       if(actor.animationName!==name){for(const g of actor.groups)g.stop();clip.start(true);clip.pause();actor.animationName=name;}
+       clip.goToFrame(attack?clip.from+(clip.to-clip.from)*Math.max(0,Math.min(1,(frame-1)/47)):frame);
+      }
 
       if(phase&&enemy.pattern)actor.bodyMotion={clip:enemy.species==='boar'?(enemy.pattern.kind==='basic'?'boar_jab':'boar_sweep'):'sentinel',start:phase.startAt,contact:phase.contactAt,recovery:enemy.pattern.recovery+220};
       const body=enemy.state==='Broken'?bodyPose('broken',1-(enemy.until-sim.now)/balance.enemy.stagger):actor.bodyMotion?bodyPose(actor.bodyMotion.clip,bodyPhase(sim.now,actor.bodyMotion.start,actor.bodyMotion.contact,actor.bodyMotion.recovery)):bodyPose('hit',1);
-      if(enemy.hp>0){actor.root.rotation.x=body.pitch;actor.root.rotation.z=body.roll;actor.root.position.y+=body.height;}
+      if(enemy.hp>0&&!actor.skinned){actor.root.rotation.x=body.pitch;actor.root.rotation.z=body.roll;actor.root.position.y+=body.height;}
       if(enemy.species!=='boar'&&phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
       else if(actor.rightArm)actor.rightArm.rotation.y=0;
       if (enemy.flashUntil>sim.now) actor.root.position.y += .04*Math.sin(sim.now*.1);

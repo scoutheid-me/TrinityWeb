@@ -4,10 +4,18 @@ import type {LabScene} from '../engine/scene';
 import {actions,defaultBindings,movementIntent,type Action} from './bindings';
 export class GameInput {
   private lookAt=performance.now();
+  autoMouseLook=true;private requestingCapture=false;private captureHint=document.createElement("button");
+  get captured(){return document.pointerLockElement===this.view.canvas;}
+  get canCapture(){return this.enabled&&!this.suspended&&!document.querySelector('#debug:not([hidden]),#ui.personal-menu-open,#overlay:not([hidden]),#journey-modal:not([hidden]),#journey-dialogue:not([hidden]),#weapon-rack:not([hidden]),#training-orb:not([hidden]),#guild-invitation:not([hidden]),#tutorial:not([hidden])');}
+  requestCapture(){if(!this.autoMouseLook||!this.canCapture||this.captured||this.requestingCapture)return;this.requestingCapture=true;try{Promise.resolve(this.view.canvas.requestPointerLock()).catch(()=>{}).finally(()=>this.requestingCapture=false);}catch{this.requestingCapture=false;}}
+  syncCapture(){this.captureHint.hidden=!this.autoMouseLook||!this.canCapture||this.captured;if(this.captured&&(!this.autoMouseLook||!this.canCapture))document.exitPointerLock();}
   retry:(()=>void)|null=null;
   keys=new Set<string>(); sensitivity=1; enabled=false; suspended=false; dragging=false; pointerX=0; pointerY=0;
   bindings=defaultBindings();
   constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void,private interact:()=>void=()=>{},private menu:()=>void=()=>{}){
+    this.captureHint.id='mouse-capture-hint';this.captureHint.textContent='Click to resume mouse look';this.captureHint.hidden=true;this.captureHint.onclick=()=>this.requestCapture();document.querySelector('#ui')!.append(this.captureHint);
+    document.addEventListener('pointerlockerror',()=>{this.requestingCapture=false;this.syncCapture();});
+    window.addEventListener('focus',()=>{this.requestingCapture=false;});
     window.addEventListener('keydown',e=>{
       if(this.suspended)return;
       if(e.code==='Escape'){e.preventDefault();if(!e.repeat)this.togglePause();return;}
@@ -17,9 +25,11 @@ export class GameInput {
       const action=this.actionFor(e.code);if(!action||e.ctrlKey||e.altKey||e.metaKey)return;
       e.preventDefault();if(e.repeat)return;this.down(e.code);
     });
+    window.addEventListener('click',()=>this.requestCapture());
+    document.addEventListener('pointerlockchange',()=>{if(!this.captured)this.clear();});
     window.addEventListener('keyup',e=>this.up(e.code));
     view.canvas.addEventListener('pointerdown',e=>{
-      if(!this.enabled||this.suspended)return;e.preventDefault();view.canvas.focus();
+      if(!this.enabled||this.suspended)return;e.preventDefault();view.canvas.focus();this.requestCapture();
       this.pointerX=e.clientX;this.pointerY=e.clientY;this.down(`Mouse${e.button}`);
     });
     // A live personal window accepts UI clicks while camera drag remains available.
@@ -31,19 +41,19 @@ export class GameInput {
     window.addEventListener('contextmenu',e=>{if(this.view.firstPerson&&(e.target as HTMLElement).closest('#ui'))e.preventDefault();});
     window.addEventListener('pointerup',e=>this.up(`Mouse${e.button}`));
     window.addEventListener('pointermove',e=>{
-      const dx=e.clientX-this.pointerX,dy=e.clientY-this.pointerY;this.pointerX=e.clientX;this.pointerY=e.clientY;
-      if(!this.enabled||this.suspended||!this.held('orbit')||this.sim.autoFaceTarget&&this.sim.target)return;
+      const dx=this.captured?e.movementX:e.clientX-this.pointerX,dy=this.captured?e.movementY:e.clientY-this.pointerY;this.pointerX=e.clientX;this.pointerY=e.clientY;
+      if(!this.enabled||this.suspended||(!this.captured&&!this.held('orbit'))||this.sim.autoFaceTarget&&this.sim.target)return;
       this.view.camera.alpha+=dx*.004*this.sensitivity;this.view.camera.beta=Math.max(this.view.firstPerson?.3:.4,Math.min(this.view.firstPerson?2.8:1.4,this.view.camera.beta-dy*.003*this.sensitivity));
     });
     view.canvas.addEventListener('contextmenu',e=>e.preventDefault());
     view.canvas.addEventListener('wheel',e=>{e.preventDefault();if(this.enabled&&!this.suspended)view.cameraDistance=Math.max(3.5,Math.min(11,view.cameraDistance+e.deltaY*.005));},{passive:false});
-    window.addEventListener('blur',()=>this.clear());
+    window.addEventListener('blur',()=>{this.requestingCapture=false;this.clear();if(this.captured)document.exitPointerLock();});
   }
   actionFor(code:string):Action|undefined{return actions.find(action=>this.bindings[action].includes(code));}
   held(action:Action){return this.bindings[action].some(code=>code!==null&&this.keys.has(code));}
   private down(code:string){
     if(this.suspended)return;const action=this.actionFor(code);if(!action)return;if(playtestBuild&&(action==='debug'||action==='reset'&&this.sim.player.hp>0))return;
-    if(action==='menu'){this.menu();return;}if(action==='pause'){this.togglePause();return;}if(action==='debug'){this.toggleDebug();return;}
+    if(action==='menu'){this.menu();this.syncCapture();this.requestCapture();return;}if(action==='pause'){this.togglePause();return;}if(action==='debug'){this.toggleDebug();return;}
     if(!this.enabled)return;this.sync();this.unlock();const already=this.held(action);this.keys.add(code);this.updateMovement();if(already)return;
     if(action==='interact')this.interact();
     if(action==='attack')this.sim.pressAttack();if(action==='dodge')this.sim.dodge();if(action==='parry')this.sim.parry();

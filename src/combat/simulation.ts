@@ -1,3 +1,4 @@
+import {stopAtExit} from '../world/regions';
 import {projectToCavern} from '../world/cavern';
 import {freshJourney} from '../world/journey';
 import {creatureFacing,angleDelta,turnToward,rearMultiplier} from './facing';
@@ -166,7 +167,7 @@ export class CombatSimulation {
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
     this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { source:phase==='basic'?'basic':phase.startsWith('counter:')?'counter':'art',artId:phase.startsWith('counter:')?undefined:this.art?.definition.id,amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1,breakAmount:enemy.hp>0?breakDamage:0 });
     this.hitStopUntil = this.now + balance.hitStop;
-    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='boar'?'Boar defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
+    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='boar'?'Boar defeated':enemy.species==='goblin'?'Goblin defeated':enemy.species==='captain'?'Goblin captain defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
     else this.applyBreak(enemy, breakDamage);
     return true;
   }
@@ -272,7 +273,7 @@ export class CombatSimulation {
     this.player.x += this.player.vx * dt; this.player.z += this.player.vz * dt;
     this.bound(this.player);
   }
-  private bound(point: Point) { if(this.journey.active){if(!this.journey.facts.includes('boss')&&point.z>103)point.z=103;Object.assign(point,projectToCavern(point));return;}const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
+  private bound(point: Point) { if(this.journey.active){if(!this.journey.facts.includes('boss')&&point.z>103&&point.z<130)point.z=103;stopAtExit(point,this.journey.facts.includes('exit-open'));Object.assign(point,projectToCavern(point));return;}const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
   private resolveBodies() {
     const live=this.enemies.filter(e=>e.hp>0);
     for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
