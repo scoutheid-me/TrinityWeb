@@ -37,3 +37,9 @@
 @media(prefers-reduced-motion:reduce){#region-banner{animation-name:region-arrival-reduced}@keyframes region-arrival-reduced{0%,100%{opacity:0}12%,78%{opacity:1}}}
 
 #quick-supplies{position:absolute;left:24px;bottom:80px;display:grid;gap:4px;pointer-events:auto}#quick-supplies button{padding:7px 10px;background:#e6efead9;border:1px solid #a5bfc0;color:#304d54;font-size:11px;text-align:left}.game-paused #quick-supplies{display:none}
+
+body.mouse-captured,body.mouse-captured *{cursor:none!important}
+
+.starting-weapon-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.starting-weapon-cards label{min-width:0;text-align:left;white-space:normal;padding:10px}.starting-weapon-cards span,.starting-weapon-cards small{display:block;margin-top:6px}.starting-weapon-cards [aria-pressed=true]{outline:2px solid #d7ad38}@media(max-width:650px){.starting-weapon-cards{grid-template-columns:1fr}}
+
+.starting-weapon-cards label:has(input:checked){outline:2px solid #d7ad38;background:#d5c18733}

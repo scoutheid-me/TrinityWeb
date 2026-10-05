@@ -85,4 +85,8 @@ The current location is **Guild Hall Training Room**. Walk to the **weapon rack*
 
 C uses a health potion; V uses a stamina draught. Both share a five-second cooldown and work between actions, including ordinary combat. Click the supply icons or change their keyboard/mouse bindings in Controls. Full resources do not consume stock.
 
-Mouse movement follows the camera over the game without right-drag. Esc or opening a menu releases camera control. Native pointer capture is attempted automatically after gameplay interactions; browsers may require a click before allowing it. If denied, movement over the canvas still controls the camera. Resume after focus loss restores gameplay safely.
+Native pointer lock drives the camera without right-drag, using raw mouse input where supported. Esc or opening a menu releases camera control. Native pointer capture is attempted automatically after gameplay interactions; browsers may require a click before allowing it. If denied, click the game to request native capture; cursor hover no longer rotates the view. Resume after focus loss restores gameplay safely.
+
+Restart from **Esc → Comfort, calibration & saves → Restart adventure**. Confirming returns to name, character and starting weapon selection. Controls are retained and the prior adventure is available through the recovery-backup download.
+
+The dungeon now follows a main tunnel with optional supply and camp/aqueduct offshoots. Goblins drop Col and can drop their carried cleaver, iron fragments or worn leather scraps. The camp cache contains a dagger; supply caches contain potions. Material details explain their source and future crafting use. Select carried weapons in the personal menu’s Items section.

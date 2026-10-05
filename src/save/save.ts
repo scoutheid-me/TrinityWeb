@@ -30,3 +30,5 @@ export function migrateSave(raw: unknown): SaveData {
 async function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open('trinity',1);request.onupgradeneeded=()=>request.result.createObjectStore('saves');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
 export async function loadSave():Promise<SaveData>{const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction('saves','readonly');const request=tx.objectStore('saves').get('combat-lab');request.onsuccess=()=>resolve(migrateSave(request.result));request.onerror=()=>reject(request.error);tx.oncomplete=()=>db.close();});}
 export async function saveGame(data:SaveData):Promise<void>{const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(migrateSave(data),'combat-lab');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error);};});}
+
+export function restartedAdventure(current:SaveData){const fresh=defaultSave();fresh.settings=structuredClone(current.settings);return fresh;}

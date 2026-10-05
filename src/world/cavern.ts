@@ -1,5 +1,5 @@
 export interface CavernArea {name:string;x:number;z:number;radius:number;}
-export const cavernAreas:CavernArea[]= [
+export const cavernAreas:CavernArea[]=[
   {
     "name": "Stillwater Hollow",
     "x": 0,
@@ -37,7 +37,7 @@ export const cavernAreas:CavernArea[]= [
     "radius": 9
   },
   {
-    "name": "The Watcherâ€™s Arch",
+    "name": "The Watcher's Arch",
     "x": -30,
     "z": 60,
     "radius": 9
@@ -61,8 +61,8 @@ export const cavernAreas:CavernArea[]= [
     "radius": 15
   }
 ];
-export const cavernLinks=[ [0,1],[1,2],[1,3],[2,4],[3,6],[4,5],[5,6],[6,7],[7,8],[8,9] ] as const;
-export const patrols=[{area:1,count:1,hp:180},{area:2,count:2,hp:220},{area:4,count:2,hp:260},{area:5,count:1,hp:220},{area:6,count:2,hp:280},{area:7,count:1,hp:1400}] as const;
+export const cavernLinks=[[0, 1], [1, 3], [1, 5], [5, 4], [4, 2], [5, 6], [6, 7], [7, 8], [8, 9]] as const;
+export const patrols=[{area:1,count:1,hp:180},{area:2,count:1,hp:160,role:'skirmisher'},{area:4,count:2,hp:220,role:'skirmisher'},{area:6,count:1,hp:380,role:'brute'},{area:7,count:1,hp:1400}] as const;
 export const chestAreas=[0,2,3,4,5,6,8];
 export function nearestArea(x:number,z:number){let best=0,d=Infinity;for(const [i,a] of cavernAreas.entries()){const n=Math.hypot(x-a.x,z-a.z);if(n<d){best=i;d=n;}}return best;}
 export function projectToCavern(p:{x:number;z:number},margin=.4){

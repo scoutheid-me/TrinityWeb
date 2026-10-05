@@ -144,3 +144,9 @@ Town/exit meshes: regenerate with `blender --background --python Tools/Blender/b
 ### Cavern elevation convention
 
 `cavernHeight(z,x)` and `build_cavern.py::height` describe the same ground: -3 m through z=128, rising along the diagonal corridor to 0 at its centre-line z=142, then level with town. Walk collision uses this smooth ramp; visible treads sit within 10 cm. Keep actor feet, cameras, effects, markers and new props on this ground. Chamber centers are save anchors; do not move them without migration. The October 4 pass used headless Blender because no Blender MCP tools were exposed, and preserves its editable source and GLB.
+
+### Expedition landmarks and loot blade
+
+The cavern generator now includes original camp shelters, an aqueduct, provision shelves, a reflecting pool, a brute shrine and a captain throne/standards. `build_dagger.py` exports the loot-only dagger with the existing weapon +Z blade axis. Both keep editable Blender sources. No Blender MCP tools were exposed in this session, so the installed Blender 5.2 headless pipeline was used.
+
+Recovered cleaver: `prepare_loot_cleaver.py` reuses the supplied Synty cleaver mesh and packed atlas, transforms source blade +Z into Blender -Y, and exports `loot_cleaver.glb` with the player grip at origin. The enemy socket retains its original export. No Blender MCP tools were exposed in this session; installed Blender 5.2 headless export was used. First-person runtime model and inventory were visually checked.

@@ -8,7 +8,7 @@ test('captured mouse, animated goblins, stone exit and town entry',async({page})
  expect(await page.evaluate(()=>window.trinity.sim.player.z)).toBeLessThan(0);
  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await expect(page.locator('#overlay')).toBeVisible();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(false);
  await page.locator('#begin').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
- await page.evaluate(()=>document.exitPointerLock());await expect(page.locator('#mouse-capture-hint')).toHaveCount(0);await page.locator('#game').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
+ await page.evaluate(()=>document.exitPointerLock());await expect(page.locator('#mouse-capture-hint')).toHaveCount(0);await page.locator('#begin').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
  const before=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.mouse.move(850,400);await page.mouse.move(950,400);
  expect(await page.evaluate(()=>window.trinity.view.camera.alpha)).not.toBe(before);
  await page.keyboard.press('m');await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(false);

@@ -22,3 +22,6 @@ export const captainPatterns:AttackPattern[]=[
  {shape:{kind:'sector',range:3,halfArc:1.1},motion:'refrain',kind:'skill',name:'Commanding pair',telegraph:1150,hits:[1150,1850],recovery:1350,damage:20,parryable:true},
  {...goblinPatterns[1],name:'Undergate sweep',shape:{kind:'sector',range:3.5,halfArc:1.4},damage:32}
 ];
+
+export const skirmisherPatterns:AttackPattern[]=[{...goblinPatterns[0],name:'Skirmisher stab',telegraph:900,hits:[900],recovery:950,damage:12,shape:{kind:'box',range:2.4,halfWidth:.3}},{...goblinPatterns[1],name:'Skirmisher feint',telegraph:1250,hits:[1250],damage:17}];
+export const brutePatterns:AttackPattern[]=[{...goblinPatterns[0],name:'Brute overhead',telegraph:1450,hits:[1450],recovery:1700,damage:24},{...goblinPatterns[1],name:'Brute wide cleave',telegraph:1800,hits:[1800],recovery:1900,damage:30,shape:{kind:'sector',range:3.2,halfArc:1.3}}];

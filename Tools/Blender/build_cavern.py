@@ -37,6 +37,21 @@ for index,a in enumerate(areas[:-1]):
   ang=n*2.399;px=x+math.sin(ang)*(r-1);pz=z+math.cos(ang)*(r-1)
   if any(math.hypot(px-b['x'],pz-b['z'])<math.hypot(x-b['x'],z-b['z'])-r+4 for b in neighbors):continue
   bpy.ops.mesh.primitive_cone_add(vertices=5,radius1=.4+random.random()*.5,radius2=.05,depth=1+random.random()*2,location=(px,-pz,1+height(pz,px)));o=bpy.context.object;o.name='Glowstone outcrop' if n%3==0 else 'Stalagmite';o.data.materials.append(crystal if n%3==0 else stone[n%6])
+# Unique room silhouettes: aqueduct, supply alcove, camp, pool, brute shrine, throne.
+water=mat('Still blue water',(.025,.19,.28),.25)
+cloth=mat('Goblin camp canvas',(.28,.16,.09))
+for x in [25,28,32,35]:
+ box('Aqueduct pier',(x,1.4,36),(.7,2.8,.9),stone[4])
+box('Broken water channel',(30,2.9,36),(12,.35,1.3),stone[2])
+for n in range(4):box('Provision shelf',(-36,.7+n*.6,30),(1.2,.12,4),wood)
+for x in [25,35]:
+ mesh('Scavenger canvas shelter',[(x-1.8,0,63),(x,2.4,63),(x+1.8,0,63),(x-1.8,0,66),(x,2.4,66),(x+1.8,0,66)],[(0,1,4,3),(1,2,5,4)],[cloth])
+box('Reflecting pool',(3,-.025,65),(5,.04,3),water)
+for x,z in [(0,63),(0,67),(6,63),(6,67)]:box('Pool rim',(x,.12,z),(.4,.24,.4),stone[4])
+for n in range(5):
+ box('Brute shrine steps',(-30,n*.16,66),(5-n*.5,.2,2.5-n*.3),stone[3])
+box('Captain throne seat',(-30,.65,98),(2,1.3,1.5),stone[2]);box('Captain throne back',(-30,2,98.8),(2.3,3,.4),stone[4])
+for x in [-33,-27]:box('Captain standard',(x,2.5,98),(.15,5,.15),wood);box('Captain banner',(x+.5,3.6,98),(1,1.5,.06),cloth)
 for i,j in links:
  a,b=areas[i],areas[j];dx=b['x']-a['x'];dz=b['z']-a['z'];length=math.hypot(dx,dz);ux,uz=dx/length,dz/length;px,pz=-uz,ux
  # Continuous walkable floor, overlaps room floors by 2 cm underneath.

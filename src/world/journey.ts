@@ -1,3 +1,4 @@
+import {emptyLoot,type LootInventory,type LootItem} from '../data/creatureLoot.ts';
 import type {ArtDefinition} from '../data/arts';
 export const primers = [
  {id:'pathfinder',name:'Pathfinder’s Primer',theme:'Short repositioning cuts. Trade raw damage for safer angles.',root:'trail-step',leaf:'turning-cut',requirement:'Land 12 basics and evade 2 attacks after receiving this book.'},
@@ -15,14 +16,17 @@ export const primerArts:Record<string,ArtDefinition>={
  'second-breath':form('second-breath','Second Breath','One patient strike. Landing it restores 10 stamina, scaled by release quality.',20,5,16,{restoreStamina:10,recovery:420}),
 };
 export interface Journey {
+ startingWeapon:string;lootSeed:number;items:LootInventory;
  version:2; visited:number[]; quest:'offered'|'accepted'|'declined'|'completed';position:{x:number;z:number};checkpoint:{x:number;z:number};defeated:string[];active:boolean; room:number; cleared:number[]; looted:string[]; facts:string[]; coins:number; elapsedMs:number;
  book:PrimerId|null; leafLearned:boolean; practice:{hits:number;evades:number;parries:number;breaks:number};
  checkpointHp:number; purchases:number;
 }
-export const freshJourney=(active=true):Journey=>({version:2,visited:[0],quest:'offered',position:{x:0,z:-6},checkpoint:{x:0,z:-6},defeated:[],active,room:0,cleared:[],looted:[],facts:[],coins:0,elapsedMs:0,book:null,leafLearned:false,practice:{hits:0,evades:0,parries:0,breaks:0},checkpointHp:200,purchases:0});
+export const freshJourney=(active=true):Journey=>({startingWeapon:'sword',lootSeed:0,items:emptyLoot(),version:2,visited:[0],quest:'offered',position:{x:0,z:-6},checkpoint:{x:0,z:-6},defeated:[],active,room:0,cleared:[],looted:[],facts:[],coins:0,elapsedMs:0,book:null,leafLearned:false,practice:{hits:0,evades:0,parries:0,breaks:0},checkpointHp:200,purchases:0});
 const count=(v:unknown,max=100000)=>typeof v==='number'&&Number.isFinite(v)?Math.max(0,Math.min(max,Math.floor(v))):0;
 export function validateJourney(raw:unknown):Journey{
  const j=freshJourney(false);if(!raw||typeof raw!=='object')return j;const r=raw as Partial<Journey>;if(r.version!==2)return freshJourney(r.active!==false);
+ j.startingWeapon=['sword','rapier','greatsword'].includes(r.startingWeapon??'')?r.startingWeapon!:'sword';
+ j.lootSeed=typeof r.lootSeed==='number'&&Number.isFinite(r.lootSeed)?r.lootSeed>>>0:1357911;for(const key of Object.keys(j.items) as LootItem[])j.items[key]=count(r.items?.[key],99);
  j.active=r.active===true;j.cleared=Array.isArray(r.cleared)?[...new Set(r.cleared.filter(v=>Number.isInteger(v)&&v>=0&&v<=8))].sort((a,b)=>a-b):[];
  j.visited=Array.isArray(r.visited)?[...new Set(r.visited.filter(i=>Number.isInteger(i)&&i>=0&&i<=9))]:[0];
  j.room=count(r.room,9);j.quest=['offered','accepted','declined','completed'].includes(r.quest??'')?r.quest!:'offered';j.defeated=Array.isArray(r.defeated)?[...new Set(r.defeated.filter(v=>/^cavern-[124567]-[01]$/.test(v)))]:[];for(const key of ['position','checkpoint'] as const){const v=r[key];if(v&&Number.isFinite(v.x)&&Number.isFinite(v.z)&&Math.abs(v.x)<100&&v.z>=-20&&v.z<190)j[key]={x:v.x,z:v.z};}

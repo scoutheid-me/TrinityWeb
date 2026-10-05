@@ -15,3 +15,8 @@ weapons.sword.multiTargetDamage=6;
 export function basicWeaponDamage(w:TrainingWeapon,targetCount:number){return targetCount>1?(w.multiTargetDamage??w.damage):w.damage;}
 
 weapons.greatsword.artBreakMultiplier=1.6;weapons.rapier.artBreakMultiplier=1.1;
+
+export const starterWeapons=['sword','rapier','greatsword'].map(id=>weapons[id]);
+weapons.dagger={id:'dagger',name:'Goblin-forged dagger',description:'A salvaged close-range knife. Fast single-target cuts, weak guard and low Break. Uses shared Basic Arts.',damage:7,startup:45,recovery:115,break:1,shape:box(1.7,.28),guard:.55,maxTargets:1,model:'/assets/weapons/goblin_dagger.glb'};
+
+weapons.cleaver={id:'cleaver',name:'Goblin cleaver',description:'The broad scrap blade carried by cavern goblins. Short reach, moderate Break and a narrow chopping sweep; shared Basic Arts only.',damage:9,startup:150,recovery:310,break:3,shape:sector(2.1,Math.PI/7),guard:.5,model:'/assets/weapons/loot_cleaver.glb'};

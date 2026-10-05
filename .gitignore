@@ -14,3 +14,6 @@ playwright-report/
 dist-playtest/
 release/
 dist-pages/
+
+__pycache__/
+*.pyc

@@ -4,21 +4,29 @@ import type {LabScene} from '../engine/scene';
 import {actions,defaultBindings,movementIntent,type Action} from './bindings';
 export class GameInput {
   private lookAt=performance.now();
-  autoMouseLook=true;private requestingCapture=false;private releaseRequested=false;private attemptedCaptureAt=-Infinity;
+  autoMouseLook=true;private requestingCapture=false;private releaseRequested=false;private deliberateRelease=false;
   get captured(){return document.pointerLockElement===this.view.canvas;}
   get canCapture(){return this.enabled&&!this.suspended&&!document.querySelector('#debug:not([hidden]),#ui.personal-menu-open,#overlay:not([hidden]),#journey-modal:not([hidden]),#journey-dialogue:not([hidden]),#weapon-rack:not([hidden]),#training-orb:not([hidden]),#guild-invitation:not([hidden]),#tutorial:not([hidden])');}
-  requestCapture(){if(!this.autoMouseLook||!this.canCapture||this.captured||this.releaseRequested||this.requestingCapture)return;this.requestingCapture=true;this.attemptedCaptureAt=performance.now();try{Promise.resolve(this.view.canvas.requestPointerLock()).catch(()=>{}).finally(()=>this.requestingCapture=false);}catch{this.requestingCapture=false;}}
-  syncCapture(){this.view.canvas.style.cursor=this.autoMouseLook&&this.canCapture&&!this.releaseRequested?"none":"";if(this.captured&&(!this.autoMouseLook||!this.canCapture))document.exitPointerLock();}
+  requestCapture(){
+    if(!this.autoMouseLook||!this.canCapture||this.captured||this.releaseRequested||this.requestingCapture)return;
+    this.requestingCapture=true;
+    const lock=async()=>{try{await this.view.canvas.requestPointerLock({unadjustedMovement:true});}catch(error){if((error as DOMException)?.name==='NotSupportedError')await this.view.canvas.requestPointerLock();else throw error;}};
+    void lock().catch(()=>{this.sim.emit('notice','Click the game to capture the mouse. Esc releases it.');}).finally(()=>this.requestingCapture=false);
+  }
+  syncCapture(){
+    document.body.classList.toggle('mouse-captured',this.captured);
+    this.view.canvas.style.cursor='';
+    if(this.captured&&(!this.autoMouseLook||!this.canCapture)){this.deliberateRelease=true;document.exitPointerLock();}
+  }
   retry:(()=>void)|null=null;
   keys=new Set<string>(); sensitivity=1; enabled=false; suspended=false; dragging=false; pointerX=0; pointerY=0;
   bindings=defaultBindings();
-  constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void,private interact:()=>void=()=>{},private menu:()=>void=()=>{},private supply:(id:'health'|'stamina')=>void=()=>{}){
-    view.canvas.addEventListener('pointerenter',()=>{this.pointerX=NaN;this.pointerY=NaN;if(!this.releaseRequested)this.requestCapture();});
+  constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void,private interact:()=>void=()=>{},private menu:()=>void=()=>{},private supply:(id:'health'|'stamina')=>void=()=>{},private captureLost:()=>void=()=>{}){
     document.addEventListener('pointerlockerror',()=>{this.requestingCapture=false;this.syncCapture();});
     window.addEventListener('focus',()=>{this.requestingCapture=false;});
     window.addEventListener('keydown',e=>{
       if(this.suspended)return;
-      if(e.code==='Escape'){e.preventDefault();this.releaseRequested=true;if(this.captured)document.exitPointerLock();if(!e.repeat)this.togglePause();return;}
+      if(e.code==='Escape'){e.preventDefault();this.releaseRequested=true;if(this.captured){this.deliberateRelease=true;document.exitPointerLock();}if(!e.repeat)this.captureLost();return;}
       if((e.target as HTMLElement).closest('input:not([type="checkbox"]),select,textarea'))return;
       if((e.target as HTMLElement).matches('input[type="checkbox"]')&&['Space','Enter'].includes(e.code))return;
       if(this.view.firstPerson&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)){e.preventDefault();this.keys.add(e.code);return;}
@@ -26,10 +34,15 @@ export class GameInput {
       e.preventDefault();if(e.repeat)return;this.down(e.code);
     });
     window.addEventListener('click',()=>{if(this.canCapture){this.releaseRequested=false;this.requestCapture();}});
-    document.addEventListener('pointerlockchange',()=>{if(!this.captured){if(this.canCapture&&document.hasFocus())this.releaseRequested=true;this.clear();this.requestingCapture=false;}});
+    document.addEventListener('pointerlockchange',()=>{
+      document.body.classList.toggle('mouse-captured',this.captured);
+      if(!this.captured){const unexpected=this.autoMouseLook&&!this.deliberateRelease&&this.canCapture;this.clear();this.requestingCapture=false;this.releaseRequested=true;if(unexpected)this.captureLost();}
+      else this.releaseRequested=false;
+      this.deliberateRelease=false;
+    });
     window.addEventListener('keyup',e=>this.up(e.code));
     view.canvas.addEventListener('pointerdown',e=>{
-      if(!this.enabled||this.suspended)return;e.preventDefault();view.canvas.focus();this.releaseRequested=false;this.requestCapture();
+      if(!this.enabled||this.suspended)return;e.preventDefault();const acquiring=this.autoMouseLook&&this.canCapture&&!this.captured;view.canvas.focus();this.releaseRequested=false;this.requestCapture();if(acquiring)return;
       this.pointerX=e.clientX;this.pointerY=e.clientY;this.down(`Mouse${e.button}`);
     });
     // A live personal window accepts UI clicks while camera drag remains available.
@@ -40,13 +53,13 @@ export class GameInput {
     });
     window.addEventListener('contextmenu',e=>{if(this.view.firstPerson&&(e.target as HTMLElement).closest('#ui'))e.preventDefault();});
     window.addEventListener('pointerup',e=>this.up(`Mouse${e.button}`));
-    window.addEventListener('pointermove',e=>{
+    const look=(e:MouseEvent)=>{
       const dx=this.captured?e.movementX:Number.isFinite(this.pointerX)?e.clientX-this.pointerX:0,dy=this.captured?e.movementY:Number.isFinite(this.pointerY)?e.clientY-this.pointerY:0;this.pointerX=e.clientX;this.pointerY=e.clientY;
-      const hoverLook=this.autoMouseLook&&this.canCapture&&!this.releaseRequested&&e.target===view.canvas&&document.hasFocus();
-      if(hoverLook&&!this.captured&&performance.now()-this.attemptedCaptureAt>1500)this.requestCapture();
-      if(!this.enabled||this.suspended||(!this.captured&&!hoverLook&&!this.held('orbit'))||this.sim.autoFaceTarget&&this.sim.target)return;
+      if(!this.enabled||this.suspended||(!this.captured&&!this.held('orbit'))||this.sim.autoFaceTarget&&this.sim.target)return;
       this.view.camera.alpha+=dx*.004*this.sensitivity;this.view.camera.beta=Math.max(this.view.firstPerson?.3:.4,Math.min(this.view.firstPerson?2.8:1.4,this.view.camera.beta-dy*.003*this.sensitivity));
-    });
+    };
+    window.addEventListener('mousemove',e=>{if(this.captured)look(e);});
+    window.addEventListener('pointermove',e=>{if(!this.captured)look(e);});
     view.canvas.addEventListener('auxclick',e=>e.preventDefault());
     view.canvas.addEventListener('contextmenu',e=>e.preventDefault());
     view.canvas.addEventListener('wheel',e=>{e.preventDefault();if(this.enabled&&!this.suspended)view.cameraDistance=Math.max(3.5,Math.min(11,view.cameraDistance+e.deltaY*.005));},{passive:false});

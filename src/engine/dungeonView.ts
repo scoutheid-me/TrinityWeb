@@ -4,7 +4,7 @@ import {Color3,Color4,DynamicTexture,ImportMeshAsync,MeshBuilder,PointLight,Stan
 import type {LabScene} from './scene';
 import {cavernAreas,chestAreas,cavernHeight} from '../world/cavern';
 export class DungeonView {
- door!:TransformNode;private doorLift=0;root:TransformNode;hall:TransformNode[]=[];markers=new Map<string,Mesh>();chests=new Map<number,TransformNode>();npc!:TransformNode;gate!:Mesh;lights:PointLight[]=[];town!:TransformNode;
+ sentryGate!:TransformNode;door!:TransformNode;private doorLift=0;root:TransformNode;hall:TransformNode[]=[];markers=new Map<string,Mesh>();chests=new Map<number,TransformNode>();npc!:TransformNode;gate!:Mesh;lights:PointLight[]=[];town!:TransformNode;
  constructor(private view:LabScene){this.root=new TransformNode('Connected cavern',view.scene);this.root.setEnabled(false);}
  setHallNodes(nodes:TransformNode[]){this.hall=nodes;}
  async init(){
@@ -23,16 +23,20 @@ export class DungeonView {
    const m=MeshBuilder.CreateCylinder(id,{diameter:.7,height:.8,tessellation:8},this.view.scene);m.parent=this.root;m.position.set(x,cavernHeight(z,x)+.4,z);m.material=this.view.material(id,id.startsWith('rest')?'#63b3ad':'#b29968',.25);this.markers.set(id,m);
    if(label){const sign=MeshBuilder.CreatePlane(id+' label',{width:2.6,height:.6},this.view.scene);sign.parent=m;sign.position.y=1.8;sign.billboardMode=7;const tex=new DynamicTexture('Mira name',{width:512,height:128},this.view.scene,false);tex.hasAlpha=true;tex.drawText(label,null,78,'34px sans-serif','#f6ebcf','transparent',true);const mat=this.view.material('Mira label','#ffffff',1);mat.diffuseTexture=tex;mat.useAlphaFromDiffuseTexture=true;mat.backFaceCulling=false;sign.material=mat;}
   }
+  for(const [label,x,z] of [['UPPER GATE ↑',1,38],['SUPPLY ALCOVE ←',-4,32],['UPPER GATE ←',0,66],['SCAVENGER CAMP →',5,62],['AQUEDUCT ↓',30,54]] as const){const sign=MeshBuilder.CreatePlane('Carved direction '+label,{width:2.5,height:.5},this.view.scene);sign.parent=this.root;sign.position.set(x,cavernHeight(z,x)+2.1,z);sign.rotation.y=Math.PI;const tex=new DynamicTexture('Waymark '+label,{width:512,height:96},this.view.scene,false);tex.drawText(label,null,62,'36px serif','#ccbb8b','#25323c',true);const mat=this.view.material('Waymark '+label,'#ffffff',.15);mat.diffuseTexture=tex;mat.backFaceCulling=false;sign.material=mat;}
+  this.sentryGate=new TransformNode('Sentry portcullis',this.view.scene);this.sentryGate.parent=this.root;this.sentryGate.position.set(0,cavernHeight(44,0),44);
+  const iron=this.view.material('Portcullis iron','#53636d');for(let x=-3;x<=3;x+=.6){const bar=MeshBuilder.CreateBox('Sentry iron bar',{width:.1,height:4,depth:.15},this.view.scene);bar.parent=this.sentryGate;bar.position.set(x,2,0);bar.material=iron;}for(const y of [1,3.5]){const rail=MeshBuilder.CreateBox('Sentry gate brace',{width:7,height:.14,depth:.18},this.view.scene);rail.parent=this.sentryGate;rail.position.y=y;rail.material=iron;}
   this.gate=MeshBuilder.CreateBox('Captain barred gate',{width:6.8,height:4,depth:.35},this.view.scene);this.gate.parent=this.root;this.gate.position.set(-30,-1,104.6);this.gate.material=this.view.material('Gate timber','#34271b');
-  for(let i=0;i<3;i++){const l=new PointLight('Cavern light '+i,new Vector3(0,3,0),this.view.scene);l.diffuse=Color3.FromHexString(i===0?'#adc9ee':'#588dff');l.intensity=i===0?2:2.5;l.range=i===0?15:24;l.setEnabled(false);this.lights.push(l);}
+  for(let i=0;i<3;i++){const l=new PointLight('Cavern light '+i,new Vector3(0,3,0),this.view.scene);l.diffuse=Color3.FromHexString(i===0?'#7eafff':'#588dff');l.intensity=i===0?2:2.5;l.range=i===0?15:24;l.setEnabled(false);this.lights.push(l);}
   for(const mat of this.view.scene.materials)if('maxSimultaneousLights' in mat)(mat as StandardMaterial).maxSimultaneousLights=6;
  }
  show(){this.root.setEnabled(true);for(const n of this.hall)n.setEnabled(false);for(const l of this.lights)l.setEnabled(true);}
  hide(){this.root.setEnabled(false);for(const n of this.hall)n.setEnabled(true);for(const l of this.lights)l.setEnabled(false);this.view.scene.clearColor=new Color4(.37,.57,.67,1);this.view.scene.fogColor=new Color3(.37,.57,.67);this.view.scene.fogDensity=.011;this.view.scene.getLightByName('sky')!.intensity=.8;this.view.scene.getLightByName('sun')!.intensity=1.65;}
- update(p:{x:number;z:number},room:number,looted:string[],boss:boolean,doorOpen=false,dt=16){
+ update(p:{x:number;z:number},room:number,looted:string[],boss:boolean,doorOpen=false,dt=16,sentryDefeated=false){
+  this.sentryGate.setEnabled(!sentryDefeated);
   this.doorLift=Math.min(4.5,Math.max(0,this.doorLift+(doorOpen?1:-1)*dt*.005));this.door.position.y=this.doorLift;
   this.gate.setEnabled(!boss);for(const [i,c] of this.chests)c.rotation.x=looted.includes('chest-'+i)?.12:0;
-  const town=p.z>148&&Math.hypot(p.x,p.z-160)<18;this.view.scene.clearColor=town?new Color4(.47,.64,.73,1):new Color4(.018,.031,.039,1);this.view.scene.fogColor=town?new Color3(.47,.64,.73):new Color3(.018,.031,.039);this.view.scene.fogDensity=town?.011:.018;this.view.scene.getLightByName('sky')!.intensity=town?.8:.2;this.view.scene.getLightByName('sun')!.intensity=town?1.65:.1;this.view.scene.imageProcessingConfiguration.exposure=1.05;
+  const town=p.z>148&&Math.hypot(p.x,p.z-160)<18;this.view.scene.clearColor=town?new Color4(.47,.64,.73,1):new Color4(.013,.022,.05,1);this.view.scene.fogColor=town?new Color3(.47,.64,.73):new Color3(.013,.022,.05);this.view.scene.fogDensity=town?.011:.018;this.view.scene.getLightByName('sky')!.intensity=town?.8:.2;this.view.scene.getLightByName('sun')!.intensity=town?1.65:.1;this.view.scene.imageProcessingConfiguration.exposure=1.05;
   this.lights[0].position.set(p.x+.5,cavernHeight(p.z,p.x)+2.5,p.z-1);const near=[...cavernAreas].sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));for(let i=1;i<3;i++)this.lights[i].position.set(near[i-1].x,cavernHeight(near[i-1].z,near[i-1].x)+3.5,near[i-1].z+2);
  }
 }

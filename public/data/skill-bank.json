@@ -64,6 +64,39 @@
       "model": "/assets/weapons/training_greatsword.glb",
       "practiceArt": "iron-horizon",
       "artBreakMultiplier": 1.6
+    },
+    {
+      "id": "dagger",
+      "name": "Goblin-forged dagger",
+      "description": "A salvaged close-range knife. Fast single-target cuts, weak guard and low Break. Uses shared Basic Arts.",
+      "damage": 7,
+      "startup": 45,
+      "recovery": 115,
+      "break": 1,
+      "shape": {
+        "kind": "box",
+        "range": 1.7,
+        "halfWidth": 0.28
+      },
+      "guard": 0.55,
+      "maxTargets": 1,
+      "model": "/assets/weapons/goblin_dagger.glb"
+    },
+    {
+      "id": "cleaver",
+      "name": "Goblin cleaver",
+      "description": "The broad scrap blade carried by cavern goblins. Short reach, moderate Break and a narrow chopping sweep; shared Basic Arts only.",
+      "damage": 9,
+      "startup": 150,
+      "recovery": 310,
+      "break": 3,
+      "shape": {
+        "kind": "sector",
+        "range": 2.1,
+        "halfArc": 0.4487989505128276
+      },
+      "guard": 0.5,
+      "model": "/assets/weapons/loot_cleaver.glb"
     }
   ],
   "skillBooks": [

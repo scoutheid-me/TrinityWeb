@@ -1,9 +1,9 @@
 import {test,expect} from '@playwright/test';
 import {createTestCharacter} from '../uiHelpers';
-test('hover camera fallback, cursor menus, potion keys, mouse mapping and persistence',async({page})=>{
+test('captured camera, cursor menus, potion keys, mouse mapping and persistence',async({page})=>{
  await page.goto('/?webgl');await createTestCharacter(page);await page.locator('#begin').click();
- await page.evaluate(()=>{const t=window.trinity;t.input.autoMouseLook=true;Object.defineProperty(t.view.canvas,'requestPointerLock',{configurable:true,value:()=>Promise.reject(new Error('Browser capture denied'))});t.sim.player.hp=80;t.sim.spawnEnemy('goblin');t.sim.enemies[0].z=50;t.sim.lockedId=null;});
- await page.mouse.move(600,400);const alpha=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.mouse.move(760,430);
+ await page.evaluate(()=>{const t=window.trinity;t.input.autoMouseLook=true;t.sim.player.hp=80;t.sim.spawnEnemy('goblin');t.sim.enemies[0].z=50;t.sim.lockedId=null;});
+ await page.locator('#game').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);await page.mouse.move(600,400);const alpha=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.mouse.move(760,430);
  expect(await page.evaluate(()=>window.trinity.view.camera.alpha)).not.toBe(alpha);await expect(page.locator('#mouse-capture-hint')).toHaveCount(0);
  await page.keyboard.press('Escape');await expect(page.locator('#overlay')).toBeVisible();const escaped=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.mouse.move(1000,600);expect(await page.evaluate(()=>window.trinity.view.camera.alpha)).toBe(escaped);await page.locator('#begin').click();
  await page.keyboard.press('c');expect(await page.evaluate(()=>window.trinity.sim.player.hp)).toBe(140);expect(await page.evaluate(()=>window.trinity.sim.profile.potions.health)).toBe(1);

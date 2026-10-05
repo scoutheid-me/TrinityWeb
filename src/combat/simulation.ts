@@ -1,6 +1,6 @@
 import {supplies,supplyCooldownMs} from '../data/items';
 import {stopAtExit} from '../world/regions';
-import {projectToCavern} from '../world/cavern';
+import {projectToCavern,cavernAreas} from '../world/cavern';
 import {freshJourney} from '../world/journey';
 import {creatureFacing,angleDelta,turnToward,rearMultiplier} from './facing';
 import {freshProfile} from '../progression/profile';
@@ -10,12 +10,12 @@ import {freshProgression,awardFieldSkills,canStart,awardChallenge,validLoadout,t
 import {containsHit,type HitShape} from './geometry';
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
 import { arts, artShape, chargeDuration, type ArtDefinition } from '../data/arts';
-import { goblinPatterns, captainPatterns, boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
+import { goblinPatterns, skirmisherPatterns, brutePatterns, captainPatterns, boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
 export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; breakAmount?:number; artId?:string; source?:'basic'|'art'|'counter'; }
-export interface Enemy extends Point { id: string; species?:'sentinel'|'boar'|'goblin'|'captain'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; lessonPattern?:number; }
+export interface Enemy extends Point { room?:number;home?:Point;role?:'skirmisher'|'brute'; id: string; species?:'sentinel'|'boar'|'goblin'|'captain'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; lessonPattern?:number; }
 export class CombatSimulation {
   profile=freshProfile();journey=freshJourney(false);suppressFieldProgression=false;
   get rewardEligible(){return !this.gmMode&&this.fieldEligible&&!this.practiceMode&&!Object.values(this.flags).some(Boolean)&&Object.entries(defaultAttributes).every(([k,v])=>this.attributes[k as keyof Attributes]===v);}
@@ -286,7 +286,7 @@ export class CombatSimulation {
     this.player.x += this.player.vx * dt; this.player.z += this.player.vz * dt;
     this.bound(this.player);
   }
-  private bound(point: Point) { if(this.journey.active){if(!this.journey.facts.includes('boss')&&point.z>103&&point.z<130)point.z=103;stopAtExit(point,point===this.player&&this.journey.facts.includes('exit-open'),point===this.player&&this.journey.facts.includes('gate-town-side'));Object.assign(point,projectToCavern(point));return;}const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
+  private bound(point: Point) { if(this.journey.active){if(!this.journey.defeated.includes('cavern-1-0')&&Math.abs(point.x)<4&&point.z>43&&point.z<51)point.z=43;if(!this.journey.facts.includes('boss')&&point.z>103&&point.z<130)point.z=103;stopAtExit(point,point===this.player&&this.journey.facts.includes('exit-open'),point===this.player&&this.journey.facts.includes('gate-town-side'));Object.assign(point,projectToCavern(point));return;}const distance = Math.hypot(point.x, point.z); if (distance > balance.arenaRadius) { point.x *= balance.arenaRadius / distance; point.z *= balance.arenaRadius / distance; } }
   private resolveBodies() {
     const live=this.enemies.filter(e=>e.hp>0);
     for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
@@ -307,6 +307,8 @@ export class CombatSimulation {
   }
   private updateEnemy(enemy: Enemy, dt: number) {
     if (enemy.state === 'Dead') return;
+    if(this.journey.active&&enemy.room!==undefined&&enemy.home){const area=cavernAreas[enemy.room];if(Math.hypot(this.player.x-area.x,this.player.z-area.z)>area.radius+5){enemy.pattern=null;enemy.state='Idle';enemy.x=enemy.home.x;enemy.z=enemy.home.z;enemy.yaw=Math.PI;return;}}
+
     if (enemy.state === 'Broken') { if (this.now >= enemy.until) { enemy.break = 0; enemy.state = 'Recovery'; enemy.until = this.now + 600; } return; }
     if (enemy.state === 'Recovery') { if (this.now >= enemy.until) enemy.state = 'Chase'; return; }
     const dx = this.player.x - enemy.x, dz = this.player.z - enemy.z, distance = Math.hypot(dx, dz);
@@ -334,6 +336,6 @@ export class CombatSimulation {
     else {
       if(this.now<this.nextEnemyAttackAt||this.enemies.some(other=>other!==enemy&&other.pattern))return;
       const patternIndex=this.encounter.active&&this.encounter.challenge==='positioning'?0:sentinelSequence[enemy.nextPattern++ % sentinelSequence.length];
-      enemy.pattern = enemy.species==='goblin'?goblinPatterns[enemy.lessonPattern??(patternIndex===0?0:1)]:enemy.species==='captain'?captainPatterns[enemy.hp<enemy.maxHp*.5?patternIndex:patternIndex===1?0:patternIndex]:enemy.species==='boar'?boarPatterns[patternIndex===0?0:1]:sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
+      enemy.pattern = enemy.species==='goblin'?(enemy.role==='brute'?brutePatterns:enemy.role==='skirmisher'?skirmisherPatterns:goblinPatterns)[enemy.lessonPattern??(patternIndex===0?0:1)]:enemy.species==='captain'?captainPatterns[enemy.hp<enemy.maxHp*.5?patternIndex:patternIndex===1?0:patternIndex]:enemy.species==='boar'?boarPatterns[patternIndex===0?0:1]:sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
   }
 }

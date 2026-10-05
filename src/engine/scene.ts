@@ -1,3 +1,4 @@
+import {creatureEquipment} from '../data/creatureLoot';
 import {publicUrl} from '../publicUrl';
 import {insideCavern,cavernHeight} from '../world/cavern';
 import {bodyPose,bodyPhase,type BodyClip} from './bodyMotion';
@@ -5,7 +6,7 @@ import {footprintPose} from './footprintMotion';
 import {greatswordPose} from './greatswordMotion';
 import {holdGrip} from './twoHandGrip';
 import {weaponRack} from '../data/room';
-import {weapons} from '../data/weapons';
+import {weapons,starterWeapons} from '../data/weapons';
 import {artShape,chargeDuration} from '../data/arts';
 import {duelPose} from './duelMotion';
 import {HitIndicator} from './hitIndicator';
@@ -98,13 +99,13 @@ export class LabScene {
     for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; const copy = column.clone(`column-${i}`, null)!; copy.setEnabled(true); copy.position.set(Math.sin(a)*13.4,0,Math.cos(a)*13.4); this.cast(copy);this.hallNodes.push(copy); }
     const rack = await this.asset('/assets/props/weapon_rack.glb'); rack.position.set(weaponRack.x,0,weaponRack.z); rack.rotation.y = weaponRack.yaw; this.cast(rack);this.hallNodes.push(rack);
     for(const mesh of rack.getChildMeshes())if(/practice_blade|practice_guard/.test(mesh.name))mesh.setEnabled(false);
-    for(const [i,w] of Object.values(weapons).entries()){const display=await this.asset(w.model);display.name='rack display '+w.id;display.parent=rack;display.position.set((i-1)*.6,.65,.25);display.rotation.x=-Math.PI/2;display.scaling.setAll(.8);this.cast(display);}
+    for(const [i,w] of starterWeapons.entries()){const display=await this.asset(w.model);display.name='rack display '+w.id;display.parent=rack;display.position.set((i-1)*.6,.65,.25);display.rotation.x=-Math.PI/2;display.scaling.setAll(.8);this.cast(display);}
     this.ring = MeshBuilder.CreateTorus('lock indicator', { diameter: 1.8, thickness: .035, tessellation: 48 }, this.scene); this.ring.material = this.material('lock', '#72e6ef', 1); this.ring.position.y = .07;
     this.setQuality('medium');
     window.addEventListener('resize', () => this.engine.resize());
     await this.scene.whenReadyAsync();
   }
-  async loadGoblins(){if(!this.goblinContainer){this.goblinContainer=await LoadAssetContainerAsync(publicUrl('/assets/enemies/goblin.glb'),this.scene);this.loadedAssets.push('/assets/enemies/goblin.glb');this.captainContainer=await LoadAssetContainerAsync(publicUrl('/assets/enemies/goblin_captain.glb'),this.scene);this.loadedAssets.push('/assets/enemies/goblin_captain.glb');this.goblinBlade=await this.asset('/assets/weapons/goblin_cleaver.glb');this.goblinBlade.setEnabled(false);this.sparkTexture=new Texture(publicUrl('/assets/textures/goblin_sparkle.png'),this.scene);this.sparkTexture.hasAlpha=true;}}
+  async loadGoblins(){if(!this.goblinContainer){this.goblinContainer=await LoadAssetContainerAsync(publicUrl('/assets/enemies/goblin.glb'),this.scene);this.loadedAssets.push('/assets/enemies/goblin.glb');this.captainContainer=await LoadAssetContainerAsync(publicUrl('/assets/enemies/goblin_captain.glb'),this.scene);this.loadedAssets.push('/assets/enemies/goblin_captain.glb');this.goblinBlade=await this.asset(creatureEquipment.goblin.model);this.goblinBlade.setEnabled(false);this.sparkTexture=new Texture(publicUrl('/assets/textures/goblin_sparkle.png'),this.scene);this.sparkTexture.hasAlpha=true;}}
   private goblinActor(enemy:Enemy):Actor{
     const entries=(enemy.species==='captain'?this.captainContainer:this.goblinContainer)!.instantiateModelsToScene(n=>enemy.id+'-'+n,false,{doNotInstantiate:true});const root=new TransformNode(enemy.id,this.scene);for(const n of entries.rootNodes)n.parent=root;
     const hand=root.getDescendants().find(n=>n.name.endsWith('Hand_R')) as TransformNode|undefined;
@@ -193,6 +194,7 @@ export class LabScene {
       let actor = this.actors.get(enemy.id);
       if (!actor&&(enemy.species==='goblin'||enemy.species==='captain')&&this.goblinContainer){actor=this.goblinActor(enemy);this.actors.set(enemy.id,actor);}
       if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
+      if(enemy.role)actor.root.scaling.setAll(enemy.role==='brute'?1.05:.75);
       const actualSpeed=Math.min(3,Math.hypot(enemy.x-actor.root.position.x,enemy.z-actor.root.position.z)/Math.max(.001,dt));
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,actualSpeed,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       actor.root.position.y+=ground(enemy.z,enemy.x);
