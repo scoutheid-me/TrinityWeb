@@ -1,3 +1,4 @@
+import {installUpdateNotice} from './ui/update';
 import {cavernHeight} from './world/cavern';
 import {Dungeon} from './world/dungeon';
 import './journey.css';
@@ -47,12 +48,13 @@ async function main(){
   const advance=()=>{const current=performance.now();if(!paused&&!dungeon?.dialogOpen){if(hud.slowMotion)sim.invalidateRewards("Slow motion enabled");input.updateMovement();sim.update(Math.min(100,current-last)*(hud.slowMotion?.35:1));}last=current;};
   hud.root.classList.add('game-paused');
   const overlay=hud.el('overlay'),begin=hud.el('begin') as HTMLButtonElement;
-  function setPaused(value:boolean){window.dispatchEvent(new Event('trinity-audio-stop'));if(!value){const gm=document.getElementById('gm-menu');if(gm)gm.hidden=true;}if(controls&&!controls.panel.hidden){if(!value)return;controls.close();}advance();if(value&&guild?.visible){guild.panel.hidden=true;hud.root.classList.remove('journal-open');}paused=value;hud.root.classList.toggle('game-paused',value);input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume training':'Enter the Training Room';}else{view.canvas.focus();audio.unlock();started=true;input.suspended=!!dungeon?.dialogOpen;input.requestCapture();}last=performance.now();}
+  function setPaused(value:boolean){window.dispatchEvent(new Event('trinity-audio-stop'));if(!value){hud.root.classList.remove('personal-menu-open');const tray=document.getElementById('loadout-tray');if(tray)tray.hidden=true;rack?.close();orb?.close();const gm=document.getElementById('gm-menu');if(gm)gm.hidden=true;}if(controls&&!controls.panel.hidden){if(!value)return;controls.close();}advance();if(value&&guild?.visible){guild.panel.hidden=true;hud.root.classList.remove('journal-open');}paused=value;if(started)overlay.classList.remove('title-screen');hud.root.classList.toggle('game-paused',value);input.enabled=!value;input.clear();audio.stopTiming();overlay.hidden=!value;if(value){begin.textContent=started?'Resume game':dungeon?.active?'Continue adventure':'Enter the Training Room';hud.root.querySelector('.intro h1')!.textContent=started?'Game paused':'TRINITY';}else{view.canvas.focus();audio.unlock();started=true;input.suspended=!!dungeon?.dialogOpen;input.resumeCapture();}last=performance.now();}
   function requestPause(){if(!paused&&(sim.encounter.active||tutorial.active||dungeon?.combat)&&sim.player.hp>0){hud.notice('Finish the trial before opening game settings.');return;}setPaused(!paused);}
   let orb:TrainingOrb|undefined;let rack:WeaponRack|undefined;let controls:ControlsMenu|undefined;let guild:GuildBoard|undefined;
   const input=new GameInput(sim,view,advance,()=>{if(orb&&!orb.panel.hidden){orb.close();return;}if(rack&&!rack.panel.hidden){rack.close();return;}const tray=document.getElementById('loadout-tray');if(tray&&!tray.hidden){tray.hidden=true;return;}guild?.visible?guild.close():requestPause();},()=>{if(!playtestBuild)hud.toggleDebug();},()=>audio.unlock(),()=>{if(dungeon?.active)dungeon.interact();else if(dungeon?.atHallExit)dungeon.leaveTraining();else if(orb?.available)orb.open();else rack?.open();},()=>togglePersonalMenu(),id=>{const result=sim.useSupply(id);if(result.used)void persist();},()=>setPaused(true));
   input.autoMouseLook=save.settings.autoMouseLook;input.sensitivity=save.settings.sensitivity;input.bindings=save.settings.bindings;hud.setBindings(input.bindings);
   controls=new ControlsMenu(input,()=>setPaused(true),()=>{hud.setBindings(input.bindings);if(tutorial.active)tutorial.render();void persist();},()=>false);
+  const captureStatus=document.createElement('p');captureStatus.id='capture-status';captureStatus.setAttribute('role','status');captureStatus.hidden=true;begin.after(captureStatus);
   const mouseOption=document.createElement('label');mouseOption.innerHTML='<input id="auto-mouse-look" type="checkbox"> Capture mouse while playing <small>M opens the cursor menu; Esc releases the mouse. Click the play area to recapture.</small>';mouseOption.className="camera-setting";controls.panel.querySelector(".camera-setting")!.after(mouseOption);const mouseToggle=mouseOption.querySelector<HTMLInputElement>('input')!;mouseToggle.checked=input.autoMouseLook;mouseToggle.onchange=()=>{input.autoMouseLook=mouseToggle.checked;input.syncCapture();void persist();};
     const autoFace=controls.panel.querySelector<HTMLInputElement>('#auto-face-target')!;autoFace.checked=sim.autoFaceTarget;autoFace.onchange=()=>{sim.autoFaceTarget=autoFace.checked;void persist();};
   for(const [id,parent] of [['open-controls',hud.root.querySelector('header')!],['intro-controls',hud.root.querySelector('.intro')!]] as const){const button=document.createElement('button');button.id=id;button.className='quiet';button.textContent='Controls';button.onclick=()=>controls!.open();parent.append(button);}
@@ -71,7 +73,7 @@ async function main(){
   rack=new WeaponRack(sim,()=>input.bindings,()=>void persist());
   const musicLabel=document.createElement('label');musicLabel.innerHTML='<input id="timing-music" type="checkbox"> Musical timing cues';hud.el('debug').append(musicLabel);
   hud.input('timing-music').checked=audio.timingMusic;hud.input('timing-music').onchange=()=>{audio.timingMusic=hud.input('timing-music').checked;audio.stopTiming();void persist();};
-  begin.disabled=true;begin.textContent='Enter the Training Room';hud.el('load-status').textContent=`${view.backend} ready · Headphones recommended`;
+  begin.disabled=true;begin.textContent='Loading adventure…';hud.el('load-status').textContent=`${view.backend} ready · Headphones recommended`;
   view.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();setPaused(true);hud.el('load-status').textContent='Graphics context lost. Your saved progress is retained. Reload to recover.';});
   begin.onclick=()=>{const entering=!started;if(sim.player.hp<=0){if(dungeon?.active)dungeon.retry();else sim.reset();}setPaused(false);if(dungeon?.active&&entering)dungeon.enter(true);else if(entering)hud.notice('Touch the entrance orb to begin the Guild Combat Trial.');input.requestCapture();};hud.el('menu').onclick=()=>requestPause();
   window.addEventListener('blur',()=>{if(started&&!paused)setPaused(true);});
@@ -97,6 +99,7 @@ async function main(){
   let importing=false,pendingSave=Promise.resolve();const comfort=save.settings.comfort;
   const applyComfort=()=>{Object.assign(audio,{cueVolume:comfort.cueVolume,effectsVolume:comfort.effectsVolume,cueOffsetMs:comfort.cueOffsetMs});view.reducedMotion=comfort.reducedMotion;view.reducedFlash=comfort.reducedFlash;hud.root.classList.toggle('reduced-flash',comfort.reducedFlash);audio.stopTiming();};applyComfort();
   playtestSettings(audio,comfort,applyComfort,persist,loadSave,()=>{importing=true;},()=>{importing=false;},()=>({renderer:view.backend,quality:view.quality,viewport:{width:innerWidth,height:innerHeight},stats:view.stats(),frameTimesMs:frameTimes.length?{samples:frameTimes.length,p50:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.5)],p95:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.95)],p99:[...frameTimes].sort((a,b)=>a-b)[Math.floor(frameTimes.length*.99)]}:null,counters:{...sim.counters},lastEncounter:recap.last,comfort:{...comfort},assetErrors:view.assetErrors}));
+  installUpdateNotice(persist);
   const stamp=document.createElement('small');stamp.textContent=buildId;hud.el('load-status').after(stamp);
   renameSettings(sim.profile,()=>void persist());
   async function persist(){if(importing)return;const data:SaveData={version:3,journey:structuredClone(sim.journey),profile:structuredClone(sim.profile),weapon:tutorial.persistentWeapon,progression:structuredClone(sim.progression),attributes:{...sim.attributes},loadout:[...tutorial.persistentLoadout],settings:{autoMouseLook:input.autoMouseLook,comfort:{...comfort},autoFaceTarget:tutorial.persistentAutoFace,quality:view.quality,sensitivity:input.sensitivity,sound:audio.enabled,timingMusic:audio.timingMusic,bindings:structuredClone(input.bindings)},counters:{...sim.counters}};try{pendingSave=pendingSave.catch(()=>{}).then(()=>saveGame(data));await pendingSave;}catch(error){console.warn('Could not save Trinity settings.',error);hud.notice('Could not save settings');}}
@@ -106,20 +109,21 @@ async function main(){
   dungeon.world.setHallNodes(view.hallNodes);await view.loadGoblins();await dungeon.init();input.retry=()=>dungeon?.active?dungeon.retry():sim.reset();
   const quickSupplies=document.createElement('section');quickSupplies.id='quick-supplies';quickSupplies.setAttribute('aria-label','Quick supplies');
   for(const id of ['health','stamina'] as const){const button=document.createElement('button');button.dataset.supply=id;button.onclick=()=>{if(paused||dungeon?.dialogOpen)return;advance();const result=sim.useSupply(id);if(result.used)void persist();};quickSupplies.append(button);}hud.root.append(quickSupplies);
-  const prologue=document.createElement('button');prologue.id='start-prologue';prologue.textContent='Explore the under-town prologue';prologue.onclick=()=>{dungeon!.start();setPaused(false);};hud.root.querySelector('.intro')!.append(prologue);
-  const training=document.createElement('button');training.id='return-training';training.textContent='Separate practice · Training Room';training.onclick=()=>{dungeon!.training();hud.root.querySelector('.location')!.innerHTML='<i></i>TRAINING ROOM<small>TOWN OF BEGINNINGS · GUILD HALL</small>';setPaused(false);};hud.root.querySelector('.intro')!.append(training);
-  if(dungeon.active){hud.root.querySelector('.intro h1')!.textContent='Beneath the First Dawn';hud.root.querySelector('.intro > p')!.textContent='A 15–20 minute introductory journey · combat, treasure and a first Skill Book.';begin.textContent='Begin / continue prologue';}
+  const prologue=document.createElement('button');prologue.id='start-prologue';prologue.textContent='Explore the under-town prologue';prologue.hidden=sim.journey.active;prologue.onclick=()=>{dungeon!.start();setPaused(false);};hud.root.querySelector('.intro')!.append(prologue);
+  const training=document.createElement('button');training.id='return-training';training.textContent='Separate practice · Training Room';training.hidden=sim.journey.active&&!sim.journey.facts.includes('boss');training.onclick=()=>{dungeon!.training();hud.root.querySelector('.location')!.innerHTML='<i></i>TRAINING ROOM<small>TOWN OF BEGINNINGS · GUILD HALL</small>';setPaused(false);};hud.root.querySelector('.intro')!.append(training);
+  if(dungeon.active){hud.root.querySelector('.intro h1')!.textContent='TRINITY';hud.root.querySelector('.intro > p')!.textContent='Beneath the First Dawn · Your adventure begins in the Under-town Caverns.';hud.root.querySelector('.intro-help > p')!.textContent='Explore the tunnels, find supplies, and seek the daylight beyond the goblin captain.';begin.textContent=newCharacter?'Start adventure':'Continue adventure';}
+  overlay.classList.add('title-screen');
   begin.disabled=false;
   view.engine.runRenderLoop(()=>{
     const frameNow=performance.now();if(!paused){frameTimes.push(frameNow-lastFrame);if(frameTimes.length>600)frameTimes.shift();}lastFrame=frameNow;
     hud.root.classList.toggle('gm-mode',sim.gmMode);
-    input.suspended=!!dungeon?.dialogOpen;input.syncCapture();
+    input.suspended=!!dungeon?.dialogOpen;input.syncCapture();captureStatus.hidden=!input.captureError;captureStatus.textContent=input.captureError;
     const before=sim.now;advance();const dt=Math.max(.001,(sim.now-before)/1000);
     audio.syncTiming(sim,paused,hud.slowMotion?.35:1);
     if(!paused){
       view.update(sim,dt);
       recap.observe(sim,sim.events);if(recap.last){const r=recap.last;report.querySelector('p')!.textContent=`${r.result} · ${r.weapon} · ${r.seconds}s · ${r.damageDealt} damage dealt / ${r.damageTaken} taken · ${r.counters} Counters · ${r.breaks} Breaks · ${r.rearHits} rear hits · ${r.artMisses} missed Arts. Practice summaries never award progress.`;}
-      dungeon?.update(sim.events,sim.now-before);training.hidden=!!dungeon?.active&&!sim.journey.facts.includes("boss");tutorial.observe(sim.events);
+      dungeon?.update(sim.events,sim.now-before);tutorial.observe(sim.events);
       for(const event of sim.events){view.effect(event,sim);hud.event(event);audio.event(event);
         if(event.type==='hit'){
           const pos=Vector3.Project(new Vector3(event.x,(sim.journey.active?cavernHeight(event.z,event.x):0)+2,event.z),Matrix.IdentityReadOnly,view.scene.getTransformMatrix(),view.camera.viewport.toGlobal(view.engine.getRenderWidth(),view.engine.getRenderHeight()));
@@ -129,6 +133,7 @@ async function main(){
       if(sim.player.hp<=0){hud.notice(`You fell · Press ${bindingText(input.bindings,'reset')} to rise again`);}
     }
     for(const b of quickSupplies.querySelectorAll<HTMLButtonElement>('button')){const id=b.dataset.supply as 'health'|'stamina',cooldown=Math.max(0,Math.ceil((sim.supplyReadyAt-sim.now)/1000));b.textContent=`${bindingText(input.bindings,id==='health'?'healthPotion':'staminaPotion')} · ${id==='health'?'HP potion':'Stamina'} ×${sim.profile.potions[id]}${cooldown?' · '+cooldown+'s':''}`;b.disabled=paused||!!dungeon?.dialogOpen;}
+    prologue.hidden=!!dungeon?.active;training.hidden=!!dungeon?.active&&!sim.journey.facts.includes('boss');
     menuButton.textContent=bindingText(input.bindings,'menu')+' · Menu';personalMenu.update();guild.observe();rack.update(!paused&&!guild.visible&&!dungeon?.active);orb.update(!paused&&!guild.visible&&!dungeon?.active&&!dungeon?.atHallExit);hud.update(view);view.scene.render();
     if(performance.now()-lastSave>5000){lastSave=performance.now();void persist();}
   });

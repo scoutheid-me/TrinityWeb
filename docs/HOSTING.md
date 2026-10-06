@@ -15,3 +15,5 @@ Local checks: `npm run build:pages`, then `npm run test:pages`. The normal local
 Progress stays in the current browser's local storage/IndexedDB, not an online account. To transfer existing localhost progress, use paused settings → Comfort, calibration & saves → Download save backup, then import that backup at the permanent address. Switching browsers/devices also requires that export/import step.
 
 Hosting follows GitHub's official custom workflow: https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages . Hosting settings are under repository Settings → Pages, source GitHub Actions. Do not change repository visibility or introduce paid hosting without authorization.
+
+The public build includes `version.json`. Clients check on focus and once per minute; a newer revision exposes Save & update game in the system menu. Existing clients keep running their loaded code until refreshed. Never claim an already-open tab automatically received a deployment.

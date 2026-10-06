@@ -10,18 +10,20 @@ test('native captured look stays locked through HUD positions, menus and focus r
  expect(await page.evaluate(()=>window.trinity.view.camera.alpha)).not.toBe(before);
  await page.keyboard.press('m');await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(false);expect(await page.locator('body').evaluate(e=>e.classList.contains('mouse-captured'))).toBe(false);
  await page.keyboard.press('m');await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
- await page.keyboard.press('Escape');await expect(page.locator('#overlay')).toBeVisible();await page.locator('#begin').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
+ await page.keyboard.press('m');await page.keyboard.press('Escape');await expect(page.locator('#overlay')).toBeVisible();await page.locator('#begin').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await expect(page.locator('#overlay')).toBeVisible();await page.locator('#begin').click();await expect.poll(()=>page.evaluate(()=>!!document.pointerLockElement)).toBe(true);
+ // A raw-input rejection still gets real native capture through the standard API.
+ await page.keyboard.press('m');await page.evaluate(()=>{const canvas=window.trinity.view.canvas,original=canvas.requestPointerLock.bind(canvas);Object.defineProperty(canvas,'requestPointerLock',{configurable:true,value:(options?:PointerLockOptions)=>options?Promise.reject(new DOMException('No raw input','NotSupportedError')):original()});});await page.keyboard.press('m');await expect.poll(()=>page.evaluate(()=>document.pointerLockElement?.id)).toBe('game');
  // No pretend hover-look when the browser refuses capture.
  await page.keyboard.press('m');await page.evaluate(()=>{Object.defineProperty(window.trinity.view.canvas,'requestPointerLock',{configurable:true,value:()=>Promise.reject(new DOMException('Denied','NotAllowedError'))});});await page.keyboard.press('m');
- const denied=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.mouse.move(1000,600);expect(await page.evaluate(()=>window.trinity.view.camera.alpha)).toBe(denied);
+ await expect(page.locator('#overlay')).toBeVisible();await expect(page.locator('#capture-status')).toContainText('Mouse capture was blocked');const denied=await page.evaluate(()=>window.trinity.view.camera.alpha);await page.mouse.move(1000,600);expect(await page.evaluate(()=>window.trinity.view.camera.alpha)).toBe(denied);
 });
 test('equipment-linked loot works, restart returns to weapon creation, and recovery backup survives',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await start(page);expect(await page.evaluate(()=>window.trinity.sim.weapon)).toBe('greatsword');
  await page.evaluate(()=>{const t=window.trinity;t.input.autoMouseLook=false;document.exitPointerLock();const s=t.sim;s.journey.lootSeed=123;for(const e of s.enemies)s.hitEnemy(e,10000,0,'Normal','test');t.dungeon.update(s.events,16);s.state.reset();});
  expect(await page.evaluate(()=>window.trinity.sim.journey.items.cleaver)).toBeGreaterThan(0);await page.keyboard.press('m');await page.locator('#character-menu').click();await page.locator('summary').filter({hasText:'Goblin cleaver'}).click();await page.locator('#equip-loot-cleaver').click();await expect.poll(()=>page.evaluate(()=>window.trinity.view.equippedWeapon)).toBe('cleaver');await page.screenshot({path:'test-results/loot-cleaver-menu.png'});await expect(page.locator('[data-material=scrapIron]')).toBeVisible();await page.locator('[data-material=scrapIron] summary').click();await expect(page.locator('[data-material=scrapIron]')).toContainText('Crafting is not available yet');await page.keyboard.press('m');await page.waitForTimeout(400);await page.screenshot({path:'test-results/cleaver-first-person.png'});await page.keyboard.press('m');
  await page.locator('#equip-starting-weapon').click();expect(await page.evaluate(()=>window.trinity.sim.weapon)).toBe('greatsword');
- await page.keyboard.press('m');await page.keyboard.press('Escape');await page.locator('#playtest-settings > summary').click();await page.getByText('Restart adventure',{exact:true}).click();await page.locator('#restart-adventure').click();await page.locator('#cancel-restart').click();await expect(page.locator('#restart-confirmation')).toBeHidden();
+ await page.keyboard.press('m');await page.keyboard.press('Escape');await page.locator('#restart-adventure').click();await page.locator('#cancel-restart').click();await expect(page.locator('#restart-confirmation')).toBeHidden();
  await page.evaluate(async()=>{const t=window.trinity;t.input.bindings.interact=['KeyH',null];await t.persist();});await page.locator('#restart-adventure').click();await page.locator('#confirm-restart').click();
  await expect(page.locator('#character-creation')).toBeVisible({timeout:45000});await expect(page.locator('#creation-weapon option')).toHaveCount(3);await page.screenshot({path:'test-results/restart-character-creation.png'});
  const data=await page.evaluate(async()=>{const path='/src/save/save.ts',backup='/src/save/backup.ts';const {loadSave}=await import(path);const {previousBackup}=await import(backup);return {current:await loadSave(),backup:await previousBackup()};});
@@ -34,4 +36,13 @@ test('linear route presents distinct encounters and readable room landmarks',asy
  }
  expect(await page.evaluate(()=>window.trinity.sim.enemies.filter((e:{room?:number})=>e.room===1).length)).toBe(1);
  expect(await page.evaluate(()=>window.trinity.sim.enemies.filter((e:{room?:number})=>e.room===7).map((e:{species?:string})=>e.species))).toEqual(['captain']);
+});
+
+test('returning adventure has a title menu with continue and direct restart',async({page})=>{
+ await start(page);await page.evaluate(()=>window.trinity.persist());await page.reload();
+ await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await expect(page.locator('.intro h1')).toHaveText('TRINITY');
+ await expect(page.locator('#begin')).toHaveText('Continue adventure');await expect(page.locator('#restart-adventure')).toBeVisible();
+ await page.screenshot({path:'test-results/title-menu.png'});await page.locator('#begin').click();
+ await expect.poll(()=>page.evaluate(()=>document.pointerLockElement?.id)).toBe('game');
+ await page.keyboard.press('Escape');await expect(page.locator('.intro h1')).toHaveText('Game paused');await expect(page.locator('#restart-adventure')).toBeVisible();
 });

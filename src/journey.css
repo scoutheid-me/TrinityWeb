@@ -43,3 +43,15 @@ body.mouse-captured,body.mouse-captured *{cursor:none!important}
 .starting-weapon-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.starting-weapon-cards label{min-width:0;text-align:left;white-space:normal;padding:10px}.starting-weapon-cards span,.starting-weapon-cards small{display:block;margin-top:6px}.starting-weapon-cards [aria-pressed=true]{outline:2px solid #d7ad38}@media(max-width:650px){.starting-weapon-cards{grid-template-columns:1fr}}
 
 .starting-weapon-cards label:has(input:checked){outline:2px solid #d7ad38;background:#d5c18733}
+
+/* The title / system menu is distinct from the live fantasy journal. */
+#overlay.title-screen{background:radial-gradient(ellipse at 50% 25%,#223b4de6,#071018f5)}
+#overlay.title-screen .intro>h1{font-size:48px;letter-spacing:.15em;margin:12px 0}
+#restart-panel{margin:10px 0;pointer-events:auto}#restart-panel>button{width:100%;padding:12px}
+#restart-confirmation{background:#f0f4f2;color:#354b55;border:1px solid #b4c6c9;padding:14px;margin:10px 0}
+#restart-confirmation p{font:13px/1.5 'Segoe UI',sans-serif;letter-spacing:0}
+#capture-status{padding:12px;border:1px solid #bb9546;background:#f6edcf;color:#594920;font:13px/1.5 'Segoe UI',sans-serif;letter-spacing:0}
+
+#game-update{padding:12px;border:1px solid #d3b957;background:#f6efce;color:#55451f;pointer-events:auto}
+
+#restart-panel>#restart-adventure{background:#f3f5ef;color:#465951;border:1px solid #a8b8ad}

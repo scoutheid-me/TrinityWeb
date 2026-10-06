@@ -87,6 +87,6 @@ C uses a health potion; V uses a stamina draught. Both share a five-second coold
 
 Native pointer lock drives the camera without right-drag, using raw mouse input where supported. Esc or opening a menu releases camera control. Native pointer capture is attempted automatically after gameplay interactions; browsers may require a click before allowing it. If denied, click the game to request native capture; cursor hover no longer rotates the view. Resume after focus loss restores gameplay safely.
 
-Restart from **Esc → Comfort, calibration & saves → Restart adventure**. Confirming returns to name, character and starting weapon selection. Controls are retained and the prior adventure is available through the recovery-backup download.
+Restart from **Esc → Restart adventure**. Confirming returns to name, character and starting weapon selection. Controls are retained and the prior adventure is available through the recovery-backup download.
 
 The dungeon now follows a main tunnel with optional supply and camp/aqueduct offshoots. Goblins drop Col and can drop their carried cleaver, iron fragments or worn leather scraps. The camp cache contains a dagger; supply caches contain potions. Material details explain their source and future crafting use. Select carried weapons in the personal menu’s Items section.

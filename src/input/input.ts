@@ -4,14 +4,24 @@ import type {LabScene} from '../engine/scene';
 import {actions,defaultBindings,movementIntent,type Action} from './bindings';
 export class GameInput {
   private lookAt=performance.now();
-  autoMouseLook=true;private requestingCapture=false;private releaseRequested=false;private deliberateRelease=false;
+  autoMouseLook=true;private requestingCapture=false;private releaseRequested=false;private deliberateRelease=false;captureError='';
   get captured(){return document.pointerLockElement===this.view.canvas;}
   get canCapture(){return this.enabled&&!this.suspended&&!document.querySelector('#debug:not([hidden]),#ui.personal-menu-open,#overlay:not([hidden]),#journey-modal:not([hidden]),#journey-dialogue:not([hidden]),#weapon-rack:not([hidden]),#training-orb:not([hidden]),#guild-invitation:not([hidden]),#tutorial:not([hidden])');}
+  resumeCapture(){this.releaseRequested=false;this.syncCapture();this.requestCapture();}
+  private captureFailed(error?:unknown){
+    if(!this.canCapture||!this.autoMouseLook||this.captured)return;
+    this.captureError='Mouse capture was blocked by this browser. Click Resume to try again. If it remains blocked in an embedded browser, open Trinity in a desktop browser such as Edge or Chrome.';
+    console.warn('Trinity mouse capture failed',error);this.captureLost();
+  }
   requestCapture(){
     if(!this.autoMouseLook||!this.canCapture||this.captured||this.releaseRequested||this.requestingCapture)return;
     this.requestingCapture=true;
-    const lock=async()=>{try{await this.view.canvas.requestPointerLock({unadjustedMovement:true});}catch(error){if((error as DOMException)?.name==='NotSupportedError')await this.view.canvas.requestPointerLock();else throw error;}};
-    void lock().catch(()=>{this.sim.emit('notice','Click the game to capture the mouse. Esc releases it.');}).finally(()=>this.requestingCapture=false);
+    const lock=async()=>{
+      // Raw deltas avoid OS acceleration. Fall back to normal native lock, never hover-look.
+      try{await this.view.canvas.requestPointerLock({unadjustedMovement:true});}
+      catch(error){if(!this.canCapture)throw error;await this.view.canvas.requestPointerLock();}
+    };
+    void lock().catch(error=>this.captureFailed(error)).finally(()=>this.requestingCapture=false);
   }
   syncCapture(){
     document.body.classList.toggle('mouse-captured',this.captured);
@@ -22,11 +32,11 @@ export class GameInput {
   keys=new Set<string>(); sensitivity=1; enabled=false; suspended=false; dragging=false; pointerX=0; pointerY=0;
   bindings=defaultBindings();
   constructor(private sim:CombatSimulation,private view:LabScene,private sync:()=>void,private togglePause:()=>void,private toggleDebug:()=>void,private unlock:()=>void,private interact:()=>void=()=>{},private menu:()=>void=()=>{},private supply:(id:'health'|'stamina')=>void=()=>{},private captureLost:()=>void=()=>{}){
-    document.addEventListener('pointerlockerror',()=>{this.requestingCapture=false;this.syncCapture();});
+    document.addEventListener('pointerlockerror',()=>{if(!this.requestingCapture)this.captureFailed();});
     window.addEventListener('focus',()=>{this.requestingCapture=false;});
     window.addEventListener('keydown',e=>{
-      if(this.suspended)return;
       if(e.code==='Escape'){e.preventDefault();this.releaseRequested=true;if(this.captured){this.deliberateRelease=true;document.exitPointerLock();}if(!e.repeat)this.captureLost();return;}
+      if(this.suspended)return;
       if((e.target as HTMLElement).closest('input:not([type="checkbox"]),select,textarea'))return;
       if((e.target as HTMLElement).matches('input[type="checkbox"]')&&['Space','Enter'].includes(e.code))return;
       if(this.view.firstPerson&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)){e.preventDefault();this.keys.add(e.code);return;}
@@ -37,7 +47,7 @@ export class GameInput {
     document.addEventListener('pointerlockchange',()=>{
       document.body.classList.toggle('mouse-captured',this.captured);
       if(!this.captured){const unexpected=this.autoMouseLook&&!this.deliberateRelease&&this.canCapture;this.clear();this.requestingCapture=false;this.releaseRequested=true;if(unexpected)this.captureLost();}
-      else this.releaseRequested=false;
+      else {this.releaseRequested=false;this.captureError='';}
       this.deliberateRelease=false;
     });
     window.addEventListener('keyup',e=>this.up(e.code));
