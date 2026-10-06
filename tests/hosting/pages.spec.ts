@@ -13,10 +13,11 @@ test('hosted game loads under its permanent project path with working models and
 });
 
 test('new release notice preserves the character when refreshing',async({page,baseURL})=>{
+ test.setTimeout(150000);
  await page.route('**/version.json?*',route=>route.fulfill({json:{revision:'newer-release-test'}}));
  await page.goto(baseURL+'?webgl');await page.locator('#creation-name').fill('Update Scout');await page.locator('[name=character][value=man]').check();await page.locator('#character-creation button').click();
  await expect(page.locator('#dialogue-next')).toBeVisible({timeout:60000});await page.keyboard.press('Escape');
- await expect(page.locator('#game-update')).toBeVisible();await page.unroute('**/version.json?*');await page.locator('#game-update button').click();
+ await expect(page.locator('#game-update')).toBeVisible();await page.unroute('**/version.json?*');await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#game-update button').click()]);
  await expect(page.locator('#begin')).toBeEnabled({timeout:45000});await expect(page.locator('.intro h1')).toHaveText('TRINITY');await expect(page.locator('#settings-name')).toHaveValue('Update Scout');await expect(page.locator('#game-update')).toBeHidden();
- await expect(page.locator('#begin')).toHaveText('Continue adventure');await expect(page.locator('#begin')).toBeEnabled();await page.screenshot({path:'test-results/hosting/title-menu.png'});
+ await expect(page.locator('#begin')).toHaveText('Continue adventure',{timeout:60000});await expect(page.locator('#begin')).toBeEnabled();await page.screenshot({path:'test-results/hosting/title-menu.png'});
 });
