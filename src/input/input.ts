@@ -10,7 +10,7 @@ export class GameInput {
   resumeCapture(){this.releaseRequested=false;this.syncCapture();this.requestCapture();}
   private captureFailed(error?:unknown){
     if(!this.canCapture||!this.autoMouseLook||this.captured)return;
-    this.captureError='Mouse capture was blocked by this browser. Click Resume to try again. If it remains blocked in an embedded browser, open Trinity in a desktop browser such as Edge or Chrome.';
+    this.captureError=(error as DOMException)?.name==='WrongDocumentError'?'This browser document cannot capture the mouse. Open Trinity in a regular Edge or Chrome window. Saves belong to each browser; use save backup/import to transfer this adventure.':'Mouse capture was blocked by this browser. Click Resume to try again. If it remains blocked in an embedded browser, open Trinity in a desktop browser such as Edge or Chrome.';
     console.warn('Trinity mouse capture failed',error);this.captureLost();
   }
   requestCapture(){

@@ -55,3 +55,5 @@ body.mouse-captured,body.mouse-captured *{cursor:none!important}
 #game-update{padding:12px;border:1px solid #d3b957;background:#f6efce;color:#55451f;pointer-events:auto}
 
 #restart-panel>#restart-adventure{background:#f3f5ef;color:#465951;border:1px solid #a8b8ad}
+
+#start-prologue[hidden],#return-training[hidden]{display:none!important}
