@@ -14,7 +14,7 @@
 .first-person #personal-artifact{background:#f3f2f0d9;transform:perspective(1300px) rotateY(5deg) rotateZ(1deg)}
 .artifact-title{font:24px var(--ui-condensed);text-align:left;margin:16px 8px 12px;border-bottom:1px solid #929393;padding-bottom:12px}.artifact-title small{font:9px 'Segoe UI',sans-serif;letter-spacing:.15em}
 .equipment-body{height:220px}.body-silhouette{fill:#686766}.body-slot i{width:32px;height:32px;background:#6e6d6b;color:#fff;border:4px double #efefeb}.body-slot span{color:#5d5d5b;background:transparent;font:10px var(--ui-condensed)}
-.journal-resource{display:grid;grid-template-columns:65px 1fr 78px;align-items:center;gap:8px;font-size:14px;margin:9px 8px}.journal-resource>i{height:7px;background:#b7b8b7;border:1px solid #a6a8a7;border-radius:2px;overflow:hidden}.journal-resource b{display:block;height:100%}.journal-resource .hp{background:#89d99a}.journal-resource .sta{background:#f4cd41}.journal-resource .sp{background:#4ab8f0}.journal-resource small{text-align:right;font:12px var(--ui-condensed)}
+.journal-resource{display:grid;grid-template-columns:65px 1fr 78px;align-items:center;gap:8px;font-size:14px;margin:9px 8px}.journal-resource>i{height:7px;background:#b7b8b7;border:1px solid #a6a8a7;border-radius:2px;overflow:hidden}.journal-resource b{display:block;height:100%}.journal-resource .journal-fill-hp{background:#89d99a}.journal-resource .journal-fill-sta{background:#f4cd41}.journal-resource .journal-fill-sp{background:#4ab8f0}.journal-resource small{text-align:right;font:12px var(--ui-condensed)}
 #personal-attributes{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #a6a6a0;border-bottom:1px solid #a6a6a0;padding:9px;margin:0 8px;font:10px var(--ui-condensed);text-align:center}#personal-attributes b{display:block;font-size:18px;font-weight:400}
 .pocket-label{margin:10px 0 6px}.pocket-row{padding:0 8px 8px}.pocket-row button{aspect-ratio:1.4;background:#fff5;border:1px solid #aaa;font-size:10px}.equipment-description{padding:10px 8px;background:transparent}.equipment-description>small:last-child{display:none}
 #personal-record{font-size:12px;padding:6px 8px 12px}#personal-record div{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #aaa9;padding:6px 0}#personal-record b{font-weight:400;text-align:right}
@@ -45,3 +45,18 @@
 #loadout-tray .skill-radar{max-width:190px;display:block;margin:auto}
 .personal-menu-open .arts-panel,.personal-menu-open #journey-objective,.personal-menu-open #quick-supplies{visibility:hidden}
 @media(max-width:1000px){#loadout-tray .skill-detail-body{max-height:24vh}}
+
+/* Keep resource fills local: the HUD .sp class is absolutely positioned. */
+.journal-resource b{position:static;inset:auto;max-width:100%;height:100%}
+.location,.room-label{display:none!important}
+#personal-detail,.first-person #personal-detail{bottom:auto;width:min(440px,47vw);right:auto;max-height:calc(100vh - 195px);padding:18px}
+#personal-detail .skill-name-list button{min-height:56px;font-size:16px}
+#personal-detail .personal-detail-heading h2{font-size:22px}
+#ui.personal-menu-open #loadout-tray,.first-person.personal-menu-open #loadout-tray{bottom:auto;max-height:calc(100vh - 195px);width:min(660px,47vw);right:auto}
+#overlay.safety-pause{background:#07121b28;backdrop-filter:none}
+#overlay.safety-pause .intro{width:auto;max-width:320px;padding:22px;background:#edf0eedf;color:#454d50;border:1px solid #fffa;margin:auto}
+#overlay.safety-pause .intro>*{display:none!important}
+#overlay.safety-pause .intro>h1,#overlay.safety-pause #begin,#overlay.safety-pause #capture-status:not([hidden]){display:block!important}
+#overlay.safety-pause .intro>h1{font:22px 'Segoe UI',sans-serif;margin:0 0 12px}
+#overlay.safety-pause #begin{margin:0;font-size:14px;padding:12px 24px}
+@media(max-width:700px){#personal-detail,.first-person #personal-detail,#ui.personal-menu-open #loadout-tray{width:calc(100vw - 175px);max-height:calc(100vh - 230px);bottom:auto}}
