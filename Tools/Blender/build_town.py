@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[2]
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 def mat(name,rgb):
  m=bpy.data.materials.new(name);m.diffuse_color=(*rgb,1);m.use_nodes=True;m.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value=(*rgb,1);m.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value=.85;return m
-stone=mat('Warm limestone',(.57,.54,.44));trim=mat('Pale carved stone',(.76,.7,.53));timber=mat('Dark oak framing',(.18,.105,.06));plaster=mat('Ivory plaster',(.8,.74,.58));roof=mat('Blue slate',(.09,.2,.24));gold=mat('Guild brass',(.78,.53,.12));cloth=mat('Guild indigo',(.09,.16,.36));glass=mat('Amber window',(.85,.57,.2));pave=mat('Square paving',(.42,.43,.39))
+stone=mat('Warm limestone',(.57,.54,.44));trim=mat('Pale carved stone',(.76,.7,.53));timber=mat('Dark oak framing',(.18,.105,.06));plaster=mat('Ivory plaster',(.8,.74,.58));roof=mat('Blue slate',(.09,.2,.24));gold=mat('Guild brass',(.78,.53,.12));cloth=mat('Guild burgundy',(.36,.055,.085));glass=mat('Amber window',(.85,.57,.2));pave=mat('Square paving',(.42,.43,.39))
 def box(n,x,y,z,w,h,d,m):
  bpy.ops.mesh.primitive_cube_add(size=1,location=(x,-z,y));o=bpy.context.object;o.name=n;o.scale=(w,d,h);bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);o.data.materials.append(m);return o
 def mesh(n,verts,faces,m):
@@ -40,6 +40,36 @@ box('Guild sign backing',0,5.6,10.75,4.9,.8,.22,timber)
 for x in [-7,7]:
  box('Planter',x,.35,8,1.2,.7,1.2,stone)
  bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=1,location=(x,-8,1.35));bpy.context.object.data.materials.append(mat('Garden green '+str(x),(.16,.29,.14)))
+# Original dressed-stone facade, curved voussoirs and warm lanterns.
+def arch(x,z,r,y):
+ for i in range(13):
+  a=i*math.pi/13;b=(i+1)*math.pi/13
+  verts=[(x+rr*math.cos(t),y+rr*math.sin(t),zz) for zz in [z-.16,z+.16] for rr,t in [(r,a),(r,b),(r+.28,b),(r+.28,a)]]
+  mesh('Carved arch stone',verts,[(0,1,2,3),(4,7,6,5),(0,4,5,1),(2,6,7,3)],trim)
+for x in [-4,4]:
+ arch(x,10.68,.8,6.8)
+ for y in [1,2,3,4,5,6,7]:
+  box('Buttress course',x*1.45,y,10.02,.76,.07,1.3,stone)
+arch(0,10.28,1.75,3.25)
+for y in [.35,3.4,7.8]:box('Guild facade cornice',0,y,10.5,12.6,.19,.5,trim)
+for y in [1,2,4,5,6,7]:
+ for x in [-5,-3,3,5]:box('Masonry joint',x,y,10.98,1.8,.035,.025,trim)
+leaf=mat('Town garden foliage',(.22,.36,.105))
+for x in [-10,10]:
+ for z in [1,7]:
+  box('Garden border',x,.3,z,2,.6,2,trim)
+  box('Garden trunk',x,1.7,z,.28,2.8,.28,timber)
+  for dx,dy,dz,r in [(0,3,0,1.35),(-.6,2.7,.3,.9),(.7,3.4,-.2,1)]:
+   bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2,radius=r,location=(x+dx,-z-dz,dy));bpy.context.object.name='Garden canopy';bpy.context.object.data.materials.append(leaf)
+  box('Lantern post',x-1.5,1.8,z,.12,3.6,.12,timber)
+  box('Lantern brass housing',x-1.5,3.45,z,.46,.75,.46,gold)
+  box('Lantern warm glass',x-1.5,3.45,z-.25,.31,.52,.025,glass)
+  box('Lantern cap',x-1.5,3.86,z,.62,.12,.62,timber)
+# A raised perimeter pavement frames the unobstructed approach to the hall.
+for x in [-11.7,11.7]:box('Perimeter curb',x,.12,2,.3,.24,19,trim)
+for x in [-8,8]:
+ box('Stone bench seat',x,.65,5,2.4,.2,.7,trim)
+ for dx in [-.8,.8]:box('Stone bench foot',x+dx,.3,5,.3,.6,.6,stone)
 save('beginnings_gate_square')
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 # Portal authored at origin; runtime places it across the final corridor.

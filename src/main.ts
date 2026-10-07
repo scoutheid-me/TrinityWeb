@@ -17,6 +17,7 @@ import {GuildBoard} from './ui/guild';
 import './style.css';
 import './interface.css';
 import './personal-interface.css';
+import './reference-interface.css';
 import {CombatTutorial} from './ui/tutorial';
 import {Matrix,Vector3} from '@babylonjs/core';
 import {CombatSimulation} from './combat/simulation';

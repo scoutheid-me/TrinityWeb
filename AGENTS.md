@@ -74,3 +74,6 @@ Keep this section persistent so future sessions do not need the user to repeat t
 - Goblin loot is seeded per adventure/creature and committed with defeat claims; never reroll on reload or reward debug kills. Dagger is loot-only, usable from Items, not a fourth starter/rack weapon. Restart is directly visible in the Esc menu with explicit in-game confirmation, retains preferences, and atomically backs up the old adventure.
 
 - Creature loot must match carried equipment or biological materials. Current goblins carry/drop cleavers, with iron and leather equipment scraps; dagger is camp-cache loot. Boar hide is a future field drop, never a Guild practice reward. Source/use descriptions live in Items; crafting is not implemented. Keep rendering and loot linked through `src/data/creatureLoot.ts`, and preserve existing owned items during migration.
+
+## Latest visual reference direction
+- The October 6 user references are preserved unchanged in `References/HUD/2026-10-06/`, with a labelled `comparison.html` gallery. Use their pale angled character/skill panes, circular gold navigation, slim stepped HP bar and warm Guild square as the current direction. Retain actual gameplay data rather than copying illustrative skill names or unsupported statistics. See `docs/VISUAL_REFERENCE_PASS.md`.

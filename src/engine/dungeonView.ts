@@ -37,6 +37,7 @@ export class DungeonView {
   this.doorLift=Math.min(4.5,Math.max(0,this.doorLift+(doorOpen?1:-1)*dt*.005));this.door.position.y=this.doorLift;
   this.gate.setEnabled(!boss);for(const [i,c] of this.chests)c.rotation.x=looted.includes('chest-'+i)?.12:0;
   const town=p.z>148&&Math.hypot(p.x,p.z-160)<18;this.view.scene.clearColor=town?new Color4(.47,.64,.73,1):new Color4(.013,.022,.05,1);this.view.scene.fogColor=town?new Color3(.47,.64,.73):new Color3(.013,.022,.05);this.view.scene.fogDensity=town?.011:.018;this.view.scene.getLightByName('sky')!.intensity=town?.8:.2;this.view.scene.getLightByName('sun')!.intensity=town?1.65:.1;this.view.scene.imageProcessingConfiguration.exposure=1.05;
+  for(let i=0;i<this.lights.length;i++){this.lights[i].intensity=town?(i===0?.35:0):(i===0?2:2.5);this.lights[i].diffuse=Color3.FromHexString(town?'#ffe0ab':i===0?'#7eafff':'#588dff');}
   this.lights[0].position.set(p.x+.5,cavernHeight(p.z,p.x)+2.5,p.z-1);const near=[...cavernAreas].sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));for(let i=1;i<3;i++)this.lights[i].position.set(near[i-1].x,cavernHeight(near[i-1].z,near[i-1].x)+3.5,near[i-1].z+2);
  }
 }
