@@ -11,7 +11,7 @@ import {artShape,chargeDuration} from '../data/arts';
 import {duelPose} from './duelMotion';
 import {HitIndicator} from './hitIndicator';
 import {enemyPhase} from '../combat/timeline';
-import { Texture, LoadAssetContainerAsync, AssetContainer, AnimationGroup, Quaternion, AbstractEngine, ArcRotateCamera, FreeCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
+import { SSAO2RenderingPipeline, Texture, LoadAssetContainerAsync, AssetContainer, AnimationGroup, Quaternion, AbstractEngine, ArcRotateCamera, FreeCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine, GlowLayer, HemisphericLight, ImportMeshAsync, Mesh, MeshBuilder, PBRMaterial, Scene, SceneInstrumentation, ShadowGenerator, StandardMaterial, TransformNode, Vector3, WebGPUEngine } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import glslangJs from '@babylonjs/core/assets/glslang/glslang.js?url';
 import glslangWasm from '@babylonjs/core/assets/glslang/glslang.wasm?url';
@@ -32,6 +32,7 @@ export class LabScene {
   togglePerspective(){this.firstPerson=!this.firstPerson;this.scene.activeCamera=this.firstPerson?this.firstCamera:this.camera;this.player.root.setEnabled(!this.firstPerson);this.firstWeapon?.setEnabled(this.firstPerson);this.camera.beta=this.firstPerson?Math.PI/2:1.1;return this.firstPerson;}
   shadow!: ShadowGenerator;
   pipeline!: DefaultRenderingPipeline;
+  ambientOcclusion?:SSAO2RenderingPipeline;
   instrumentation!: SceneInstrumentation;
   player!: Actor;
   actors = new Map<string, Actor>();
@@ -82,8 +83,9 @@ export class LabScene {
     this.camera.lowerBetaLimit = .4; this.camera.upperBetaLimit = 1.40; this.camera.lowerRadiusLimit = 3.5; this.camera.upperRadiusLimit = 11;
     const sky = new HemisphericLight('sky', new Vector3(0,1,0), this.scene); sky.intensity = .8; sky.groundColor = new Color3(.20,.27,.32);
     const sun = new DirectionalLight('sun', new Vector3(-.45,-1,.55), this.scene); sun.position = new Vector3(12,22,-16); sun.intensity = 1.65; sun.diffuse = new Color3(1,.87,.68);
-    this.shadow = new ShadowGenerator(1024, sun); this.shadow.useBlurExponentialShadowMap = true; this.shadow.blurKernel = 16; this.shadow.darkness = .30; this.shadow.bias = .002;
+    sun.shadowFrustumSize=48;sun.shadowMinZ=1;sun.shadowMaxZ=90;this.shadow = new ShadowGenerator(2048, sun); this.shadow.useBlurExponentialShadowMap = true; this.shadow.blurKernel = 6; this.shadow.darkness = .15; this.shadow.bias = .002;
     this.glow = new GlowLayer('aether glow', this.scene, { mainTextureRatio: .35 }); this.glow.intensity = .35;
+    if(SSAO2RenderingPipeline.IsSupported){this.ambientOcclusion=new SSAO2RenderingPipeline('contact shading',this.scene,{ssaoRatio:.5,blurRatio:.5},[this.camera,this.firstCamera]);this.ambientOcclusion.radius=.7;this.ambientOcclusion.totalStrength=.8;this.ambientOcclusion.samples=8;this.ambientOcclusion.expensiveBlur=false;}
     this.pipeline = new DefaultRenderingPipeline('presentation', false, this.scene, [this.camera,this.firstCamera]); this.pipeline.fxaaEnabled = true;
     this.instrumentation = new SceneInstrumentation(this.scene); this.instrumentation.captureFrameTime = true;
     this.environment();this.hallNodes=[...this.scene.meshes];
@@ -170,6 +172,7 @@ export class LabScene {
     return { root, leftArm: find('left_arm'), rightArm, leftLeg: find('left_leg'), rightLeg: find('right_leg'), sword, phase: 0, slashUntil: 0 };
   }
   setQuality(quality: Quality) {
+    if(this.ambientOcclusion){const manager=this.scene.postProcessRenderPipelineManager;manager.detachCamerasFromRenderPipeline('contact shading',[this.camera,this.firstCamera]);if(quality!=='low')manager.attachCamerasToRenderPipeline('contact shading',[this.camera,this.firstCamera]);}
     this.quality = quality; const scale = quality === 'low' ? 1.6 : quality === 'medium' ? 1.2 : 1;
     this.engine.setHardwareScalingLevel(scale); this.scene.shadowsEnabled = quality !== 'low'; this.glow.isEnabled = quality !== 'low'; this.pipeline.fxaaEnabled = quality !== 'low'; this.effects = quality === 'high' ? 1 : quality === 'medium' ? .65 : .3;
   }
@@ -186,6 +189,7 @@ export class LabScene {
     actor.root.position.y = dead ? .25 : Math.abs(stride)*.035;
   }
   update(sim: CombatSimulation, dt: number) {
+    const sun=this.scene.getLightByName("sun") as DirectionalLight;sun.position.set(sim.player.x+12,cavernHeight(sim.player.z,sim.player.x)+26,sim.player.z-16);
     void this.syncWeapon(sim.weapon);
     const ground=(z:number,x:number)=>sim.journey.active?cavernHeight(z,x):0;
     const poseDt=sim.now<sim.hitStopUntil?0:dt;
@@ -261,7 +265,7 @@ export class LabScene {
         for(const side of ['left','right'] as const){const arm=side==='left'?this.player.leftArm:this.player.rightArm;if(arm)holdGrip(arm,sword,side);}
         if(this.firstWeapon){this.firstWeapon.position.set(.14,-.30+heavy.lift*.65,-.48);this.firstWeapon.rotationQuaternion=Quaternion.RotationAxis(Vector3.Up(),Math.PI).multiply(orientation);}
       }
-    for(const [i,arm] of this.firstArms.entries()){arm.setEnabled(this.firstPerson&&this.equippedWeapon==='greatsword');if(this.firstWeapon&&this.equippedWeapon==='greatsword')holdGrip(arm,this.firstWeapon,i===0?'left':'right');}
+    for(const [i,arm] of this.firstArms.entries()){arm.setEnabled(this.firstPerson&&(this.equippedWeapon==='greatsword'||i===1));if(this.firstWeapon&&(this.equippedWeapon==='greatsword'||i===1))holdGrip(arm,this.firstWeapon,i===0?'left':'right');}
     const artCue=!!sim.art&&sim.art.grades[sim.art.stage]===null&&Math.abs(sim.now-sim.art.start-chargeDuration(sim.art.definition,sim.art.stage))<=balance.timing.perfect;
     this.timingFlash.setEnabled(artCue&&!this.reducedFlash);
     const bodyClip=state==='Dodge'?'dodge':state==='Parry'?'counter':state==='HitReaction'?'hit':null;

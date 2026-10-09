@@ -1,0 +1,13 @@
+{
+  "fps": 70,
+  "frameMs": 14.300000011920929,
+  "backend": "WebGPU",
+  "meshes": 212,
+  "vertices": 239813,
+  "drawCalls": 612,
+  "viewport": "1920x1080",
+  "quality": "high",
+  "meanFrameMs": 15.100671140939598,
+  "p95FrameMs": 16.599999964237213,
+  "measuredFps": 66.22222222222221
+}

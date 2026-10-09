@@ -60,3 +60,12 @@
 #overlay.safety-pause .intro>h1{font:22px 'Segoe UI',sans-serif;margin:0 0 12px}
 #overlay.safety-pause #begin{margin:0;font-size:14px;padding:12px 24px}
 @media(max-width:700px){#personal-detail,.first-person #personal-detail,#ui.personal-menu-open #loadout-tray{width:calc(100vw - 175px);max-height:calc(100vh - 230px);bottom:auto}}
+
+/* Fine artifact chrome: retain compact click-to-expand layouts. */
+#personal-artifact,#personal-detail,#loadout-tray{box-shadow:0 10px 35px #18222e38,inset 0 0 0 3px #ffffff29;background:linear-gradient(115deg,#fbfaf7ed,#e9e8e3df)!important}
+#personal-artifact:after,#personal-detail:after,#loadout-tray:after{content:'';position:absolute;right:5px;bottom:5px;width:12px;height:12px;border-right:2px solid white;border-bottom:2px solid white;pointer-events:none}
+#character-branch button i{background:radial-gradient(circle,#aab1b640,#5e6a7366);box-shadow:0 0 0 1px #ffffff45,0 3px 10px #0002}
+#character-branch button.selected i{background:radial-gradient(circle at 35% 30%,#ffe875,#f3be13 65%,#bc8512);box-shadow:0 0 0 3px #e5b52088,0 0 20px #ffd34730}
+#personal-detail a{color:#6c6648;font-size:12px;text-underline-offset:3px}
+#personal-detail .skill-name-list button{font-size:16px!important}
+.art-emblem{box-shadow:0 0 0 1px #fff8,0 2px 5px #18273326}

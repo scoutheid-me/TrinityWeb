@@ -150,3 +150,9 @@ Town/exit meshes: regenerate with `blender --background --python Tools/Blender/b
 The cavern generator now includes original camp shelters, an aqueduct, provision shelves, a reflecting pool, a brute shrine and a captain throne/standards. `build_dagger.py` exports the loot-only dagger with the existing weapon +Z blade axis. Both keep editable Blender sources. No Blender MCP tools were exposed in this session, so the installed Blender 5.2 headless pipeline was used.
 
 Recovered cleaver: `prepare_loot_cleaver.py` reuses the supplied Synty cleaver mesh and packed atlas, transforms source blade +Z into Blender -Y, and exports `loot_cleaver.glb` with the player grip at origin. The enemy socket retains its original export. No Blender MCP tools were exposed in this session; installed Blender 5.2 headless export was used. First-person runtime model and inventory were visually checked.
+
+## October 9 asset pass
+- `Tools/Blender/build_town.py -- --town-only` rebuilds the courtyard without touching exit assets; `town_surfaces.py` supplies deterministic original 512px albedo/normal textures and metre-scaled planar UVs. Editable source: `art/blender/beginnings_gate_square.blend`.
+- `refine_characters.py` preserves existing named arm/elbow/grip nodes. `build_mira.py` authors the independent static town guide (`mira_guide.blend` / `.glb`). `render_selection.py` refreshes creation portraits after player edits.
+- Textures remain embedded in GLBs and retained separately under `public/assets/textures/town_*`. No downloaded or copied game art was added.
+- Runtime checks passed for both imported player variants, Mira, town materials and both-view greatsword grip contact. See `docs/VISUAL_REFERENCE_PASS.md` for measured renderer results and remaining presentation limits.

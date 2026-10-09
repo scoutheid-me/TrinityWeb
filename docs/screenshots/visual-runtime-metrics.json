@@ -1,0 +1,11 @@
+{
+  "fps": 120,
+  "frameMs": 8.300000011920929,
+  "backend": "WebGL",
+  "meshes": 41,
+  "vertices": 295070,
+  "drawCalls": 140,
+  "quality": "medium",
+  "contactShading": true,
+  "townMeshes": 4
+}
