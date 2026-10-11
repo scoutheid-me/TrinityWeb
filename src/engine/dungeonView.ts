@@ -1,5 +1,5 @@
-import {lootRarities,itemRarity,type LootItem} from '../data/creatureLoot';
-import type {CreatureLoot} from '../world/loot';
+import {lootRarities,itemRarity} from '../data/creatureLoot';
+import {canPickUp,type GroundDrop} from '../world/loot';
 import {createTownProbe} from './townProbe';
 import {exitDoor} from '../world/regions';
 import {publicUrl} from '../publicUrl';
@@ -8,7 +8,7 @@ import type {LabScene} from './scene';
 import {cavernAreas,chestAreas,cavernHeight} from '../world/cavern';
 export class DungeonView {
  sentryGate!:TransformNode;door!:TransformNode;private doorLift=0;root:TransformNode;hall:TransformNode[]=[];markers=new Map<string,Mesh>();chests=new Map<number,TransformNode>();npc!:TransformNode;gate!:Mesh;lights:PointLight[]=[];exitLight!:PointLight;town!:TransformNode;
- private lootOrbs:{mesh:Mesh;age:number;base:number}[]=[];
+ private lootOrbs=new Map<string,{mesh:Mesh;age:number;base:number}>();
  constructor(private view:LabScene){this.root=new TransformNode('Connected cavern',view.scene);this.root.setEnabled(false);}
  setHallNodes(nodes:TransformNode[]){this.hall=nodes;}
  async init(){
@@ -35,21 +35,22 @@ export class DungeonView {
   this.exitLight=new PointLight('Warm daylight beyond the stairs',new Vector3(-11,4.8,145),this.view.scene);this.exitLight.diffuse=Color3.FromHexString('#ffe6b4');this.exitLight.intensity=3;this.exitLight.range=25;this.exitLight.setEnabled(false);
   for(const mat of this.view.scene.materials)if('maxSimultaneousLights' in mat)(mat as StandardMaterial).maxSimultaneousLights=6;
  }
- /** Loot is committed by the simulation before these cosmetic remnants appear. */
- showLoot(x:number,z:number,drop:CreatureLoot){
-  const tiers=new Set<keyof typeof lootRarities>();if(drop.coins)tiers.add('common');
-  for(const [id,count] of Object.entries(drop.items))if(count>0)tiers.add(itemRarity(id as LootItem));
-  let i=0;for(const tier of tiers){const rarity=lootRarities[tier],name='Loot orb '+rarity.label;
-   const orb=MeshBuilder.CreateSphere(name,{diameter:.23,segments:12},this.view.scene);orb.parent=this.root;orb.isPickable=false;
-   orb.position.set(x+i++*.4,cavernHeight(z,x)+.38,z);orb.material=this.view.scene.getMaterialByName(name)??this.view.material(name,rarity.color,.4);const orbMat=orb.material as StandardMaterial;orbMat.disableLighting=true;orbMat.emissiveColor=Color3.FromHexString(rarity.color);orbMat.specularColor=Color3.Black();
+ /** Only eligible, unclaimed items are represented in this player's scene. */
+ syncLoot(drops:GroundDrop[],actor:string){
+  const visible=drops.filter(d=>canPickUp(d,actor)),ids=new Set(visible.map(d=>d.id));
+  for(const [id,o] of this.lootOrbs)if(!ids.has(id)){o.mesh.dispose();this.lootOrbs.delete(id);}
+  for(const drop of visible){if(this.lootOrbs.has(drop.id))continue;
+   const rarity=lootRarities[drop.item==='col'?'common':itemRarity(drop.item)],name='Loot orb '+rarity.label;
+   const orb=MeshBuilder.CreateSphere(name,{diameter:.23,segments:12},this.view.scene);orb.parent=this.root;orb.isPickable=false;orb.metadata={dropId:drop.id,item:drop.item};
+   orb.position.set(drop.x,cavernHeight(drop.z,drop.x)+.38,drop.z);orb.material=this.view.scene.getMaterialByName(name)??this.view.material(name,rarity.color,.4);const mat=orb.material as StandardMaterial;mat.disableLighting=true;mat.emissiveColor=Color3.FromHexString(rarity.color);mat.specularColor=Color3.Black();
    const halo=MeshBuilder.CreateTorus(name+' halo',{diameter:.42,thickness:.014,tessellation:24},this.view.scene);halo.parent=orb;halo.material=orb.material;halo.isPickable=false;
-   this.lootOrbs.push({mesh:orb,age:0,base:orb.position.y});
+   this.lootOrbs.set(drop.id,{mesh:orb,age:0,base:orb.position.y});
   }
  }
  show(){this.exitLight.setEnabled(true);this.root.setEnabled(true);for(const n of this.hall)n.setEnabled(false);for(const l of this.lights)l.setEnabled(true);}
  hide(){this.exitLight.setEnabled(false);this.view.scene.environmentIntensity=.35;this.root.setEnabled(false);for(const n of this.hall)n.setEnabled(true);for(const l of this.lights)l.setEnabled(false);this.view.scene.clearColor=new Color4(.37,.57,.67,1);this.view.scene.fogColor=new Color3(.37,.57,.67);this.view.scene.fogDensity=.011;this.view.scene.getLightByName('sky')!.intensity=.8;this.view.scene.getLightByName('sun')!.intensity=1.65;}
  update(p:{x:number;z:number},room:number,looted:string[],boss:boolean,doorOpen=false,dt=16,sentryDefeated=false){
-  for(let i=this.lootOrbs.length-1;i>=0;i--){const o=this.lootOrbs[i];o.age+=dt;o.mesh.position.y=o.base+Math.sin(o.age*.003)*.055;o.mesh.rotation.y=o.age*.0006;o.mesh.visibility=Math.min(1,(15000-o.age)/2500);if(o.age>=15000){o.mesh.dispose();this.lootOrbs.splice(i,1);}}
+  for(const o of this.lootOrbs.values()){o.age+=dt;o.mesh.position.y=o.base+Math.sin(o.age*.003)*.055;o.mesh.rotation.y=o.age*.0006;}
   this.sentryGate.setEnabled(!sentryDefeated);
   this.doorLift=Math.min(4.5,Math.max(0,this.doorLift+(doorOpen?1:-1)*dt*.005));this.door.position.y=this.doorLift;
   this.gate.setEnabled(!boss);for(const [i,c] of this.chests)c.rotation.x=looted.includes('chest-'+i)?.12:0;

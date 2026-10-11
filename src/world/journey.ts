@@ -1,3 +1,4 @@
+import type {GroundDrop} from './loot';
 import {emptyLoot,type LootInventory,type LootItem} from '../data/creatureLoot.ts';
 import type {ArtDefinition} from '../data/arts';
 export const primers = [
@@ -16,12 +17,13 @@ export const primerArts:Record<string,ArtDefinition>={
  'second-breath':form('second-breath','Second Breath','One patient strike. Landing it restores 10 stamina, scaled by release quality.',20,5,16,{restoreStamina:10,recovery:420}),
 };
 export interface Journey {
+ drops:GroundDrop[];
  startingWeapon:string;lootSeed:number;items:LootInventory;
  version:2; visited:number[]; quest:'offered'|'accepted'|'declined'|'completed';position:{x:number;z:number};checkpoint:{x:number;z:number};defeated:string[];active:boolean; room:number; cleared:number[]; looted:string[]; facts:string[]; coins:number; elapsedMs:number;
  book:PrimerId|null; leafLearned:boolean; practice:{hits:number;evades:number;parries:number;breaks:number};
  checkpointHp:number; purchases:number;
 }
-export const freshJourney=(active=true):Journey=>({startingWeapon:'sword',lootSeed:0,items:emptyLoot(),version:2,visited:[0],quest:'offered',position:{x:0,z:-6},checkpoint:{x:0,z:-6},defeated:[],active,room:0,cleared:[],looted:[],facts:[],coins:0,elapsedMs:0,book:null,leafLearned:false,practice:{hits:0,evades:0,parries:0,breaks:0},checkpointHp:200,purchases:0});
+export const freshJourney=(active=true):Journey=>({drops:[],startingWeapon:'sword',lootSeed:0,items:emptyLoot(),version:2,visited:[0],quest:'offered',position:{x:0,z:-6},checkpoint:{x:0,z:-6},defeated:[],active,room:0,cleared:[],looted:[],facts:[],coins:0,elapsedMs:0,book:null,leafLearned:false,practice:{hits:0,evades:0,parries:0,breaks:0},checkpointHp:200,purchases:0});
 const count=(v:unknown,max=100000)=>typeof v==='number'&&Number.isFinite(v)?Math.max(0,Math.min(max,Math.floor(v))):0;
 export function validateJourney(raw:unknown):Journey{
  const j=freshJourney(false);if(!raw||typeof raw!=='object')return j;const r=raw as Partial<Journey>;if(r.version!==2)return freshJourney(r.active!==false);
@@ -30,6 +32,13 @@ export function validateJourney(raw:unknown):Journey{
  j.active=r.active===true;j.cleared=Array.isArray(r.cleared)?[...new Set(r.cleared.filter(v=>Number.isInteger(v)&&v>=0&&v<=8))].sort((a,b)=>a-b):[];
  j.visited=Array.isArray(r.visited)?[...new Set(r.visited.filter(i=>Number.isInteger(i)&&i>=0&&i<=9))]:[0];
  j.room=count(r.room,9);j.quest=['offered','accepted','declined','completed'].includes(r.quest??'')?r.quest!:'offered';j.defeated=Array.isArray(r.defeated)?[...new Set(r.defeated.filter(v=>/^cavern-[124567]-[01]$/.test(v)))]:[];for(const key of ['position','checkpoint'] as const){const v=r[key];if(v&&Number.isFinite(v.x)&&Number.isFinite(v.z)&&Math.abs(v.x)<100&&v.z>=-20&&v.z<190)j[key]={x:v.x,z:v.z};}
+ const seenDrops=new Set<string>();
+ if(Array.isArray(r.drops))for(const d of r.drops.slice(0,256)){
+  if(!d||typeof d!=='object'||typeof d.id!=='string'||!/^cavern-[124567]-[01]:[0-9]+$/.test(d.id)||seenDrops.has(d.id)||!j.defeated.includes(d.creatureId)||!d.id.startsWith(d.creatureId+':')||!(d.item==='col'||Object.hasOwn(j.items,d.item))||!Number.isFinite(d.x)||!Number.isFinite(d.z)||Math.abs(d.x)>100||d.z< -20||d.z>150)continue;
+  const owners=Array.isArray(d.owners)?[...new Set(d.owners.filter(v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{1,64}$/.test(v)))].slice(0,32):[];
+  const amount=count(d.amount,d.item==='col'?9999:1);if(!amount||!owners.length)continue;
+  seenDrops.add(d.id);j.drops.push({id:d.id,creatureId:d.creatureId,item:d.item,amount,x:d.x,z:d.z,owners,...d.pickedBy&&owners.includes(d.pickedBy)?{pickedBy:d.pickedBy}:{}});
+ }
  j.looted=Array.isArray(r.looted)?[...new Set(r.looted.filter(v=>/^chest-[0-8]$/.test(v)))]:[];
  const known=['joined','awakened','bought','supplies','boss','mira','town-quest','message-read','quest-resolved','exit-open','gate-town-side'];j.facts=Array.isArray(r.facts)?[...new Set(r.facts.filter(v=>known.includes(v)))]:[];
  if(!j.defeated.includes('cavern-7-0')){j.facts=j.facts.filter(v=>!['boss','mira','town-quest'].includes(v));if(j.quest==='completed')j.quest='accepted';}

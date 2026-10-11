@@ -208,7 +208,8 @@ export class LabScene {
       if(actor.groups){
        if(phase&&enemy.pattern)actor.attackMotion={name:enemy.pattern.motion==='sweep'?'attack_sweep':'attack_chop',startAt:phase.startAt,contactAt:phase.contactAt};
        const attack=actor.attackMotion&&sim.now<=actor.attackMotion.contactAt+300&&enemy.state!=='Broken'&&enemy.hp>0?actor.attackMotion:null;
-       const name=attack?attack.name:(actualSpeed>.2?'walk':'idle');
+       const routine=enemy.mind?.mode==='routine'?enemy.mind.activity:undefined;
+       const name=attack?attack.name:(actualSpeed>.2?'walk':routine==='rest'?'rest':routine==='lookout'?'fidget':'idle');
        const clip=actor.groups.find(g=>g.name.endsWith(name))??actor.groups[0];
        const frame=attack?(sim.now<=attack.contactAt?1+23*Math.max(0,(sim.now-attack.startAt)/Math.max(1,attack.contactAt-attack.startAt)):24+24*Math.min(1,(sim.now-attack.contactAt)/300)):clip.from+((name==='walk'?actor.phase*8:sim.now*.03))%Math.max(1,clip.to-clip.from);
        if(actor.animationName!==name){for(const g of actor.groups)g.stop();clip.start(true);clip.pause();actor.animationName=name;}

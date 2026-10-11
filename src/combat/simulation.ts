@@ -1,3 +1,5 @@
+import {recordLootDamage,type LootCredit} from '../world/loot';
+import {cavernSight,updateCavernBehavior,type CreatureMind} from './creatureBehavior';
 import {supplies,supplyCooldownMs} from '../data/items';
 import {stopAtExit} from '../world/regions';
 import {projectToCavern,cavernAreas} from '../world/cavern';
@@ -15,7 +17,7 @@ import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, St
 
 export interface Point { x: number; z: number; }
 export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; breakAmount?:number; artId?:string; source?:'basic'|'art'|'counter'; }
-export interface Enemy extends Point { room?:number;home?:Point;role?:'skirmisher'|'brute'; id: string; species?:'sentinel'|'boar'|'goblin'|'captain'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; lessonPattern?:number; }
+export interface Enemy extends Point { credit?:LootCredit;mind?:CreatureMind; room?:number;home?:Point;role?:'skirmisher'|'brute'; id: string; species?:'sentinel'|'boar'|'goblin'|'captain'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; lessonPattern?:number; }
 export class CombatSimulation {
   profile=freshProfile();journey=freshJourney(false);suppressFieldProgression=false;
   get rewardEligible(){return !this.gmMode&&this.fieldEligible&&!this.practiceMode&&!Object.values(this.flags).some(Boolean)&&Object.entries(defaultAttributes).every(([k,v])=>this.attributes[k as keyof Attributes]===v);}
@@ -172,11 +174,12 @@ export class CombatSimulation {
     enemy.break = clamp(enemy.break + amount, 0, balance.enemy.breakThreshold);
     if (enemy.break >= balance.enemy.breakThreshold) { enemy.state = 'Broken'; enemy.until = this.now + balance.enemy.stagger; enemy.pattern = null; this.recordOutcome({kind:'break',actor:'player',target:enemy.id,attackId:this.now,phase:'break',at:this.now,amount:amount});this.counters.breaks++; this.emit('break', 'BREAK · punish the opening', enemy, { strong: true }); }
   }
-  hitEnemy(enemy: Enemy, damage: number, breakDamage: number, grade: Grade, phase: string) {
+  hitEnemy(enemy: Enemy, damage: number, breakDamage: number, grade: Grade, phase: string,sourceActor='player') {
     if (enemy.hp <= 0 || !this.hits.accept(`${this.attackSerial}:${phase}`, enemy.id)) return false;
     const rear=rearMultiplier(enemy,this.player);
     const actual = Math.round(damage * rear * (enemy.state === 'Broken' ? 1.6 : 1));
     this.recordOutcome({kind:phase==='basic'?'basic-hit':phase.startsWith('counter:')?'counter-hit':'art-hit',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:actual,artId:phase==='basic'?undefined:this.art?.definition.id,grade});
+    if(actual>0){recordLootDamage(enemy.credit??={contributors:[]},sourceActor,Math.min(actual,enemy.hp));if(enemy.mind){enemy.mind.mode='pursuit';enemy.mind.pursuit=Math.max(60,enemy.mind.pursuit);enemy.mind.lastSeen={x:this.player.x,z:this.player.z};}}
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
     this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { source:phase==='basic'?'basic':phase.startsWith('counter:')?'counter':'art',artId:phase.startsWith('counter:')?undefined:this.art?.definition.id,amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1,breakAmount:enemy.hp>0?breakDamage:0 });
     this.hitStopUntil = this.now + balance.hitStop;
@@ -307,7 +310,8 @@ export class CombatSimulation {
   }
   private updateEnemy(enemy: Enemy, dt: number) {
     if (enemy.state === 'Dead') return;
-    if(this.journey.active&&enemy.room!==undefined&&enemy.home){const area=cavernAreas[enemy.room];if(Math.hypot(this.player.x-area.x,this.player.z-area.z)>area.radius+5){enemy.pattern=null;enemy.state='Idle';enemy.x=enemy.home.x;enemy.z=enemy.home.z;enemy.yaw=Math.PI;return;}}
+    const cavernAI=this.journey.active&&enemy.home&&enemy.room!==undefined;
+    if(cavernAI&&!updateCavernBehavior(enemy,this.player,this.journey,this.now,dt))return;
 
     if (enemy.state === 'Broken') { if (this.now >= enemy.until) { enemy.break = 0; enemy.state = 'Recovery'; enemy.until = this.now + 600; } return; }
     if (enemy.state === 'Recovery') { if (this.now >= enemy.until) enemy.state = 'Chase'; return; }
@@ -320,14 +324,14 @@ export class CombatSimulation {
       enemy.state = elapsed < pattern.telegraph ? 'Telegraph' : 'Attack';
       for (let i = 0; i < pattern.hits.length; i++) if (elapsed >= pattern.hits[i] && !enemy.hits.has(i)) {
         enemy.hits.add(i); this.emit('slash', pattern.name, enemy, { target: enemy.id, strong: !pattern.parryable,shape:pattern.shape,motion:pattern.motion });
-        if (containsHit(pattern.shape, enemy, enemy.yaw, this.player)) this.receiveAttack(enemy, pattern);
+        if ((!cavernAI||cavernSight(enemy,this.player,this.journey))&&containsHit(pattern.shape, enemy, enemy.yaw, this.player)) this.receiveAttack(enemy, pattern);
         else if (this.state.state === 'Dodge' && this.now-this.actionStart >= balance.dodge.iframeStart && this.now-this.actionStart <= balance.dodge.iframeEnd && containsHit(pattern.shape,enemy,enemy.yaw,this.dodgeOrigin)) {this.defenseOutcome('evade',enemy);this.emit('notice', 'Evaded');}
         if (['Broken','Dead'].includes(enemy.state)) return;
       }
       if (elapsed >= pattern.hits.at(-1)! + 220) { enemy.pattern = null; enemy.state = 'Recovery'; enemy.until = this.now + pattern.recovery;this.nextEnemyAttackAt=this.now+350; }
       return;
     }
-    if (distance > balance.enemy.aggro || this.now < enemy.until) { enemy.state = 'Idle'; return; }
+    if ((!cavernAI&&distance > balance.enemy.aggro) || this.now < enemy.until) { enemy.state = 'Idle'; return; }
     enemy.yaw = turnToward(enemy.yaw,desired,facing.turnRate*dt);
     enemy.state='Chase';
     // Turn in place before closing or attacking.

@@ -159,3 +159,6 @@ Recovered cleaver: `prepare_loot_cleaver.py` reuses the supplied Synty cleaver m
 
 ### October 10 cavern reconstruction
 The installed Blender 5.2 headless pipeline was used; no Blender MCP tool was exposed. Wall portal endpoints are shared exactly, and room wall tops match the ceiling at 7.8m. Tunnel side walls and openings share a 3.6m half-width and 6.5m soffit. `finish_cavern.py` now uses the reusable PBR surface generator with a cool basalt palette. Sources and all four generated textures are preserved; exported cavern is approximately 3.4MB. Browser travel tests cover the stairs, stone door, town and Training Room return. Camera screenshots cover the repaired joins and final approach. Collision and saved positions were not changed.
+
+## Goblin routine clips
+`import_goblin.py` now retargets supplied Polygon `Idle_Crouching` and `Idle_Fidget_Scratching` clips as `rest` and `fidget`, alongside idle/walk and the original authored attacks. Sources are preserved in both import .blend files; no raw packs were copied. Blender MCP was not exposed. Sandbox texture packing on D: failed; the same headless export succeeded with authorized filesystem access. Existing bind offsets, hand socket scale, palette and attack contact mapping are preserved. Browser inspection confirmed the crouched pose loads in-game.

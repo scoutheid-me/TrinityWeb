@@ -27,7 +27,7 @@ from mathutils import Quaternion
 root.rotation_euler.z=0
 actions=[]
 base_poses={}
-for clip,source_path in [('idle','Idles/A_POLY_GBL_Idle_Standing_Neut.fbx'),('walk','Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx')]:
+for clip,source_path in [('idle','Idles/A_POLY_GBL_Idle_Standing_Neut.fbx'),('walk','Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx'),('rest','Idles/A_POLY_GBL_Idle_Crouching_Neut.fbx'),('fidget','Idles/A_POLY_GBL_Idle_Fidget_Scratching_Neut.fbx')]:
  before=set(bpy.data.objects)
  bpy.ops.import_scene.fbx(filepath=str(ANIM/source_path))
  imported=set(bpy.data.objects)-before

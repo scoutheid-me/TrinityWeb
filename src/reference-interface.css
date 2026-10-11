@@ -69,3 +69,7 @@
 #personal-detail a{color:#6c6648;font-size:12px;text-underline-offset:3px}
 #personal-detail .skill-name-list button{font-size:16px!important}
 .art-emblem{box-shadow:0 0 0 1px #fff8,0 2px 5px #18273326}
+#pursuit-row { display:flex;align-items:center;gap:8px;font-size:11px;color:#475660;margin-top:5px; }
+#pursuit-row[hidden] { display:none; }
+#pursuit-row progress { flex:1;min-width:40px;height:5px;accent-color:#dbb854; }
+#pursuit-value { min-width:48px;text-align:right; }

@@ -14,8 +14,23 @@ export function creatureLoot(seed:number,id:string,creature:LootCreature):Creatu
  return {coins,health:0,stamina:0,items};
 }
 export const goblinLoot=(seed:number,id:string,boss=false)=>creatureLoot(seed,id,boss?'captain':'goblin');
-export function claimGoblinLoot(j:Journey,id:string,boss=false,eligible=true){
- if(!eligible||j.defeated.includes(id))return null;
- const drop=goblinLoot(j.lootSeed,id,boss);j.defeated.push(id);j.coins+=drop.coins;
- for(const key of Object.keys(drop.items) as LootItem[])j.items[key]=Math.min(99,j.items[key]+drop.items[key]);return drop;
+export interface GroundDrop {id:string;creatureId:string;item:LootItem|'col';amount:number;x:number;z:number;owners:string[];pickedBy?:string;}
+export interface LootCredit {contributors:string[];lastHit?:string;}
+export const localActorId='player';
+export function recordLootDamage(credit:LootCredit,actor:string,damage:number){if(damage<=0||!Number.isFinite(damage))return;if(!credit.contributors.includes(actor))credit.contributors.push(actor);credit.lastHit=actor;}
+export function canPickUp(drop:GroundDrop,actor:string){return !drop.pickedBy&&drop.owners.includes(actor);}
+/** Defeat commits the roll, not inventory. Old defeated saves never mint replacement loot. */
+export function dropGoblinLoot(j:Journey,id:string,position:{x:number;z:number},credit:LootCredit,boss=false,eligible=true){
+ if(!eligible||j.defeated.includes(id))return [];
+ const loot=goblinLoot(j.lootSeed,id,boss),owners=boss?(credit.lastHit?[credit.lastHit]:[]):[...new Set(credit.contributors)];
+ j.defeated.push(id);const drops:GroundDrop[]=[];
+ const add=(item:GroundDrop['item'],amount:number)=>{const index=drops.length,angle=index*2.399,radius=index===0?0:.5+.18*Math.floor(index/5);drops.push({id:id+':'+index,creatureId:id,item,amount,x:position.x+Math.sin(angle)*radius,z:position.z+Math.cos(angle)*radius,owners:[...owners]});};
+ if(owners.length){if(loot.coins)add('col',loot.coins);for(const [item,amount] of Object.entries(loot.items))for(let i=0;i<amount;i++)add(item as LootItem,1);}
+ j.drops.push(...drops);return drops;
+}
+export function pickUpDrop(j:Journey,id:string,actor:string,position:{x:number;z:number}){
+ const drop=j.drops.find(d=>d.id===id);if(!drop||!canPickUp(drop,actor)||Math.hypot(drop.x-position.x,drop.z-position.z)>1.8)return null;
+ if(drop.item==='col'){if(j.coins+drop.amount>999999)return null;j.coins+=drop.amount;}
+ else{if(j.items[drop.item]+drop.amount>99)return null;j.items[drop.item]+=drop.amount;}
+ drop.pickedBy=actor;return drop;
 }
