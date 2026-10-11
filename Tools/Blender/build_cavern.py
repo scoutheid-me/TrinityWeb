@@ -22,14 +22,15 @@ for index,a in enumerate(areas[:-1]):
  verts=[(x,0,z)]+[(x+math.sin(i*2*math.pi/N)*r,0,z+math.cos(i*2*math.pi/N)*r) for i in range(N)]
  mesh(a['name']+' floor',verts,[(0,i+1,(i+1)%N+1) for i in range(N)],[earth])
  neighbors=[areas[j if i==index else i] for i,j in links if i==index or j==index]
- for i in range(N):
-  angle=(i+.5)*2*math.pi/N
-  if any(abs(math.atan2(math.sin(angle-math.atan2(b['x']-x,b['z']-z)),math.cos(angle-math.atan2(b['x']-x,b['z']-z))))<math.asin(min(.9,4.1/r)) for b in neighbors):continue
-  aa=i*2*math.pi/N;bb=(i+1)*2*math.pi/N;rr=r+random.random()*.6
-  v=[]
-  for y,rad in [(0,r),(3.8,rr),(7.5+random.random(),r*.93)]:
-   for ang in [aa,bb]:v.append((x+math.sin(ang)*rad,y,z+math.cos(ang)*rad))
-  mesh('Faceted cave wall',v,[(0,1,3),(0,3,2),(2,3,5),(2,5,4)],stone)
+ # Exact shared portal boundaries; no per-face radial jitter or missing lintels.
+ openings=[(math.atan2(b['x']-x,b['z']-z)%(2*math.pi),math.asin(3.6/r)) for b in neighbors]
+ angles=sorted(set([i*2*math.pi/N for i in range(N)]+[(c+d)%(2*math.pi) for c,h in openings for d in [-h,h]]))
+ for i,aa in enumerate(angles):
+  bb=angles[(i+1)%len(angles)]+(2*math.pi if i==len(angles)-1 else 0);mid=(aa+bb)/2
+  portal=any(abs(math.atan2(math.sin(mid-c),math.cos(mid-c)))<h for c,h in openings)
+  low=6.5 if portal else -.12
+  v=[(x+math.sin(ang)*r,y,z+math.cos(ang)*r) for y in [low,7.8] for ang in [aa,bb]]
+  mesh('Continuous masonry lintel' if portal else 'Continuous masonry wall',v,[(0,1,3,2)],stone)
  # Rough ceiling dome; normals face into the cave.
  v=[(x,9.5,z)]+[(x+math.sin(i*2*math.pi/N)*r,7.8,z+math.cos(i*2*math.pi/N)*r) for i in range(N)]
  mesh('Vaulted natural ceiling',v,[(0,(i+1)%N+1,i+1) for i in range(N)],stone[:3])
@@ -59,12 +60,12 @@ for i,j in links:
  for step in range(math.ceil(length*2)):
   f0=-length/2+step*.5;f1=min(length/2,f0+.5)
   v=[(cx+ux*f+px*w,-.02,cz+uz*f+pz*w) for f,w in [(f0,-3.6),(f0,3.6),(f1,3.6),(f1,-3.6)]];mesh('Connecting path',v,[(0,1,2,3)],[earth])
- start=a['radius']*.82;end=length-b['radius']*.82
+ start=math.sqrt(a['radius']**2-3.6**2)-.08;end=length-math.sqrt(b['radius']**2-3.6**2)+.08
  if j==9:end=length-8
  for side in [-1,1]:
-  v=[(a['x']+ux*f+px*side*w,y,a['z']+uz*f+pz*side*w) for f,y,w in [(start,0,3.6),(end,0,3.6),(end,6.5,4.1),(start,6.5,4.1)]];mesh('Tunnel rock',v,[(0,1,2),(0,2,3)],stone)
- if j!=9:
-  v=[(a['x']+ux*f+px*w,6.5,a['z']+uz*f+pz*w) for f,w in [(start,-4.1),(end,-4.1),(end,4.1),(start,4.1)]];mesh('Tunnel ceiling',v,[(0,1,2,3)],stone[:2])
+  v=[(a['x']+ux*f+px*side*w,y,a['z']+uz*f+pz*side*w) for f,y,w in [(start,0,3.6),(end,0,3.6),(end,6.5,3.6),(start,6.5,3.6)]];mesh('Tunnel rock',v,[(0,1,2),(0,2,3)],stone)
+ if True:
+  v=[(a['x']+ux*f+px*w,6.5,a['z']+uz*f+pz*w) for f,w in [(start,-3.6),(end,-3.6),(end,3.6),(start,3.6)]];mesh('Tunnel ceiling',v,[(0,1,2,3)],stone[:2])
  # Stone courses, columns and voussoir arches extend the visible corridor.
  for f in range(math.ceil(start)+1,math.floor(end),4):
   for side in [-1,1]:
@@ -75,8 +76,14 @@ for i,j in links:
     bowl=box('Brazier bracket',(x-px*side*.32,1.8,z-pz*side*.32),(.6,.2,.6),stone[1])
     bpy.ops.mesh.primitive_cone_add(vertices=8,radius1=.19,radius2=.03,depth=.65,location=(x-px*side*.35,-z+pz*side*.35,2.2+height(z,x)));bpy.context.object.name='Aether blue flame';bpy.context.object.data.materials.append(crystal)
   for segment in range(13):
-   angle=(segment+.5)*math.pi/13;w=math.cos(angle)*3.3;y=4.35+math.sin(angle)*1.75
-   o=box('Stone arch voussoir',(a['x']+ux*f+px*w,y,a['z']+uz*f+pz*w),(.65,.4,.65),stone[segment%6])
+   aa=segment*math.pi/13+.008;bb=(segment+1)*math.pi/13-.008
+   v=[]
+   for depth in [-.26,.26]:
+    for ang,rx,ry in [(aa,3.05,1.55),(bb,3.05,1.55),(bb,3.65,2.08),(aa,3.65,2.08)]:
+     w=math.cos(ang)*rx;y=4.35+math.sin(ang)*ry
+     v.append((a['x']+ux*(f+depth)+px*w,y,a['z']+uz*(f+depth)+pz*w))
+   mesh('Cut basalt arch keystone',v,[(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)],stone)
+
   # Low relief flagstones, below feet; no collision obstructions.
  for f in range(math.ceil(start),math.floor(end),2):
   if j==9 and 127<a['z']+uz*f<143:continue

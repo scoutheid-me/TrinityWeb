@@ -15,3 +15,7 @@ export type LootItem=keyof typeof lootItems;
 export type LootInventory=Record<LootItem,number>;
 export const emptyLoot=():LootInventory=>({dagger:0,cleaver:0,scrapIron:0,leatherScraps:0,hide:0,token:0});
 export type LootCreature='goblin'|'captain'|'boar';
+
+/** Color and text are both exposed; common dungeon salvage remains neutral gray. */
+export const lootRarities={common:{label:'Common',color:'#737c87'},uncommon:{label:'Uncommon',color:'#6bdc9a'},rare:{label:'Rare',color:'#67adff'},epic:{label:'Epic',color:'#bb85ee'}} as const;
+export function itemRarity(id:LootItem):keyof typeof lootRarities{return id==='token'?'uncommon':'common';}

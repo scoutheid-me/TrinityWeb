@@ -24,6 +24,18 @@ export class CombatAudio {
       }
     }
   }
+  private exitVoices:OscillatorNode[]=[];private nextExitChord=0;private exitChord=0;
+  /** Sparse original exit score; never competes with active combat timing. */
+  syncExit(sim:CombatSimulation,paused:boolean){
+    const active=!paused&&this.enabled&&this.effectsVolume>0&&this.context&&sim.journey.active&&sim.journey.facts.includes('boss')&&sim.player.z>108&&sim.player.z<149&&!sim.enemies.some(e=>e.hp>0&&Math.hypot(e.x-sim.player.x,e.z-sim.player.z)<14);
+    if(!active){for(const voice of this.exitVoices){try{voice.stop();}catch{}}this.exitVoices=[];this.nextExitChord=0;this.exitChord=0;return;}
+    const ctx=this.context!;if(ctx.currentTime<this.nextExitChord)return;this.nextExitChord=ctx.currentTime+4;
+    const chords=[[146.83,220,293.66,349.23],[130.81,196,261.63,329.63],[174.61,220,349.23,440],[196,246.94,293.66,392]];
+    for(const frequency of chords[this.exitChord++%chords.length]){const voice=ctx.createOscillator(),gain=ctx.createGain(),t=ctx.currentTime;voice.type='sine';voice.frequency.value=frequency;
+      gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.013*this.effectsVolume,t+1);gain.gain.linearRampToValueAtTime(0,t+5);voice.connect(gain);gain.connect(ctx.destination);voice.start(t);voice.stop(t+5.05);this.exitVoices.push(voice);
+      voice.onended=()=>{voice.disconnect();gain.disconnect();this.exitVoices=this.exitVoices.filter(v=>v!==voice);};
+    }
+  }
   unlock(){if(!this.context)this.context=new AudioContext();void this.context.resume();}
   tone(frequency:number,duration:number,volume=.06,type:OscillatorType='sine'){
     if(!this.enabled||!this.context||this.effectsVolume<=0)return;

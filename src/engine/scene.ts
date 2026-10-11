@@ -199,6 +199,8 @@ export class LabScene {
       if (!actor&&(enemy.species==='goblin'||enemy.species==='captain')&&this.goblinContainer){actor=this.goblinActor(enemy);this.actors.set(enemy.id,actor);}
       if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
       if(enemy.role)actor.root.scaling.setAll(enemy.role==='brute'?1.05:.75);
+      actor.root.setEnabled(enemy.hp>0);
+      if(enemy.hp<=0)continue;
       const actualSpeed=Math.min(3,Math.hypot(enemy.x-actor.root.position.x,enemy.z-actor.root.position.z)/Math.max(.001,dt));
       this.animate(actor,enemy.x,enemy.z,enemy.yaw,actualSpeed,0,false,enemy.hp<=0,enemy.state==='Broken',poseDt);
       actor.root.position.y+=ground(enemy.z,enemy.x);
@@ -318,6 +320,17 @@ export class LabScene {
     }
   }
   effect(event: CombatEvent, sim: CombatSimulation) {
+    if(event.type==='death'){
+      const mat=this.scene.getMaterialByName('digital dissolution')??this.material('digital dissolution','#218cff',this.reducedFlash?.3:.8);
+      const count=this.reducedMotion?12:this.quality==='low'?20:44;
+      for(let i=0;i<count;i++){
+        const shard=MeshBuilder.CreateBox('Digital blue death fragment',{size:.035+(i%4)*.015},this.scene);
+        const angle=i*2.399,y=.2+(i%13)*.13;
+        shard.position.set(event.x+Math.sin(angle)*.3,(sim.journey.active?cavernHeight(event.z,event.x):0)+y,event.z+Math.cos(angle)*.3);
+        shard.rotation.set(angle,angle*.7,angle*.3);shard.material=mat;shard.isPickable=false;
+        const life=.65+(i%7)*.1;this.pendingEffects.push({mesh:shard,life,max:life,velocity:new Vector3(Math.sin(angle)*.8,.6+(i%3)*.25,Math.cos(angle)*.8)});
+      }
+    }
     if (event.type==='hit'||event.type==='parry'||event.type==='break') {
       this.shake=this.reducedMotion?0:event.strong?.09:balance.shake;
       const color = event.target==='player'?'#ff7c79':event.type==='parry'?'#fff0ba':'#83f3ff';

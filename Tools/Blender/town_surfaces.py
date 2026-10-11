@@ -1,7 +1,7 @@
 """Deterministic original PBR masonry, paving, timber and slate; no external artwork."""
 import bpy, numpy as np
 
-def surface(root,name,kind):
+def surface(root,name,kind,base_override=None):
  size=512;rng=np.random.default_rng(901+len(name));y,x=np.mgrid[0:size,0:size];noise=rng.random((size,size))
  if kind in ('stone','pave','roof'):
   rh,cw=(64,128) if kind=='stone' else (64,64) if kind=='pave' else (64,85)
@@ -14,7 +14,7 @@ def surface(root,name,kind):
  else:
   grain=np.sin(x*.35+np.sin(y*.021)*1.8)+np.sin(x*.94+y*.001)*.25
   h=.5+grain*.07+noise*.04;value=.7+grain*.12+noise*.08;base=(.34,.20,.10)
- rgba=np.ones((size,size,4),dtype=np.float32);rgba[:,:,:3]=value[:,:,None]*np.array(base)
+ rgba=np.ones((size,size,4),dtype=np.float32);rgba[:,:,:3]=value[:,:,None]*np.array(base_override or base)
  def image(label,pixels,noncolor=False):
   im=bpy.data.images.new(name+' '+label,width=size,height=size);im.pixels.foreach_set(pixels.ravel());im.filepath_raw=str(root/'public/assets/textures'/(name+'_'+label+'.png'));im.file_format='PNG';im.save();im.pack()
   if noncolor:im.colorspace_settings.name='Non-Color'

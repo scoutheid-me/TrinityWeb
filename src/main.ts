@@ -120,7 +120,7 @@ async function main(){
     hud.root.classList.toggle('gm-mode',sim.gmMode);
     input.suspended=!!dungeon?.dialogOpen;input.syncCapture();captureStatus.hidden=!input.captureError;captureStatus.textContent=input.captureError;
     const before=sim.now;advance();const dt=Math.max(.001,(sim.now-before)/1000);
-    audio.syncTiming(sim,paused,hud.slowMotion?.35:1);
+    audio.syncTiming(sim,paused,hud.slowMotion?.35:1);audio.syncExit(sim,paused||!!dungeon?.dialogOpen);
     if(!paused){
       view.update(sim,dt);
       recap.observe(sim,sim.events);if(recap.last){const r=recap.last;report.querySelector('p')!.textContent=`${r.result} · ${r.weapon} · ${r.seconds}s · ${r.damageDealt} damage dealt / ${r.damageTaken} taken · ${r.counters} Counters · ${r.breaks} Breaks · ${r.rearHits} rear hits · ${r.artMisses} missed Arts. Practice summaries never award progress.`;}
