@@ -3,11 +3,12 @@ import {canPickUp,type GroundDrop} from '../world/loot';
 import {createTownProbe} from './townProbe';
 import {exitDoor} from '../world/regions';
 import {publicUrl} from '../publicUrl';
-import {Color3,Color4,DynamicTexture,ImportMeshAsync,MeshBuilder,PointLight,StandardMaterial,TransformNode,Vector3,type Mesh} from '@babylonjs/core';
+import {Color3,Color4,DynamicTexture,ImportMeshAsync,MeshBuilder,PointLight,StandardMaterial,TransformNode,Vector3,type Mesh,type AnimationGroup} from '@babylonjs/core';
 import type {LabScene} from './scene';
 import {cavernAreas,chestAreas,cavernHeight} from '../world/cavern';
 export class DungeonView {
  sentryGate!:TransformNode;door!:TransformNode;private doorLift=0;root:TransformNode;hall:TransformNode[]=[];markers=new Map<string,Mesh>();chests=new Map<number,TransformNode>();npc!:TransformNode;gate!:Mesh;lights:PointLight[]=[];exitLight!:PointLight;town!:TransformNode;
+ private guideClips:AnimationGroup[]=[];private guideTime=0;private guideNear=false;private greeting=0;
  private lootOrbs=new Map<string,{mesh:Mesh;age:number;base:number}>();
  constructor(private view:LabScene){this.root=new TransformNode('Connected cavern',view.scene);this.root.setEnabled(false);}
  setHallNodes(nodes:TransformNode[]){this.hall=nodes;}
@@ -23,10 +24,10 @@ export class DungeonView {
   for(const i of chestAreas){const a=cavernAreas[i],copy=chest.clone('cavern-chest-'+i,this.root)!;copy.setEnabled(true);copy.position.set(a.x-5,cavernHeight(a.z+3,a.x-5),a.z+3);this.chests.set(i,copy);}
   const crate=await asset('/assets/props/goblin_crate.glb');crate.setEnabled(false);
   for(const i of [1,3,4,6,7]){const a=cavernAreas[i];for(let k=0;k<2;k++){const c=crate.clone('Abandoned crate',this.root)!;c.setEnabled(true);c.position.set(a.x+a.radius-3,cavernHeight(a.z+k*2,a.x+a.radius-3),a.z+k*2);}}
-  this.npc=await asset('/assets/characters/mira_guide.glb');this.npc.position.set(0,0,161);this.npc.rotation.y=Math.PI;
-  for(const [id,label,x,z] of [['rest-0','',4,-4],['rest-3','',-26,26],['rest-6','',-26,56],['supply','',-33,27],['mira','Mira Vale',0,161]] as const){
+  const guide=await ImportMeshAsync(publicUrl('/assets/characters/mina_guide.glb'),this.view.scene);this.npc=new TransformNode('Mina town guide',this.view.scene);this.npc.parent=this.root;for(const n of guide.meshes){if(!n.parent)n.parent=this.npc;n.receiveShadows=true;}this.view.cast(this.npc);this.view.loadedAssets.push('/assets/characters/mina_guide.glb');this.guideClips=guide.animationGroups;for(const clip of this.guideClips){clip.start(true);clip.pause();}this.poseGuide(0);this.npc.position.set(0,0,161);this.npc.rotation.y=Math.PI;
+  for(const [id,label,x,z] of [['rest-0','',4,-4],['rest-3','',-26,26],['rest-6','',-26,56],['supply','',-33,27],['mira','Mina Vale',0,161]] as const){
    const m=MeshBuilder.CreateCylinder(id,{diameter:.7,height:.8,tessellation:8},this.view.scene);m.parent=this.root;m.position.set(x,cavernHeight(z,x)+.4,z);m.material=this.view.material(id,id.startsWith('rest')?'#63b3ad':'#b29968',.25);this.markers.set(id,m);if(id==='mira'){m.visibility=0;}
-   if(label){const sign=MeshBuilder.CreatePlane(id+' label',{width:2.6,height:.6},this.view.scene);sign.parent=m;sign.position.y=1.8;sign.billboardMode=7;const tex=new DynamicTexture('Mira name',{width:512,height:128},this.view.scene,false);tex.hasAlpha=true;tex.drawText(label,null,78,'34px sans-serif','#f6ebcf','transparent',true);const mat=this.view.material('Mira label','#ffffff',1);mat.diffuseTexture=tex;mat.useAlphaFromDiffuseTexture=true;mat.backFaceCulling=false;sign.material=mat;}
+   if(label){const sign=MeshBuilder.CreatePlane(id+' label',{width:2.6,height:.6},this.view.scene);sign.parent=m;sign.position.y=1.8;sign.billboardMode=7;const tex=new DynamicTexture('Mina name',{width:512,height:128},this.view.scene,false);tex.hasAlpha=true;tex.drawText(label,null,78,'34px sans-serif','#f6ebcf','transparent',true);const mat=this.view.material('Mina label','#ffffff',1);mat.diffuseTexture=tex;mat.useAlphaFromDiffuseTexture=true;mat.backFaceCulling=false;sign.material=mat;}
   }
   this.sentryGate=new TransformNode('Sentry portcullis',this.view.scene);this.sentryGate.parent=this.root;this.sentryGate.position.set(0,cavernHeight(44,0),44);
   const iron=this.view.material('Portcullis iron','#53636d');for(let x=-3;x<=3;x+=.6){const bar=MeshBuilder.CreateBox('Sentry iron bar',{width:.1,height:4,depth:.15},this.view.scene);bar.parent=this.sentryGate;bar.position.set(x,2,0);bar.material=iron;}for(const y of [1,3.5]){const rail=MeshBuilder.CreateBox('Sentry gate brace',{width:7,height:.14,depth:.18},this.view.scene);rail.parent=this.sentryGate;rail.position.y=y;rail.material=iron;}
@@ -34,6 +35,11 @@ export class DungeonView {
   for(let i=0;i<3;i++){const l=new PointLight('Cavern light '+i,new Vector3(0,3,0),this.view.scene);l.diffuse=Color3.FromHexString(i===0?'#7eafff':'#588dff');l.intensity=i===0?2:2.5;l.range=i===0?15:24;l.setEnabled(false);this.lights.push(l);}
   this.exitLight=new PointLight('Warm daylight beyond the stairs',new Vector3(-11,4.8,145),this.view.scene);this.exitLight.diffuse=Color3.FromHexString('#ffe6b4');this.exitLight.intensity=3;this.exitLight.range=25;this.exitLight.setEnabled(false);
   for(const mat of this.view.scene.materials)if('maxSimultaneousLights' in mat)(mat as StandardMaterial).maxSimultaneousLights=6;
+ }
+ private poseGuide(dt:number){
+  this.guideTime+=dt;this.greeting=Math.max(0,this.greeting-dt);
+  const name=this.greeting>0?'greet':'idle',clip=this.guideClips.find(c=>c.name===name);
+  if(clip){const duration=name==='greet'?3000:4000,t=name==='greet'?1-this.greeting/duration:(this.guideTime%duration)/duration;clip.goToFrame(clip.from+(clip.to-clip.from)*t);}
  }
  /** Only eligible, unclaimed items are represented in this player's scene. */
  syncLoot(drops:GroundDrop[],actor:string){
@@ -50,6 +56,9 @@ export class DungeonView {
  show(){this.exitLight.setEnabled(true);this.root.setEnabled(true);for(const n of this.hall)n.setEnabled(false);for(const l of this.lights)l.setEnabled(true);}
  hide(){this.exitLight.setEnabled(false);this.view.scene.environmentIntensity=.35;this.root.setEnabled(false);for(const n of this.hall)n.setEnabled(true);for(const l of this.lights)l.setEnabled(false);this.view.scene.clearColor=new Color4(.37,.57,.67,1);this.view.scene.fogColor=new Color3(.37,.57,.67);this.view.scene.fogDensity=.011;this.view.scene.getLightByName('sky')!.intensity=.8;this.view.scene.getLightByName('sun')!.intensity=1.65;}
  update(p:{x:number;z:number},room:number,looted:string[],boss:boolean,doorOpen=false,dt=16,sentryDefeated=false){
+  const nearGuide=Math.hypot(p.x,p.z-161)<5;
+  if(nearGuide&&!this.guideNear)this.greeting=3000;this.guideNear=nearGuide;this.poseGuide(dt);
+  if(nearGuide){const desired=Math.atan2(p.x,p.z-161),delta=Math.atan2(Math.sin(desired-this.npc.rotation.y),Math.cos(desired-this.npc.rotation.y));this.npc.rotation.y+=Math.max(-dt*.001,Math.min(dt*.001,delta));}
   for(const o of this.lootOrbs.values()){o.age+=dt;o.mesh.position.y=o.base+Math.sin(o.age*.003)*.055;o.mesh.rotation.y=o.age*.0006;}
   this.sentryGate.setEnabled(!sentryDefeated);
   this.doorLift=Math.min(4.5,Math.max(0,this.doorLift+(doorOpen?1:-1)*dt*.005));this.door.position.y=this.doorLift;

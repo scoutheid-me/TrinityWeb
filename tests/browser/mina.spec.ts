@@ -1,0 +1,9 @@
+import {test,expect} from '@playwright/test';
+test('Mina is skinned, grounded and animated in the town scene',async({page})=>{
+ await page.goto('/?webgl');await page.locator('#creation-name').fill('Guide review');await page.locator('[name=character][value=man]').check();await page.locator('#character-creation button').click();await expect(page.locator('#dialogue-next')).toBeVisible({timeout:45000});await page.locator('#dialogue-next').click();await page.locator('#dialogue-next').click();await page.locator('#journey-confirm').click();await page.locator('#accept-exit-quest').click();
+ const info=await page.evaluate(()=>{const t=window.trinity;t.input.autoMouseLook=false;t.pause(true);t.sim.player.x=0;t.sim.player.z=157.5;t.view.camera.alpha=-Math.PI/2;t.view.camera.beta=1.52;for(let i=0;i<80;i++)t.view.update(t.sim,.016);t.dungeon.world.update(t.sim.player,9,[],true,false,16,true);const root=t.dungeon.world.npc;return {meshes:root.getChildMeshes().filter((m:any)=>m.skeleton).length,clips:t.view.scene.animationGroups.filter((a:any)=>a.targetedAnimations.some((v:any)=>v.target.name==='head')).map((a:any)=>a.name),position:root.position.asArray()};});
+ expect(info.meshes).toBe(18);expect(info.clips).toEqual(expect.arrayContaining(['idle','greet']));expect(info.position).toEqual([0,0,161]);
+ await page.locator('#overlay').evaluate(e=>(e as HTMLElement).hidden=true);await page.locator('#region-banner').evaluate(e=>(e as HTMLElement).hidden=true);
+ await page.waitForTimeout(300);await page.screenshot({path:'docs/screenshots/mina-town-idle.png'});
+ await page.evaluate(()=>{const t=window.trinity;t.dungeon.world.update(t.sim.player,9,[],true,false,1450,true);});await page.waitForTimeout(100);await page.screenshot({path:'docs/screenshots/mina-town-greeting.png'});
+});

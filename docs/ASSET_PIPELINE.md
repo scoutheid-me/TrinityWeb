@@ -162,3 +162,6 @@ The installed Blender 5.2 headless pipeline was used; no Blender MCP tool was ex
 
 ## Goblin routine clips
 `import_goblin.py` now retargets supplied Polygon `Idle_Crouching` and `Idle_Fidget_Scratching` clips as `rest` and `fidget`, alongside idle/walk and the original authored attacks. Sources are preserved in both import .blend files; no raw packs were copied. Blender MCP was not exposed. Sandbox texture packing on D: failed; the same headless export succeeded with authorized filesystem access. Existing bind offsets, hand socket scale, palette and attack contact mapping are preserved. Browser inspection confirmed the crouched pose loads in-game.
+
+## Mina supplied character
+See [MINA_CHARACTER.md](MINA_CHARACTER.md). The town guide now uses mina_guide.glb, a 20-bone skinned derivative of the supplied Tripo model, with idle/greet clips and a matching rendered portrait. Legacy mira save IDs remain stable.
