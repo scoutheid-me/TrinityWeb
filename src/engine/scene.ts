@@ -21,7 +21,7 @@ import { balance, chargeTime } from '../data/balance';
 import type { CombatSimulation, Enemy, CombatEvent } from '../combat/simulation';
 
 export type Quality = 'low' | 'medium' | 'high';
-type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; groups?:AnimationGroup[];animationName?:string;attackMotion?:{name:string;startAt:number;contactAt:number};skinned?:boolean; bodyMotion?:{clip:BodyClip;start:number;contact:number;recovery:number}; };
+type Actor = { root: TransformNode; leftArm?: TransformNode; rightArm?: TransformNode; leftLeg?: TransformNode; rightLeg?: TransformNode; sword: TransformNode; phase: number; slashUntil: number; groups?:AnimationGroup[];animationName?:string;routineBlend?:{at:number;poses:{node:TransformNode;rotation:Quaternion}[]};attackMotion?:{name:string;startAt:number;contactAt:number};skinned?:boolean; bodyMotion?:{clip:BodyClip;start:number;contact:number;recovery:number}; };
 export class LabScene {
   hallNodes:TransformNode[]=[];goblinContainer:AssetContainer|null=null;captainContainer:AssetContainer|null=null;goblinBlade:TransformNode|null=null;sparkTexture:Texture|null=null;
   reducedMotion=false;reducedFlash=false;
@@ -36,7 +36,7 @@ export class LabScene {
   instrumentation!: SceneInstrumentation;
   player!: Actor;
   actors = new Map<string, Actor>();
-  enemyTemplate!: TransformNode;boarTemplate!:TransformNode;
+  enemyTemplate!: TransformNode;boarTemplate!:TransformNode;wolfTemplate!:TransformNode;
   swordTemplate!: TransformNode;
   weaponTemplates=new Map<string,Promise<TransformNode>>();weaponRequested='';equippedWeapon='';firstWeapon:TransformNode|null=null;firstArms:TransformNode[]=[];
   private async syncWeapon(id:string){
@@ -91,7 +91,7 @@ export class LabScene {
     this.environment();this.hallNodes=[...this.scene.meshes];
     const hero = await this.asset(character==='woman'?'/assets/characters/wayfarer_woman.glb':'/assets/characters/wayfarer.glb');
     this.swordTemplate = await this.asset('/assets/weapons/aether_sword.glb'); this.swordTemplate.setEnabled(false);
-    this.enemyTemplate = await this.asset('/assets/enemies/aether_sentinel.glb'); this.enemyTemplate.setEnabled(false);this.boarTemplate=await this.asset('/assets/enemies/woodland_boar.glb');this.boarTemplate.setEnabled(false);
+    this.enemyTemplate = await this.asset('/assets/enemies/aether_sentinel.glb'); this.enemyTemplate.setEnabled(false);this.boarTemplate=await this.asset('/assets/enemies/woodland_boar.glb');this.boarTemplate.setEnabled(false);this.wolfTemplate=await this.asset('/assets/enemies/grassland_wolf.glb');this.wolfTemplate.setEnabled(false);
  const orb=MeshBuilder.CreateSphere('Training encounter orb',{diameter:.7,segments:24},this.scene);orb.position.set(2,1.25,-9);orb.material=this.material('orb glow','#60dfec',1);const pedestal=MeshBuilder.CreateCylinder('Orb pedestal',{diameter:1,height:.65,tessellation:12},this.scene);pedestal.position.set(2,.325,-9);pedestal.material=this.material('orb pedestal','#74858a');
     this.hallNodes.push(orb,pedestal);
     this.player = this.actor(hero, 'wayfarer', false);
@@ -197,7 +197,7 @@ export class LabScene {
     for (const enemy of sim.enemies) {
       let actor = this.actors.get(enemy.id);
       if (!actor&&(enemy.species==='goblin'||enemy.species==='captain')&&this.goblinContainer){actor=this.goblinActor(enemy);this.actors.set(enemy.id,actor);}
-      if (!actor) { actor = this.actor((enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
+      if (!actor) { actor = this.actor((enemy.species==='wolf'?this.wolfTemplate:enemy.species==='boar'?this.boarTemplate:this.enemyTemplate).clone(enemy.id,null)!,enemy.id,true); if(enemy.species==='boar'||enemy.species==='wolf')actor.sword.setEnabled(false);this.actors.set(enemy.id,actor); }
       if(enemy.role)actor.root.scaling.setAll(enemy.role==='brute'?1.05:.75);
       actor.root.setEnabled(enemy.hp>0);
       if(enemy.hp<=0)continue;
@@ -212,14 +212,15 @@ export class LabScene {
        const name=attack?attack.name:(actualSpeed>.2?'walk':routine==='rest'?'rest':routine==='lookout'?'fidget':'idle');
        const clip=actor.groups.find(g=>g.name.endsWith(name))??actor.groups[0];
        const frame=attack?(sim.now<=attack.contactAt?1+23*Math.max(0,(sim.now-attack.startAt)/Math.max(1,attack.contactAt-attack.startAt)):24+24*Math.min(1,(sim.now-attack.contactAt)/300)):clip.from+((name==='walk'?actor.phase*8:sim.now*.03))%Math.max(1,clip.to-clip.from);
-       if(actor.animationName!==name){for(const g of actor.groups)g.stop();clip.start(true);clip.pause();actor.animationName=name;}
+       if(actor.animationName!==name){actor.routineBlend=!attack?{at:sim.now,poses:[...new Set(clip.targetedAnimations.map(a=>a.target as TransformNode))].filter(n=>n.rotationQuaternion).map(node=>({node,rotation:node.rotationQuaternion!.clone()}))}:undefined;for(const g of actor.groups)g.stop();clip.start(true);clip.pause();actor.animationName=name;}
        clip.goToFrame(attack?clip.from+(clip.to-clip.from)*Math.max(0,Math.min(1,(frame-1)/47)):frame);
+       if(actor.routineBlend&&!attack){const t=Math.min(1,(sim.now-actor.routineBlend.at)/180);for(const p of actor.routineBlend.poses)if(p.node.rotationQuaternion)p.node.rotationQuaternion=Quaternion.Slerp(p.rotation,p.node.rotationQuaternion,t);if(t>=1)actor.routineBlend=undefined;}
       }
 
-      if(phase&&enemy.pattern)actor.bodyMotion={clip:enemy.species==='boar'?(enemy.pattern.kind==='basic'?'boar_jab':'boar_sweep'):'sentinel',start:phase.startAt,contact:phase.contactAt,recovery:enemy.pattern.recovery+220};
+      if(phase&&enemy.pattern)actor.bodyMotion={clip:enemy.species==='boar'||enemy.species==='wolf'?(enemy.pattern.kind==='basic'?'boar_jab':'boar_sweep'):'sentinel',start:phase.startAt,contact:phase.contactAt,recovery:enemy.pattern.recovery+220};
       const body=enemy.state==='Broken'?bodyPose('broken',1-(enemy.until-sim.now)/balance.enemy.stagger):actor.bodyMotion?bodyPose(actor.bodyMotion.clip,bodyPhase(sim.now,actor.bodyMotion.start,actor.bodyMotion.contact,actor.bodyMotion.recovery)):bodyPose('hit',1);
       if(enemy.hp>0&&!actor.skinned){actor.root.rotation.x=body.pitch;actor.root.rotation.z=body.roll;actor.root.position.y+=body.height;}
-      if(enemy.species!=='boar'&&phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
+      if(enemy.species!=='boar'&&enemy.species!=='wolf'&&phase&&enemy.pattern&&actor.rightArm){const pose=duelPose(enemy.pattern.motion,sim.now,phase.startAt,phase.contactAt,phase.index%2===0?1:-1);actor.rightArm.rotation.x=pose.pitch;actor.rightArm.rotation.y=pose.yaw;}
       else if(actor.rightArm)actor.rightArm.rotation.y=0;
       if (enemy.flashUntil>sim.now) actor.root.position.y += .04*Math.sin(sim.now*.1);
     }

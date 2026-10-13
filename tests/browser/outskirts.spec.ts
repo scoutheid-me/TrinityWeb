@@ -1,0 +1,17 @@
+import {test,expect} from '@playwright/test';
+test('illustrated Mira, concealed cavern and connected wildlife meadow',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/?webgl');await page.locator('#creation-name').fill('World review');await page.locator('[name=character][value=man]').check();await page.locator('#character-creation button').click();await expect(page.locator('#dialogue-next')).toBeVisible({timeout:45000});await page.locator('#dialogue-next').click();await page.locator('#dialogue-next').click();await page.locator('#journey-confirm').click();await page.locator('#accept-exit-quest').click();
+ await page.evaluate(()=>{const t=window.trinity;t.input.autoMouseLook=false;t.pause(true);t.sim.player.x=0;t.sim.player.z=156;t.view.camera.alpha=-Math.PI/2;t.view.camera.beta=1.45;for(let i=0;i<80;i++)t.view.update(t.sim,.016);t.dungeon.update([],16);});
+ await page.locator('#overlay').evaluate(e=>(e as HTMLElement).hidden=true);await page.locator('#region-banner').evaluate(e=>(e as HTMLElement).hidden=true);
+ expect(await page.evaluate(()=>window.trinity.dungeon.world.root.getChildTransformNodes().find((n:any)=>n.name==='/assets/environments/connected_cavern.glb')!.isEnabled())).toBe(false);
+ await page.evaluate(()=>{const t=window.trinity;for(let i=0;i<90;i++)t.dungeon.world.update(t.sim.player,9,[],true,false,16,true);});await page.waitForTimeout(100);await page.screenshot({path:'docs/screenshots/mira-wave-town.png'});
+ await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=t.dungeon.world.npc.position.x;t.sim.player.z=t.dungeon.world.npc.position.z-1.5;t.dungeon.update([],16);t.pause(false);t.dungeon.interact();});
+ await expect(page.locator('#journey-dialogue img')).toHaveAttribute('src',/mira_portrait.png$/);await expect(page.locator('#journey-dialogue')).toContainText('Mira Vale');await page.screenshot({path:'docs/screenshots/mira-illustrated-dialogue.png'});
+ for(let i=0;i<5;i++)await page.locator('#dialogue-next').click();
+ await page.evaluate(()=>{const t=window.trinity;t.pause(true);t.dungeon.modal.hidden=true;t.sim.player.x=14;t.sim.player.z=160;t.view.camera.alpha=Math.PI;t.view.camera.beta=1.45;for(let i=0;i<60;i++)t.view.update(t.sim,.016);t.dungeon.update([],16);});await page.locator('#overlay').evaluate(e=>(e as HTMLElement).hidden=true);await page.locator('#ui').evaluate(e=>e.classList.remove('game-paused'));await page.waitForTimeout(150);await page.screenshot({path:'docs/screenshots/town-east-gate.png'});
+ await page.evaluate(()=>{const t=window.trinity;for(let x=14;x<=38;x+=.1){t.sim.player.x=x;t.sim.player.z=160;t.dungeon.update([],16);}t.view.camera.alpha=Math.PI;t.view.camera.beta=1.4;for(let i=0;i<60;i++)t.view.update(t.sim,.016);});
+ await expect(page.locator('#region-banner')).toContainText('Beginnings Grasslands');expect(await page.evaluate(()=>window.trinity.sim.enemies.filter((e:any)=>e.room===10).map((e:any)=>e.species))).toEqual(['boar','boar','wolf','wolf']);await page.waitForTimeout(150);await page.screenshot({path:'docs/screenshots/beginnings-grasslands.png'});
+ await page.evaluate(()=>{const t=window.trinity;t.sim.player.x=60;t.sim.player.z=147;t.view.camera.alpha=-Math.PI/2;t.view.camera.beta=1.45;t.dungeon.update([],16);for(let i=0;i<80;i++)t.view.update(t.sim,.016);});await page.waitForTimeout(150);await page.screenshot({path:'docs/screenshots/grassland-wolf.png'});
+ expect(errors).toEqual([]);
+});

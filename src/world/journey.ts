@@ -30,11 +30,11 @@ export function validateJourney(raw:unknown):Journey{
  j.startingWeapon=['sword','rapier','greatsword'].includes(r.startingWeapon??'')?r.startingWeapon!:'sword';
  j.lootSeed=typeof r.lootSeed==='number'&&Number.isFinite(r.lootSeed)?r.lootSeed>>>0:1357911;for(const key of Object.keys(j.items) as LootItem[])j.items[key]=count(r.items?.[key],99);
  j.active=r.active===true;j.cleared=Array.isArray(r.cleared)?[...new Set(r.cleared.filter(v=>Number.isInteger(v)&&v>=0&&v<=8))].sort((a,b)=>a-b):[];
- j.visited=Array.isArray(r.visited)?[...new Set(r.visited.filter(i=>Number.isInteger(i)&&i>=0&&i<=9))]:[0];
- j.room=count(r.room,9);j.quest=['offered','accepted','declined','completed'].includes(r.quest??'')?r.quest!:'offered';j.defeated=Array.isArray(r.defeated)?[...new Set(r.defeated.filter(v=>/^cavern-[124567]-[01]$/.test(v)))]:[];for(const key of ['position','checkpoint'] as const){const v=r[key];if(v&&Number.isFinite(v.x)&&Number.isFinite(v.z)&&Math.abs(v.x)<100&&v.z>=-20&&v.z<190)j[key]={x:v.x,z:v.z};}
+ j.visited=Array.isArray(r.visited)?[...new Set(r.visited.filter(i=>Number.isInteger(i)&&i>=0&&i<=10))]:[0];
+ j.room=count(r.room,10);j.quest=['offered','accepted','declined','completed'].includes(r.quest??'')?r.quest!:'offered';j.defeated=Array.isArray(r.defeated)?[...new Set(r.defeated.filter(v=>/^(?:cavern-[124567]-[01]|field-(?:boar|wolf)-[01])$/.test(v)))]:[];for(const key of ['position','checkpoint'] as const){const v=r[key];if(v&&Number.isFinite(v.x)&&Number.isFinite(v.z)&&Math.abs(v.x)<100&&v.z>=-20&&v.z<190)j[key]={x:v.x,z:v.z};}
  const seenDrops=new Set<string>();
  if(Array.isArray(r.drops))for(const d of r.drops.slice(0,256)){
-  if(!d||typeof d!=='object'||typeof d.id!=='string'||!/^cavern-[124567]-[01]:[0-9]+$/.test(d.id)||seenDrops.has(d.id)||!j.defeated.includes(d.creatureId)||!d.id.startsWith(d.creatureId+':')||!(d.item==='col'||Object.hasOwn(j.items,d.item))||!Number.isFinite(d.x)||!Number.isFinite(d.z)||Math.abs(d.x)>100||d.z< -20||d.z>150)continue;
+  if(!d||typeof d!=='object'||typeof d.id!=='string'||!/^(?:cavern-[124567]-[01]|field-(?:boar|wolf)-[01]):[0-9]+$/.test(d.id)||seenDrops.has(d.id)||!j.defeated.includes(d.creatureId)||!d.id.startsWith(d.creatureId+':')||!(d.item==='col'||Object.hasOwn(j.items,d.item))||!Number.isFinite(d.x)||!Number.isFinite(d.z)||Math.abs(d.x)>100||d.z< -20||d.z>190)continue;
   const owners=Array.isArray(d.owners)?[...new Set(d.owners.filter(v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{1,64}$/.test(v)))].slice(0,32):[];
   const amount=count(d.amount,d.item==='col'?9999:1);if(!amount||!owners.length)continue;
   seenDrops.add(d.id);j.drops.push({id:d.id,creatureId:d.creatureId,item:d.item,amount,x:d.x,z:d.z,owners,...d.pickedBy&&owners.includes(d.pickedBy)?{pickedBy:d.pickedBy}:{}});

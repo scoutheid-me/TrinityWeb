@@ -12,12 +12,12 @@ import {freshProgression,awardFieldSkills,canStart,awardChallenge,validLoadout,t
 import {containsHit,type HitShape} from './geometry';
 import { balance, chargeTime, clamp, defaultAttributes, maxHp, maxStamina, physicalDamage, type Attributes } from '../data/balance';
 import { arts, artShape, chargeDuration, type ArtDefinition } from '../data/arts';
-import { goblinPatterns, skirmisherPatterns, brutePatterns, captainPatterns, boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
+import { wolfPatterns, goblinPatterns, skirmisherPatterns, brutePatterns, captainPatterns, boarPatterns, sentinelPatterns, sentinelSequence, type AttackPattern } from '../data/enemies';
 import { artMultiplier, equipArts, gainSp, HitRegistry, inHitVolume, spendSp, StateMachine, timingGrade, type Grade } from './rules';
 
 export interface Point { x: number; z: number; }
 export interface CombatEvent { type: 'hit' | 'slash' | 'grade' | 'parry' | 'dodge' | 'break' | 'death' | 'art' | 'notice'; text: string; x: number; z: number; amount?: number; grade?: Grade; target?: string; strong?: boolean; shape?:HitShape; motion?:string; weakPoint?:boolean; breakAmount?:number; artId?:string; source?:'basic'|'art'|'counter'; }
-export interface Enemy extends Point { credit?:LootCredit;mind?:CreatureMind; room?:number;home?:Point;role?:'skirmisher'|'brute'; id: string; species?:'sentinel'|'boar'|'goblin'|'captain'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; lessonPattern?:number; }
+export interface Enemy extends Point { credit?:LootCredit;mind?:CreatureMind; room?:number;home?:Point;role?:'skirmisher'|'brute'; id: string; species?:'sentinel'|'boar'|'goblin'|'captain'|'wolf'; yaw: number; hp: number; maxHp: number; break: number; state: 'Idle' | 'Chase' | 'Telegraph' | 'Attack' | 'Recovery' | 'Broken' | 'Dead'; until: number; attackStart: number; pattern: AttackPattern | null; nextPattern: number; hits: Set<number>; flashUntil: number; lessonPattern?:number; }
 export class CombatSimulation {
   profile=freshProfile();journey=freshJourney(false);suppressFieldProgression=false;
   get rewardEligible(){return !this.gmMode&&this.fieldEligible&&!this.practiceMode&&!Object.values(this.flags).some(Boolean)&&Object.entries(defaultAttributes).every(([k,v])=>this.attributes[k as keyof Attributes]===v);}
@@ -92,7 +92,7 @@ export class CombatSimulation {
     this.lastContact=null; this.cancelBufferedInput(); this.state.reset(); this.art = null; this.actionEnd = 0; this.hits.clear(); this.lockedId = null; this.events = []; this.hitStopUntil = 0;
     this.input = { x: 0, z: 0, sprint: false, guard: false }; this.enemies = [];
   }
-  spawnEnemy(species:'sentinel'|'boar'|'goblin'|'captain'='sentinel') {
+  spawnEnemy(species:'sentinel'|'boar'|'goblin'|'captain'|'wolf'='sentinel') {
     if (this.enemies.filter(e => e.hp > 0).length >= (this.journey.active?20:5)) return;
     const index = this.enemies.length;
     this.enemies.push({ id: `${species}-${index}`, species, x: index ? Math.sin(index * 2.4) * 5 : 0, z: index ? Math.cos(index * 2.4) * 5 : 2.5, yaw: Math.PI, hp: species==='boar'?220:balance.enemy.hp, maxHp: species==='boar'?220:balance.enemy.hp, break: 0, state: 'Idle', until: this.now + 1200, attackStart: 0, pattern: null, nextPattern: 0, hits: new Set(), flashUntil: 0 });
@@ -183,7 +183,7 @@ export class CombatSimulation {
     enemy.hp = Math.max(0, enemy.hp - actual); enemy.flashUntil = this.now + 170;
     this.emit('hit', rear>1?`${actual} · REAR`:String(actual), enemy, { source:phase==='basic'?'basic':phase.startsWith('counter:')?'counter':'art',artId:phase.startsWith('counter:')?undefined:this.art?.definition.id,amount: actual, grade, target: enemy.id, strong: grade === 'Perfect'||rear>1, weakPoint:rear>1,breakAmount:enemy.hp>0?breakDamage:0 });
     this.hitStopUntil = this.now + balance.hitStop;
-    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='boar'?'Boar defeated':enemy.species==='goblin'?'Goblin defeated':enemy.species==='captain'?'Goblin captain defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
+    if (enemy.hp === 0) { enemy.state = 'Dead'; enemy.pattern = null; this.recordOutcome({kind:'defeat',actor:'player',target:enemy.id,attackId:this.attackSerial,phase,at:this.now,amount:1});this.counters.kills++; this.emit('death', enemy.species==='wolf'?'Wolf defeated':enemy.species==='boar'?'Boar defeated':enemy.species==='goblin'?'Goblin defeated':enemy.species==='captain'?'Goblin captain defeated':'Sentinel defeated', enemy); if (this.lockedId === enemy.id) this.lockedId = null; }
     else this.applyBreak(enemy, breakDamage);
     return true;
   }
@@ -336,10 +336,10 @@ export class CombatSimulation {
     enemy.state='Chase';
     // Turn in place before closing or attacking.
     if(Math.abs(angleDelta(enemy.yaw,desired))>Math.PI/6)return;
-    if (distance > (enemy.species==='boar'?1.8:2.25)) { enemy.state = 'Chase'; enemy.x += dx / distance * balance.enemy.speed * dt; enemy.z += dz / distance * balance.enemy.speed * dt; this.bound(enemy); }
+    if (distance > (enemy.species==='wolf'?1.7:enemy.species==='boar'?1.8:2.25)) { enemy.state = 'Chase'; enemy.x += dx / distance * balance.enemy.speed * dt; enemy.z += dz / distance * balance.enemy.speed * dt; this.bound(enemy); }
     else {
       if(this.now<this.nextEnemyAttackAt||this.enemies.some(other=>other!==enemy&&other.pattern))return;
       const patternIndex=this.encounter.active&&this.encounter.challenge==='positioning'?0:sentinelSequence[enemy.nextPattern++ % sentinelSequence.length];
-      enemy.pattern = enemy.species==='goblin'?(enemy.role==='brute'?brutePatterns:enemy.role==='skirmisher'?skirmisherPatterns:goblinPatterns)[enemy.lessonPattern??(patternIndex===0?0:1)]:enemy.species==='captain'?captainPatterns[enemy.hp<enemy.maxHp*.5?patternIndex:patternIndex===1?0:patternIndex]:enemy.species==='boar'?boarPatterns[patternIndex===0?0:1]:sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
+      enemy.pattern = enemy.species==='goblin'?(enemy.role==='brute'?brutePatterns:enemy.role==='skirmisher'?skirmisherPatterns:goblinPatterns)[enemy.lessonPattern??(patternIndex===0?0:1)]:enemy.species==='captain'?captainPatterns[enemy.hp<enemy.maxHp*.5?patternIndex:patternIndex===1?0:patternIndex]:enemy.species==='wolf'?wolfPatterns[patternIndex===0?0:1]:enemy.species==='boar'?boarPatterns[patternIndex===0?0:1]:sentinelPatterns[patternIndex]; enemy.attackStart = this.now; enemy.hits.clear(); enemy.state = 'Telegraph'; }
   }
 }

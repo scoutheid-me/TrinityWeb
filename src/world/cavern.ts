@@ -61,7 +61,9 @@ export const cavernAreas:CavernArea[]=[
     "radius": 15
   }
 ];
-export const cavernLinks=[[0, 1], [1, 3], [1, 5], [5, 4], [4, 2], [5, 6], [6, 7], [7, 8], [8, 9]] as const;
+cavernAreas.push({name:'Beginnings Grasslands',x:52,z:160,radius:25});
+export const fieldSpawns=[{id:'field-boar-0',species:'boar',x:39,z:153,hp:240},{id:'field-boar-1',species:'boar',x:48,z:173,hp:240},{id:'field-wolf-0',species:'wolf',x:60,z:151,hp:190},{id:'field-wolf-1',species:'wolf',x:63,z:166,hp:190}] as const;
+export const cavernLinks=[[0, 1], [1, 3], [1, 5], [5, 4], [4, 2], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10]] as const;
 export const patrols=[{area:1,count:1,hp:180},{area:2,count:1,hp:160,role:'skirmisher'},{area:4,count:2,hp:220,role:'skirmisher'},{area:6,count:1,hp:380,role:'brute'},{area:7,count:1,hp:1400}] as const;
 export const chestAreas=[0,2,3,4,5,6,8];
 export function nearestArea(x:number,z:number){let best=0,d=Infinity;for(const [i,a] of cavernAreas.entries()){const n=Math.hypot(x-a.x,z-a.z);if(n<d){best=i;d=n;}}return best;}

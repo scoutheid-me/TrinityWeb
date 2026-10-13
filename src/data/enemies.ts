@@ -13,6 +13,10 @@ export const boarPatterns:AttackPattern[]=[
  {shape:{kind:'sector',range:2.3,halfArc:.85},motion:'sweep',kind:'skill',name:'Savage head sweep',telegraph:1350,hits:[1350],recovery:1500,damage:30,parryable:false}
 ];
 
+export const wolfPatterns:AttackPattern[]=[
+ {shape:{kind:'box',range:2,halfWidth:.35},motion:'cleave',kind:'basic',name:'Snapping bite',telegraph:850,hits:[850],recovery:850,damage:16,parryable:true},
+ {shape:{kind:'box',range:2.7,halfWidth:.5},motion:'sweep',kind:'skill',name:'Predator lunge',telegraph:1250,hits:[1250],recovery:1400,damage:27,parryable:false}
+];
 export const goblinPatterns:AttackPattern[]=[
  {shape:{kind:'box',range:2.5,halfWidth:.5},motion:'cleave',kind:'basic',name:'Scrap-blade chop',telegraph:1150,hits:[1150],recovery:1250,damage:14,parryable:true},
  {shape:{kind:'sector',range:2.9,halfArc:1.15},motion:'sweep',kind:'skill',name:'Reckless sweep',telegraph:1500,hits:[1500],recovery:1600,damage:22,parryable:false}

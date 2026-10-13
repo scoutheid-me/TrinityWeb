@@ -111,3 +111,14 @@ Live-host diagnosis (October 6): refreshed the user tab to 5fd25fb, verified sav
 - Added supplied crouched-idle and scratching/fidget animation clips to both Synty exports. These are not eating or seated animations. Screenshots: `individual-loot-orbs.png`, `goblin-rest-routine.png`.
 
 Validation: 157 unit tests pass. Eight targeted browser scenarios pass across dungeon travel, quest outcomes, individual remapped pickups/reload, remote routines/pursuit, defeat presentation, and loot equipment/restart/recovery. The public-path build and both production-hosting checks pass. The first pickup fixture initially saved the player outside pickup range; correcting the fixture position verified the unchanged proximity rule. Imported rest/fidget clips and gray/green separate orbs were inspected in-game. This is still single-player AI, with planar architecture visibility/navigation rather than a full navigation mesh or crowd-avoidance system.
+
+
+## October 13: aimed loot and town outskirts
+- Loot inspection follows the camera crosshair up to 6m. The selected orb gains an outline and compact item, rarity, use and distance pane. The saved interaction key collects only that item within 1.8m. Looking away never substitutes a nearby drop. Ownership, visibility and saved individual claims still apply.
+- Goblin routine transitions blend over 180ms; attacks retain authored timing. Chamber lighting has subtle simulation-timed variation. Fixed outdoor lighting incorrectly affecting the eastern underground camp.
+- Mira patrols, waves on approach and uses the original illustrated dialogue portrait. The underground structure is concealed from town; a recessed entrance remains accessible.
+- The walled square connects through an east gate to a level meadow with two boars and two wolves. Wildlife uses global routines/pursuit but cannot pursue into town. It drops hide/pelts, never goblin weapons. Defeats and unclaimed orbs persist; survivors still reconstruct on whole-adventure reload.
+- The underground source layout remains unchanged in public/data/cavern-layout.json. Runtime area 10 and link 9 to 10 add the outdoor extension; build_outskirts.py matches its gate and meadow dimensions. No loading transition.
+- Vegetation and articulated wolf art remain prototypes. Full town, eastern watch quest, crowd navigation and AAA art/animation quality are not complete. Prologue progression restrictions remain unchanged.
+
+Validation: 163 core tests plus targeted browser coverage for aimed loot, persistence, routines, capture, expedition flow, Mira and the meadow. Actual scene screenshots are in docs/screenshots.

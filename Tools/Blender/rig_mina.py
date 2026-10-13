@@ -66,7 +66,7 @@ for mat in bpy.data.materials:
 rig.animation_data_create()
 def turn(n,axis,angle):
  p=rig.pose.bones[n];basis=p.bone.matrix_local.to_quaternion();p.rotation_mode='QUATERNION';p.rotation_quaternion=basis.inverted()@Quaternion(axis,angle)@basis
-for clip,frames in [('idle',121),('greet',91)]:
+for clip,frames in [('idle',121),('greet',91),('walk',31),('wave',91)]:
  action=bpy.data.actions.new(clip);rig.animation_data.action=action
  for f in range(1,frames+1,3):
   t=(f-1)/(frames-1);wave=math.sin(t*math.tau);g=math.sin(t*math.pi)**2 if clip=='greet' else 0
@@ -77,6 +77,17 @@ for clip,frames in [('idle',121),('greet',91)]:
   turn('chest',(1,0,0),math.radians(wave*.65))
   turn('head',(1,0,0),math.radians(g*5))
   turn('head',(0,0,1),math.radians(wave*1.5+g*4))
+  if clip=='walk':
+   for side,s in [('left',1),('right',-1)]:
+    turn(side+'_thigh',(1,0,0),math.radians(s*wave*16))
+    turn(side+'_shin',(1,0,0),math.radians(-max(0,-s*wave)*22))
+    turn(side+'_upper_arm',(0,1,0),s*math.radians(73))
+    p=rig.pose.bones[side+'_upper_arm'];basis=p.bone.matrix_local.to_quaternion();p.rotation_quaternion=p.rotation_quaternion@(basis.inverted()@Quaternion((1,0,0),math.radians(-s*wave*7))@basis)
+  if clip=='wave':
+   envelope=min(1,t*5,(1-t)*5)
+   turn('right_upper_arm',(0,1,0),math.radians(-68+envelope*48))
+   turn('right_forearm',(0,1,0),math.radians(envelope*125))
+   turn('right_hand',(0,0,1),math.radians(envelope*math.sin(t*math.tau*3)*16))
   for p in rig.pose.bones:p.keyframe_insert('rotation_quaternion',frame=f,group=p.name)
  track=rig.animation_data.nla_tracks.new();track.name=clip;track.strips.new(clip,1,action);track.mute=True
 rig.animation_data.action=bpy.data.actions['idle'];bpy.context.scene.frame_set(1)

@@ -24,7 +24,7 @@ def save(name):
 box('Town square',0,-.15,3,42,.3,36,pave)
 # Paving joints, kept to broad strips instead of hundreds of separate stones.
 # Metre-scaled paving texture supplies the joints without overlay strips.
-for x,z in [(-16,0),(16,0),(-20,-12),(20,-12),(-14,13),(14,13)]:
+for x,z in [(-16,0),(16,-10),(-20,-12),(20,-12),(-14,13),(14,13)]:
  box('Half-timber townhouse',x,3,z,7,6,6,plaster);gable(x,z,8,6,7)
  for dx in [-3,0,3]:box('Upright oak beam',x+dx,3,z-3.04,.2,6,.16,timber)
  for y in [1,3.5,5.8]:box('Cross beam',x,y,z-3.05,7,.18,.18,timber)
@@ -83,7 +83,7 @@ for x in [-8,8]:
   box('Window transom',x,y,12.31,.92,.055,.04,gold)
   arch(x,12.36,.68,y+.86)
 for x in [-16,16,-14,14]:
- z=0 if abs(x)==16 else 13
+ z=(-10 if x==16 else 0) if abs(x)==16 else 13
  for dx in [-1.8,1.8]:
   for side in [-.6,.6]:box('Window carved surround',x+dx+side,4.7,z-3.21,.12,1.6,.2,timber)
   box('Window sill',x+dx,3.95,z-3.26,1.5,.13,.38,trim)

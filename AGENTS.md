@@ -87,3 +87,10 @@ Keep this section persistent so future sessions do not need the user to repeat t
 - Supplied Synty rest/fidget clips use the existing bind-offset-preserving retarget pipeline. Do not claim eating/sitting animations or a multiplayer implementation that does not exist.
 
 - Mina Vale now uses the supplied model and 20-bone NPC rig in mina_guide.glb. Preserve the original import, rig_mina.py, editable source and matching portrait. Keep legacy mira quest/save IDs; see docs/MINA_CHARACTER.md. This supersedes the earlier static Mira presentation note.
+
+
+## October 13 continuation
+- Mira is the displayed guide name; preserve mina model/source paths and mira save IDs. Use original mira_portrait.png in dialogue. GuideRoutine drives walking, arrival waving and waiting nearby.
+- Loot inspection follows the crosshair up to 6m. Collect only the aimed eligible orb within 1.8m with the saved binding; never substitute a nearby drop. Preserve ownership, visibility and individual claims.
+- The walled town east gate connects to a small prototype meadow (area 10) with boars and wolves. Wildlife stays outside town and drops biological materials. Vegetation and wolf art remain provisional. Preserve the unchanged underground layout and matching outdoor dimensions in build_outskirts.py.
+- Routine animation blending must not shift attack contact timing. Outdoor lighting must never activate merely because an underground room has positive X coordinates.

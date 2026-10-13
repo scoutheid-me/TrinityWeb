@@ -73,3 +73,7 @@
 #pursuit-row[hidden] { display:none; }
 #pursuit-row progress { flex:1;min-width:40px;height:5px;accent-color:#dbb854; }
 #pursuit-value { min-width:48px;text-align:right; }
+#loot-inspect{position:absolute;left:calc(50% + 26px);top:53%;width:min(270px,38vw);padding:13px 16px;color:#394442;background:linear-gradient(110deg,rgba(250,250,241,.95),rgba(229,235,231,.88));border:1px solid #e7ece6;box-shadow:0 4px 22px #0004;pointer-events:none;transform:perspective(900px) rotateY(-5deg);font-size:14px;line-height:1.4}
+#loot-inspect[hidden]{display:none}#loot-inspect small{display:block;text-transform:uppercase;letter-spacing:.09em;font-size:10px;color:#667572}#loot-inspect strong{display:block;font-size:19px;margin-top:4px}#loot-inspect p{margin:8px 0;font-size:12px}#loot-inspect span{display:block;border-top:1px solid #aab7ad;padding-top:6px;color:#806013}
+
+#ui.game-paused #loot-inspect,#ui.personal-menu-open #loot-inspect{visibility:hidden}

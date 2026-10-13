@@ -7,6 +7,7 @@ export interface CreatureMind {mode:'routine'|'pursuit'|'return';activity:'patro
 /** Architecture-aware visibility; closed gates also occlude sight and navigation. */
 export function cavernSight(a:Point,b:Point,j:Journey,margin=.05){
  const distance=Math.hypot(b.x-a.x,b.z-a.z),steps=Math.max(1,Math.ceil(distance/.25));
+ if(a.x>=24&&b.x>=24&&a.z>130&&b.z>130)return insideCavern(a,margin)&&insideCavern(b,margin);
  if(a.z>145.1||b.z>145.1)return false;
  for(let i=0;i<=steps;i++){const t=i/steps,p={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t};if(!insideCavern(p,margin))return false;
   if(!j.defeated.includes('cavern-1-0')&&Math.abs(p.x)<3.7&&Math.abs(p.z-44)<.14)return false;

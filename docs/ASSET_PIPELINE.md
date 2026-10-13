@@ -165,3 +165,9 @@ The installed Blender 5.2 headless pipeline was used; no Blender MCP tool was ex
 
 ## Mina supplied character
 See [MINA_CHARACTER.md](MINA_CHARACTER.md). The town guide now uses mina_guide.glb, a 20-bone skinned derivative of the supplied Tripo model, with idle/greet clips and a matching rendered portrait. Legacy mira save IDs remain stable.
+
+
+### October 13 exports
+build_outskirts.py exports the enclosure, recessed undercroft and prototype meadow to beginnings_outskirts.blend/.glb. build_wolf.py exports the articulated prototype grassland_wolf.blend/.glb. Existing metre/Y-up conventions apply. Meadow vegetation and wolf art remain provisional. The east-gate house was moved clear of the walking corridor.
+
+Blender Lab live access was verified at localhost:9876, including source clip inspection without changing the user's scene. Tools/Blender/live_blender.py sends null-terminated JSON execute requests. Deterministic builds use isolated headless Blender 5.2.2. The guide now has idle/greet/walk/wave clips; dialogue uses the original 2D portrait.
